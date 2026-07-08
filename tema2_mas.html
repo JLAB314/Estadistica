@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu ojo contra el azar — muestreo aleatorio simple</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;        /* azar */
+    --verde-suave:rgba(15,118,110,.15);
+    --ambar:#D98E04;        /* la verdad (μ) */
+    --coral:#E4572E;        /* a ojo */
+    --coral-suave:rgba(228,87,46,.14);
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 22px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:680px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .paso{display:flex; align-items:baseline; gap:10px; margin:36px 0 12px;}
+  .paso .num{
+    font-family:'Space Grotesk', sans-serif; font-weight:700;
+    color:var(--blanco); background:var(--tinta);
+    width:26px; height:26px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:.85rem; flex:none; transform:translateY(3px);
+  }
+  h2{font-family:'Space Grotesk', sans-serif; font-size:1.15rem; font-weight:700;}
+  h2 small{color:var(--tinta-suave); font-size:.92rem; display:block; font-weight:400;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  /* ---- población de rectángulos ---- */
+  .poblacion{
+    display:grid; grid-template-columns:repeat(10, 1fr); gap:4px;
+  }
+  .celda{
+    position:relative; aspect-ratio:1; background:#F7FAFC;
+    border-radius:6px; cursor:pointer; border:1px solid transparent;
+  }
+  .celda:hover{border-color:var(--cuadricula);}
+  .celda:focus-visible{outline:2.5px solid var(--coral); outline-offset:1px;}
+  .celda .rect{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    background:#B9C7D6; border-radius:2px;
+    transition:background .15s;
+  }
+  .celda.mia .rect{background:var(--coral);}
+  .celda.mia{border-color:var(--coral); background:var(--coral-suave);}
+  .celda.azar .rect{background:var(--verde);}
+  .celda.azar{border-color:var(--verde); background:var(--verde-suave);}
+  .celda .area{
+    position:absolute; right:2px; bottom:0; font-size:.62rem;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; color:var(--tinta-suave);
+    display:none; pointer-events:none;
+  }
+  .celda.mia .area, .celda.azar .area, body.revelado .celda:hover .area{display:block;}
+
+  .barra-acciones{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:14px;
+  }
+  .contador-sel{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.05rem;
+    color:var(--coral); min-width:150px;
+  }
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.95rem;
+    border:none; border-radius:999px; padding:10px 22px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:active:not([disabled]){transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .btn[disabled]{opacity:.45; cursor:default;}
+  .btn.coral{background:var(--coral); color:var(--blanco);}
+  .btn.coral:hover:not([disabled]){filter:brightness(1.07);}
+  .btn.verde{background:var(--verde); color:var(--blanco);}
+  .btn.verde:hover:not([disabled]){filter:brightness(1.12);}
+  .btn.tinta{background:var(--tinta); color:var(--blanco);}
+  .btn.tinta:hover:not([disabled]){filter:brightness(1.25);}
+  .btn.sec{background:var(--blanco); color:var(--tinta); border:1.5px solid var(--borde); font-weight:500;}
+  .btn.sec:hover:not([disabled]){border-color:var(--verde);}
+
+  .lista-est{
+    margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; font-size:.88rem;
+  }
+  .est{
+    font-family:'Space Grotesk',sans-serif; font-weight:700;
+    border-radius:8px; padding:4px 12px;
+  }
+  .est.mia{background:var(--coral-suave); color:var(--coral);}
+  .est.azar{background:var(--verde-suave); color:var(--verde);}
+
+  .definicion{
+    margin-top:14px; background:#F4F7FA; border-left:4px solid var(--verde);
+    padding:12px 16px; border-radius:0 8px 8px 0; font-size:.95rem;
+    display:none;
+  }
+  .definicion.visible{display:block;}
+
+  /* ---- recta de estimaciones ---- */
+  #rectaEst{width:100%; height:190px; display:block;}
+  .leyenda{
+    display:flex; gap:22px; flex-wrap:wrap; margin-top:8px; font-size:.85rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:7px;}
+  .pto{width:12px; height:12px; border-radius:50%; display:inline-block;}
+
+  .veredicto{
+    margin-top:14px; background:#FDF6E9; border-left:4px solid var(--ambar);
+    padding:12px 16px; border-radius:0 8px 8px 0; font-size:.97rem;
+    display:none;
+  }
+  .veredicto.visible{display:block;}
+
+  /* ---- fase 4 ---- */
+  #histo{width:100%; height:240px; display:block;}
+  .fila-n{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+  .fila-n .etiq{font-size:.92rem; color:var(--tinta-suave);}
+  .fila-n button{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.88rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:6px 16px; cursor:pointer;
+  }
+  .fila-n button:hover{border-color:var(--verde);}
+  .fila-n button:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .fila-n button.activo{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+  .contador-h{font-size:.9rem; color:var(--tinta-suave); font-variant-numeric:tabular-nums;}
+
+  .bloqueado{opacity:.45; pointer-events:none;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important;}
+  }
+  @media (max-width:560px){
+    .poblacion{gap:3px;}
+    #rectaEst{height:160px;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de probabilidad</div>
+    <h1>Tu ojo contra el azar</h1>
+    <p class="sub">Aquí tienes una población de 100 rectángulos. El objetivo: estimar el
+    <b>área media</b> de la población tomando muestras de 10. Primero muestrearás tú, a ojo;
+    luego lo hará el azar. Al final compararemos quién lo hace mejor. Las áreas se miden en
+    cuadraditos (un rectángulo de 2×3 tiene área 6).</p>
+  </header>
+
+  <div class="paso"><span class="num">1</span><h2>Muestrea a ojo
+    <small>Pulsa 10 rectángulos que te parezcan representativos de la población y guarda tu estimación. Repítelo si quieres con otros 10.</small></h2></div>
+
+  <div class="panel">
+    <div class="poblacion" id="poblacion" role="group" aria-label="Población de 100 rectángulos"></div>
+    <div class="barra-acciones">
+      <span class="contador-sel" id="contadorSel">0 / 10 elegidos</span>
+      <button class="btn coral" id="btnGuardar" disabled>Guardar mi estimación</button>
+      <button class="btn sec" id="btnLimpiar">Empezar otra selección</button>
+    </div>
+    <div class="lista-est" id="listaMias"></div>
+  </div>
+
+  <div class="paso"><span class="num">2</span><h2>Ahora muestrea el azar
+    <small>El sorteo elige 10 rectángulos sin mirar. Lánzalo varias veces.</small></h2></div>
+
+  <div class="panel bloqueado" id="panel2">
+    <div class="barra-acciones" style="margin-top:0">
+      <button class="btn verde" id="btnAzar">🎲 Muestra aleatoria (n = 10)</button>
+      <span id="txtDesbloqueo" style="font-size:.88rem; color:var(--tinta-suave)">Guarda antes al menos una estimación a ojo.</span>
+    </div>
+    <div class="definicion" id="definicion">
+      <b>Esto es el muestreo aleatorio simple (MAS):</b> todos los individuos de la población
+      —y todas las muestras posibles de tamaño 10— tienen la <b>misma probabilidad</b> de ser
+      elegidos. Los rectángulos se sortean <b>sin reemplazamiento</b>: ninguno puede salir dos veces
+      en la misma muestra. Nuestro criterio, nuestro gusto y nuestros prejuicios no intervienen.
+    </div>
+    <div class="lista-est" id="listaAzar"></div>
+  </div>
+
+  <div class="paso"><span class="num">3</span><h2>La revelación
+    <small>Comparamos todas las estimaciones con el valor real de la población.</small></h2></div>
+
+  <div class="panel bloqueado" id="panel3">
+    <div class="barra-acciones" style="margin-top:0">
+      <button class="btn tinta" id="btnVerdad">Mostrar la verdad</button>
+      <button class="btn sec" id="btnSimular" style="display:none">¿Y si muestrearan 20 personas a ojo?</button>
+    </div>
+    <canvas id="rectaEst" aria-label="Recta con las estimaciones a ojo y aleatorias comparadas con la media real"></canvas>
+    <div class="leyenda">
+      <span><span class="pto" style="background:var(--coral)"></span> Estimaciones a ojo</span>
+      <span><span class="pto" style="background:var(--verde)"></span> Estimaciones aleatorias</span>
+      <span id="legMu" style="display:none"><span class="pto" style="background:var(--ambar)"></span> Media real de la población (μ)</span>
+    </div>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+
+  <div class="paso"><span class="num">4</span><h2>La máquina de muestrear
+    <small>¿Qué pasa si el azar toma 500 muestras? Sus medias forman una campana centrada justo en μ: el estimador es insesgado. Prueba a cambiar n.</small></h2></div>
+
+  <div class="panel bloqueado" id="panel4">
+    <div class="fila-n">
+      <span class="etiq">Tamaño de cada muestra:</span>
+      <button data-n="5">n = 5</button>
+      <button data-n="10" class="activo">n = 10</button>
+      <button data-n="20">n = 20</button>
+      <button class="btn verde" id="btnMaquina" style="margin-left:auto">Lanzar 500 muestras</button>
+    </div>
+    <canvas id="histo" aria-label="Histograma de las medias de 500 muestras aleatorias"></canvas>
+    <div class="contador-h" id="contadorH"></div>
+  </div>
+
+  <footer>Demo interactiva de muestreo · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+/* ================= población fija (semilla determinista) ================= */
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15, 1|a);
+    t=t+Math.imul(t^t>>>7, 61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+const semilla=mulberry32(20260708);
+function parAleatorio(){
+  const r=semilla();
+  let lo,hi;
+  if(r<0.60){lo=1;hi=3;}        /* muchos pequeños */
+  else if(r<0.85){lo=3;hi=5;}
+  else if(r<0.94){lo=5;hi=7;}
+  else{lo=7;hi=10;}             /* pocos grandes, y grandes de verdad */
+  const w=lo+Math.floor(semilla()*(hi-lo+1));
+  const h=lo+Math.floor(semilla()*(hi-lo+1));
+  return [w,h];
+}
+const RECTS=[];
+for(let i=0;i<100;i++){
+  const [w,h]=parAleatorio();
+  RECTS.push({w,h,area:w*h});
+}
+/* barajamos posiciones para que los grandes no queden agrupados */
+for(let i=RECTS.length-1;i>0;i--){
+  const j=Math.floor(semilla()*(i+1));
+  [RECTS[i],RECTS[j]]=[RECTS[j],RECTS[i]];
+}
+const MU=RECTS.reduce((a,r)=>a+r.area,0)/100;
+const SIGMA=Math.sqrt(RECTS.reduce((a,r)=>a+(r.area-MU)*(r.area-MU),0)/100);
+
+/* ================= estado ================= */
+const NSEL=10;
+let seleccion=new Set();
+let estimacionesMias=[];   // medias de mis muestras a ojo
+let estimacionesAzar=[];   // medias de muestras aleatorias
+let estimacionesSim=[];    // "20 personas" simuladas (también coral)
+let revelado=false;
+let animandoAzar=false;
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function fmt(x){ return (Math.round(x*10)/10).toLocaleString('es-ES'); }
+
+/* ================= construir la población ================= */
+const contPob=document.getElementById('poblacion');
+const celdas=[];
+RECTS.forEach((r,i)=>{
+  const c=document.createElement('div');
+  c.className='celda'; c.tabIndex=0;
+  c.setAttribute('role','button');
+  c.setAttribute('aria-label','Rectángulo '+(i+1));
+  const rect=document.createElement('div');
+  rect.className='rect';
+  rect.style.width=(r.w*9)+'%';
+  rect.style.height=(r.h*9)+'%';
+  const area=document.createElement('span');
+  area.className='area'; area.textContent=r.area;
+  c.append(rect,area);
+  c.addEventListener('click',()=>alternar(i));
+  c.addEventListener('keydown',e=>{
+    if(e.key===' '||e.key==='Enter'){ alternar(i); e.preventDefault(); }
+  });
+  contPob.appendChild(c);
+  celdas.push(c);
+});
+
+function alternar(i){
+  if(animandoAzar) return;
+  if(seleccion.has(i)){
+    seleccion.delete(i);
+    celdas[i].classList.remove('mia');
+  } else {
+    if(seleccion.size>=NSEL) return;
+    seleccion.add(i);
+    celdas[i].classList.add('mia');
+  }
+  actualizarSel();
+}
+function actualizarSel(){
+  document.getElementById('contadorSel').textContent=seleccion.size+' / '+NSEL+' elegidos';
+  document.getElementById('btnGuardar').disabled = seleccion.size!==NSEL;
+}
+function limpiarSeleccion(){
+  seleccion.forEach(i=>celdas[i].classList.remove('mia'));
+  seleccion.clear();
+  actualizarSel();
+}
+document.getElementById('btnLimpiar').addEventListener('click',limpiarSeleccion);
+
+/* ================= fase 1: guardar estimación a ojo ================= */
+document.getElementById('btnGuardar').addEventListener('click',()=>{
+  const media=[...seleccion].reduce((a,i)=>a+RECTS[i].area,0)/NSEL;
+  estimacionesMias.push(media);
+  const chip=document.createElement('span');
+  chip.className='est mia';
+  chip.textContent='x̄ = '+fmt(media);
+  document.getElementById('listaMias').appendChild(chip);
+  limpiarSeleccion();
+  /* desbloquea la fase 2 */
+  document.getElementById('panel2').classList.remove('bloqueado');
+  document.getElementById('txtDesbloqueo').style.display='none';
+  dibujarRecta();
+});
+
+/* ================= fase 2: muestra aleatoria ================= */
+function muestraAleatoria(n){
+  const idx=[...Array(100).keys()];
+  for(let i=idx.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [idx[i],idx[j]]=[idx[j],idx[i]];
+  }
+  return idx.slice(0,n);
+}
+
+document.getElementById('btnAzar').addEventListener('click',()=>{
+  if(animandoAzar) return;
+  animandoAzar=true;
+  document.getElementById('definicion').classList.add('visible');
+  const muestra=muestraAleatoria(NSEL);
+  const retardo=reducirMovimiento?0:110;
+
+  muestra.forEach((i,k)=>{
+    setTimeout(()=>celdas[i].classList.add('azar'), k*retardo);
+  });
+  setTimeout(()=>{
+    const media=muestra.reduce((a,i)=>a+RECTS[i].area,0)/NSEL;
+    estimacionesAzar.push(media);
+    const chip=document.createElement('span');
+    chip.className='est azar';
+    chip.textContent='x̄ = '+fmt(media);
+    document.getElementById('listaAzar').appendChild(chip);
+    setTimeout(()=>{
+      muestra.forEach(i=>celdas[i].classList.remove('azar'));
+      animandoAzar=false;
+    }, reducirMovimiento?0:700);
+    /* desbloquea la fase 3 */
+    document.getElementById('panel3').classList.remove('bloqueado');
+    dibujarRecta();
+  }, NSEL*retardo+50);
+});
+
+/* ================= fase 3: recta de estimaciones y la verdad ================= */
+const recta=document.getElementById('rectaEst');
+const rctx=recta.getContext('2d');
+
+function preparaCanvas(cv, cctx){
+  const dpr=window.devicePixelRatio||1;
+  const r=cv.getBoundingClientRect();
+  cv.width=r.width*dpr; cv.height=r.height*dpr;
+  cctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function dibujarRecta(){
+  const {W,H}=preparaCanvas(recta, rctx);
+  const mL=30, mR=30, base=H-34;
+  const todos=[...estimacionesMias, ...estimacionesSim, ...estimacionesAzar];
+  if(revelado) todos.push(MU);
+  if(todos.length===0){ rctx.clearRect(0,0,W,H); return; }
+  let lo=Math.min(...todos), hi=Math.max(...todos);
+  const holgura=Math.max((hi-lo)*0.2, 3);
+  lo-=holgura; hi+=holgura;
+  const px=v=>mL+(v-lo)/(hi-lo)*(W-mL-mR);
+
+  rctx.clearRect(0,0,W,H);
+  /* eje */
+  rctx.strokeStyle='#B9C7D6'; rctx.lineWidth=2;
+  rctx.beginPath(); rctx.moveTo(mL-6,base); rctx.lineTo(W-mR+6,base); rctx.stroke();
+  rctx.font='12px "IBM Plex Sans", sans-serif'; rctx.fillStyle='#5B6B80'; rctx.textAlign='center';
+  const paso=Math.max(1, Math.round((hi-lo)/8));
+  for(let v=Math.ceil(lo);v<=hi;v+=paso){
+    const X=px(v);
+    rctx.strokeStyle='#D2DCE6'; rctx.lineWidth=1;
+    rctx.beginPath(); rctx.moveTo(X,base); rctx.lineTo(X,base+6); rctx.stroke();
+    rctx.fillText(v, X, base+20);
+  }
+
+  /* μ si está revelada */
+  if(revelado){
+    const X=px(MU);
+    rctx.strokeStyle='#D98E04'; rctx.lineWidth=2.6;
+    rctx.beginPath(); rctx.moveTo(X,14); rctx.lineTo(X,base); rctx.stroke();
+    rctx.fillStyle='#D98E04';
+    rctx.font='700 13px "Space Grotesk", sans-serif';
+    rctx.fillText('μ = '+fmt(MU), X, 11);
+  }
+
+  /* puntos apilados por proximidad */
+  function pintaGrupo(datos, color, radio){
+    const anchoBin=(hi-lo)/48;
+    const pilas=new Map();
+    for(const v of datos){
+      const b=Math.round(v/anchoBin);
+      const nivel=pilas.get(b)||0;
+      pilas.set(b, nivel+1);
+      const X=px(v), Y=base-8-nivel*(radio*2+3);
+      rctx.beginPath(); rctx.arc(X,Y,radio,0,Math.PI*2);
+      rctx.fillStyle=color; rctx.fill();
+      rctx.strokeStyle='#FFFFFF'; rctx.lineWidth=1.5; rctx.stroke();
+    }
+  }
+  pintaGrupo(estimacionesSim, 'rgba(228,87,46,.45)', 5.5);
+  pintaGrupo(estimacionesMias, '#E4572E', 6.5);
+  pintaGrupo(estimacionesAzar, '#0F766E', 6.5);
+}
+
+document.getElementById('btnVerdad').addEventListener('click',()=>{
+  revelado=true;
+  document.body.classList.add('revelado');
+  document.getElementById('legMu').style.display='inline-flex';
+  document.getElementById('btnVerdad').disabled=true;
+  document.getElementById('btnSimular').style.display='inline-block';
+  document.getElementById('panel4').classList.remove('bloqueado');
+  dibujarRecta();
+  veredicto();
+});
+
+function veredicto(){
+  const v=document.getElementById('veredicto');
+  const sesgo=arr=>arr.length? arr.reduce((a,x)=>a+x,0)/arr.length-MU : 0;
+  const ojo=[...estimacionesMias, ...estimacionesSim];
+  const sOjo=sesgo(ojo), sAzar=sesgo(estimacionesAzar);
+  let html='<b>La media real de la población es μ = '+fmt(MU)+'.</b> ';
+  html+='Tus estimaciones a ojo'+(estimacionesSim.length?' (y las simuladas)':'')+
+    ' se desvían en promedio <b style="color:var(--coral)">'+(sOjo>=0?'+':'')+fmt(sOjo)+'</b>; '+
+    'las aleatorias, <b style="color:var(--verde)">'+(sAzar>=0?'+':'')+fmt(sAzar)+'</b>.';
+  if(sOjo>1){
+    html+=' El patrón clásico: al elegir a ojo, los rectángulos grandes llaman la atención y '+
+    '"parecen necesarios" para representar, mientras los diminutos pasan desapercibidos. Resultado: '+
+    '<b>sobreestimación sistemática</b>. El azar no es más listo que tú, pero no tiene prejuicios: '+
+    'unas veces se pasa y otras se queda corto, pero <b>centrado en μ</b>. Eso es ser <b>insesgado</b>.';
+  } else {
+    html+=' Si tu sesgo a ojo ha salido pequeño, ¡enhorabuena! — pero prueba el botón de las 20 personas '+
+    'simuladas: el ojo humano típico sobreestima sistemáticamente, porque los rectángulos grandes llaman '+
+    'la atención y los diminutos pasan desapercibidos. El azar, en cambio, no tiene prejuicios: '+
+    'unas veces se pasa y otras se queda corto, pero <b>centrado en μ</b>. Eso es ser <b>insesgado</b>.';
+  }
+  html+=' Con pocas muestras el promedio aleatorio también puede desviarse algo: lánzalo más veces, o pasa a la fase 4.';
+  v.innerHTML=html;
+  v.classList.add('visible');
+}
+
+/* ---- 20 personas simuladas: eligen con probabilidad proporcional al área ---- */
+function muestraSesgada(n){
+  const disponibles=[...Array(100).keys()];
+  const elegidos=[];
+  for(let k=0;k<n;k++){
+    let total=0;
+    for(const i of disponibles) total+=Math.pow(RECTS[i].area,0.9);
+    let r=Math.random()*total;
+    let pos=0;
+    while(pos<disponibles.length-1){
+      r-=Math.pow(RECTS[disponibles[pos]].area,0.9);
+      if(r<=0) break;
+      pos++;
+    }
+    elegidos.push(disponibles[pos]);
+    disponibles.splice(pos,1);
+  }
+  return elegidos;
+}
+document.getElementById('btnSimular').addEventListener('click',e=>{
+  for(let p=0;p<20;p++){
+    const m=muestraSesgada(NSEL);
+    estimacionesSim.push(m.reduce((a,i)=>a+RECTS[i].area,0)/NSEL);
+  }
+  e.target.disabled=true;
+  dibujarRecta();
+  veredicto();
+});
+
+/* ================= fase 4: la máquina de muestrear ================= */
+const histo=document.getElementById('histo');
+const hctx=histo.getContext('2d');
+let nMaquina=10;
+let maquinaEnCurso=false;
+
+document.querySelectorAll('.fila-n button[data-n]').forEach(b=>
+  b.addEventListener('click',()=>{
+    if(maquinaEnCurso) return;
+    nMaquina=+b.dataset.n;
+    document.querySelectorAll('.fila-n button[data-n]').forEach(x=>
+      x.classList.toggle('activo', x===b));
+  }));
+
+document.getElementById('btnMaquina').addEventListener('click',()=>{
+  if(maquinaEnCurso) return;
+  maquinaEnCurso=true;
+  const TOTAL=500, n=nMaquina;
+  const ee=SIGMA/Math.sqrt(n)*Math.sqrt((100-n)/99); /* con corrección de población finita */
+  const lo=Math.max(0, MU-4.5*ee), hi=MU+4.5*ee;
+  const NB=41, binW=(hi-lo)/NB;
+  const conteos=new Float64Array(NB);
+  let hechas=0;
+  const porFrame=reducirMovimiento?TOTAL:12;
+
+  function dibujaHisto(){
+    const {W,H}=preparaCanvas(histo,hctx);
+    const mL=30, mR=30, base=H-30;
+    const px=v=>mL+(v-lo)/(hi-lo)*(W-mL-mR);
+    hctx.clearRect(0,0,W,H);
+    /* eje */
+    hctx.strokeStyle='#B9C7D6'; hctx.lineWidth=2;
+    hctx.beginPath(); hctx.moveTo(mL-6,base); hctx.lineTo(W-mR+6,base); hctx.stroke();
+    hctx.font='12px "IBM Plex Sans", sans-serif'; hctx.fillStyle='#5B6B80'; hctx.textAlign='center';
+    const paso=Math.max(1, Math.round((hi-lo)/8));
+    for(let v=Math.ceil(lo);v<=hi;v+=paso){
+      hctx.fillText(v, px(v), base+18);
+    }
+    /* barras */
+    const maxC=Math.max(...conteos,1);
+    hctx.fillStyle='rgba(15,118,110,.35)'; hctx.strokeStyle='#0F766E'; hctx.lineWidth=1;
+    for(let i=0;i<NB;i++){
+      if(!conteos[i]) continue;
+      const X=px(lo+i*binW), Xw=px(lo+(i+1)*binW)-X;
+      const alto=conteos[i]/maxC*(base-30);
+      hctx.fillRect(X,base-alto,Xw,alto);
+      hctx.strokeRect(X,base-alto,Xw,alto);
+    }
+    /* μ */
+    const Xm=px(MU);
+    hctx.strokeStyle='#D98E04'; hctx.lineWidth=2.6;
+    hctx.beginPath(); hctx.moveTo(Xm,12); hctx.lineTo(Xm,base); hctx.stroke();
+    hctx.fillStyle='#D98E04'; hctx.font='700 13px "Space Grotesk", sans-serif';
+    hctx.fillText('μ = '+fmt(MU), Xm, 10);
+  }
+
+  function tanda(){
+    const fin=Math.min(hechas+porFrame, TOTAL);
+    while(hechas<fin){
+      const m=muestraAleatoria(n);
+      const media=m.reduce((a,i)=>a+RECTS[i].area,0)/n;
+      const b=Math.floor((media-lo)/binW);
+      if(b>=0&&b<NB) conteos[b]++;
+      hechas++;
+    }
+    document.getElementById('contadorH').textContent=
+      hechas+' / '+TOTAL+' muestras de tamaño n = '+n+
+      (hechas===TOTAL?' · La campana se centra en μ: la media muestral es un estimador insesgado. Con n mayor, la campana es más estrecha: más precisión.':'');
+    dibujaHisto();
+    if(hechas<TOTAL) requestAnimationFrame(tanda);
+    else maquinaEnCurso=false;
+  }
+  requestAnimationFrame(tanda);
+});
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>dibujarRecta());
+actualizarSel();
+</script>
+</body>
+</html>
