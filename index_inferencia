@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Ejercicios de Estadística</title>
+  <title>Ejercicios de Inferencia y Regresión</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -57,8 +57,8 @@
 </head>
 <body>
   <img src="logo.png" alt="Logo de la cátedra" class="logo">
-  <h1>Ejercicios y Demos de Estadística y Probabilidad</h1>
-  <p class="autor">Autores: Jose Luis Arroyo Barrigüete y Felipe Barrera Jiménez</p>
+  <h1>Ejercicios y Demos de Inferencia y Regresión</h1>
+  <p class="autor">Autores: Felipe Barrera Jiménez y Jose Luis Arroyo Barrigüete</p>
   <ul>
     
    <li><a href="tema1_algoritmos.html">ALGORITMOS: Tipos de algoritmos</a></li>
