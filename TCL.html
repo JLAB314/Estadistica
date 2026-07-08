@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teorema Central del Límite en acción</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;        /* fondo papel milimetrado */
+    --tinta:#1B2A41;        /* texto principal */
+    --tinta-suave:#5B6B80;  /* texto secundario */
+    --cuadricula:#C9D6E3;   /* líneas de la rejilla */
+    --curva:#0F766E;        /* densidad real (verde azulado) */
+    --curva-suave:rgba(15,118,110,.14);
+    --normal:#D98E04;       /* normal teórica (ámbar) */
+    --acento:#E4572E;       /* interacción (coral) */
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --mal:#C0392B;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 28px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--curva); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.7rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:640px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:1.15rem; font-weight:700; margin-bottom:4px;
+  }
+  .paso{
+    display:flex; align-items:baseline; gap:10px; margin:34px 0 14px;
+  }
+  .paso .num{
+    font-family:'Space Grotesk', sans-serif; font-weight:700;
+    color:var(--blanco); background:var(--tinta);
+    width:26px; height:26px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:.85rem; flex:none; transform:translateY(3px);
+  }
+  .paso small{color:var(--tinta-suave); font-size:.92rem; display:block; font-weight:400;}
+
+  /* ---- tarjetas de distribuciones ---- */
+  .tarjetas{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr));
+    gap:12px;
+  }
+  .tarjeta{
+    background:var(--blanco); border:2px solid var(--borde);
+    border-radius:var(--radio); padding:12px 12px 10px;
+    cursor:pointer; text-align:left; font-family:inherit;
+    transition:border-color .15s, transform .12s, box-shadow .15s;
+    box-shadow:var(--sombra);
+  }
+  .tarjeta:hover{transform:translateY(-2px);}
+  .tarjeta:focus-visible{outline:3px solid var(--acento); outline-offset:2px;}
+  .tarjeta.activa{border-color:var(--curva); box-shadow:0 0 0 3px var(--curva-suave), var(--sombra);}
+  .tarjeta canvas{width:100%; height:64px; display:block;}
+  .tarjeta .nombre{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.92rem; margin-top:6px;
+  }
+  .tarjeta .detalle{font-size:.78rem; color:var(--tinta-suave); margin-top:2px;}
+
+  .ficha{
+    margin-top:14px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:14px 18px; box-shadow:var(--sombra);
+    display:flex; flex-wrap:wrap; gap:8px 28px; align-items:baseline;
+  }
+  .ficha .fnombre{font-family:'Space Grotesk',sans-serif; font-weight:700;}
+  .ficha .fdato{font-size:.95rem; color:var(--tinta-suave);}
+  .ficha .fdato b{color:var(--tinta); font-weight:600;}
+
+  /* ---- controles ---- */
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+  .fila-n{display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  .valor-n{
+    font-family:'Space Grotesk', sans-serif; font-size:2rem; font-weight:700;
+    min-width:96px; color:var(--curva);
+  }
+  .valor-n small{font-size:.8rem; color:var(--tinta-suave); display:block; font-weight:500; margin-top:-6px;}
+  input[type=range]{
+    flex:1; min-width:200px; accent-color:var(--acento); height:32px; cursor:pointer;
+  }
+  input[type=range]:focus-visible{outline:3px solid var(--acento); outline-offset:2px; border-radius:6px;}
+  .atajos{display:flex; gap:8px; flex-wrap:wrap;}
+  .atajos button, .modo button{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.88rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:6px 14px; cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  .atajos button:hover{border-color:var(--curva);}
+  .atajos button:focus-visible, .modo button:focus-visible{outline:3px solid var(--acento); outline-offset:2px;}
+  .atajos button.activo, .modo button.activo{
+    background:var(--tinta); color:var(--blanco); border-color:var(--tinta);
+  }
+  .modo{display:flex; gap:8px; margin-top:14px; align-items:center; flex-wrap:wrap;}
+  .modo .etiq{font-size:.85rem; color:var(--tinta-suave); margin-right:2px;}
+
+  /* ---- gráfica principal ---- */
+  .pestanas{display:flex; gap:0; margin-top:26px;}
+  .pestanas button{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.95rem;
+    padding:10px 20px; border:1px solid var(--borde); border-bottom:none;
+    background:#E4EAF1; color:var(--tinta-suave); cursor:pointer;
+    border-radius:var(--radio) var(--radio) 0 0;
+  }
+  .pestanas button.activa{background:var(--blanco); color:var(--tinta);}
+  .pestanas button:focus-visible{outline:3px solid var(--acento); outline-offset:-3px;}
+  .zona-grafica{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:0 var(--radio) var(--radio) var(--radio);
+    padding:16px; box-shadow:var(--sombra);
+  }
+  #lienzo{width:100%; height:380px; display:block;}
+  .leyenda{
+    display:flex; gap:22px; flex-wrap:wrap; margin-top:10px; font-size:.85rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:7px;}
+  .muestra-linea{width:26px; height:0; border-top:3px solid var(--curva); display:inline-block;}
+  .muestra-normal{width:26px; height:0; border-top:3px dashed var(--normal); display:inline-block;}
+  .muestra-histo{width:14px; height:14px; background:var(--curva-suave); border:1.5px solid var(--curva); display:inline-block; border-radius:3px;}
+
+  .barra-sim{display:flex; align-items:center; gap:14px; margin-top:12px; flex-wrap:wrap;}
+  .btn-principal{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.95rem;
+    background:var(--acento); color:var(--blanco); border:none;
+    border-radius:999px; padding:10px 22px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn-principal:hover{filter:brightness(1.07);}
+  .btn-principal:active{transform:scale(.97);}
+  .btn-principal:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .btn-principal[disabled]{opacity:.55; cursor:default;}
+  .contador{font-size:.9rem; color:var(--tinta-suave); font-variant-numeric:tabular-nums;}
+
+  /* ---- indicador de convergencia ---- */
+  .indicador{margin-top:18px;}
+  .indicador .titulo-ind{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:.88rem; color:var(--tinta-suave); margin-bottom:6px;
+  }
+  .indicador .titulo-ind b{
+    color:var(--tinta); font-family:'Space Grotesk',sans-serif; font-size:1.05rem;
+  }
+  .pista{height:10px; background:#E4EAF1; border-radius:999px; overflow:hidden;}
+  .relleno{
+    height:100%; width:0%; border-radius:999px;
+    background:linear-gradient(90deg, var(--acento), var(--normal), var(--curva));
+    transition:width .25s ease;
+  }
+
+  /* ---- teoría y quiz ---- */
+  details.teoria{
+    margin-top:40px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra); overflow:hidden;
+  }
+  details.teoria summary{
+    cursor:pointer; padding:16px 20px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:1.05rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.teoria summary::-webkit-details-marker{display:none;}
+  details.teoria summary::before{content:'▸'; color:var(--curva); transition:transform .15s;}
+  details.teoria[open] summary::before{transform:rotate(90deg);}
+  details.teoria summary:focus-visible{outline:3px solid var(--acento); outline-offset:-3px;}
+  .cuerpo-teoria{padding:0 20px 20px; color:var(--tinta); max-width:760px;}
+  .enunciado{
+    background:#F4F7FA; border-left:4px solid var(--curva);
+    padding:12px 16px; border-radius:0 8px 8px 0; margin:10px 0 18px;
+    font-size:.97rem;
+  }
+  .enunciado i{font-family:'Space Grotesk',sans-serif; font-style:italic;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important;}
+    html{scroll-behavior:auto;}
+  }
+  @media (max-width:560px){
+    #lienzo{height:300px;}
+    .valor-n{font-size:1.6rem; min-width:80px;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de probabilidad</div>
+    <h1>Teorema Central del Límite en acción</h1>
+    <p class="sub">Elige una distribución de partida, suma varias copias independientes de ella
+    y observa cómo —tenga la forma que tenga al principio— el resultado se va pareciendo
+    cada vez más a una campana de Gauss.</p>
+  </header>
+
+  <div class="paso"><span class="num">1</span><h2>Elige la distribución de partida
+    <small>Cada tarjeta muestra su función de densidad (o de masa).</small></h2></div>
+
+  <div class="tarjetas" id="tarjetas" role="group" aria-label="Distribuciones disponibles"></div>
+
+  <div class="ficha" id="ficha" aria-live="polite"></div>
+
+  <div class="paso"><span class="num">2</span><h2>¿Cuántas variables sumamos?
+    <small>Mueve el control (de 1 a 100) y mira cómo cambia la forma. Con n = 1 ves la distribución original.</small></h2></div>
+
+  <div class="panel">
+    <div class="fila-n">
+      <div class="valor-n"><span id="txtN">n = 1</span><small id="txtNsub">1 variable</small></div>
+      <input type="range" id="sliderN" min="1" max="100" step="1" value="1"
+             aria-label="Número de variables que se suman">
+      <div class="atajos" id="atajos">
+        <button data-n="1">1</button>
+        <button data-n="2">2</button>
+        <button data-n="5">5</button>
+        <button data-n="10">10</button>
+        <button data-n="30">30</button>
+        <button data-n="100">100</button>
+      </div>
+    </div>
+    <div class="modo">
+      <span class="etiq">Mostrar:</span>
+      <button id="btnSuma" class="activo">Suma S<sub>n</sub></button>
+      <button id="btnMedia">Media X̄<sub>n</sub></button>
+    </div>
+  </div>
+
+  <div class="paso"><span class="num">3</span><h2>El resultado
+    <small>Compara la distribución exacta (curva teórica) o genera muestras tú mismo (simulación).</small></h2></div>
+
+  <div class="pestanas" role="tablist">
+    <button id="tabTeoria" class="activa" role="tab" aria-selected="true">Curva teórica</button>
+    <button id="tabSim" role="tab" aria-selected="false">Simulación</button>
+  </div>
+
+  <div class="zona-grafica">
+    <canvas id="lienzo" aria-label="Gráfica de la distribución resultante"></canvas>
+    <div class="leyenda">
+      <span id="legTeo"><span class="muestra-linea"></span> Distribución exacta</span>
+      <span id="legHisto" style="display:none"><span class="muestra-histo"></span> Histograma de muestras</span>
+      <span><span class="muestra-normal"></span> Normal del TCL</span>
+    </div>
+    <div class="barra-sim" id="barraSim" style="display:none">
+      <button class="btn-principal" id="btnLanzar">Lanzar 5.000 experimentos</button>
+      <span class="contador" id="contador"></span>
+    </div>
+    <div class="indicador">
+      <div class="titulo-ind">
+        <span>Parecido con la normal</span>
+        <b id="txtParecido">—</b>
+      </div>
+      <div class="pista"><div class="relleno" id="rellenoParecido"></div></div>
+    </div>
+  </div>
+
+  <details class="teoria">
+    <summary>El enunciado del teorema</summary>
+    <div class="cuerpo-teoria">
+      <div class="enunciado">
+        <i>Teorema Central del Límite.</i> Si X₁, X₂, …, Xₙ son variables aleatorias independientes
+        e idénticamente distribuidas con media μ y varianza σ² finita, entonces la suma
+        Sₙ = X₁ + ⋯ + Xₙ tiene aproximadamente distribución Normal(nμ, nσ²) cuando n es grande.
+        De forma equivalente, la media muestral X̄ₙ es aproximadamente Normal(μ, σ²/n).
+      </div>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de estadística · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+/* ================= utilidades matemáticas ================= */
+function erf(x){
+  const s = x < 0 ? -1 : 1; x = Math.abs(x);
+  const t = 1/(1+0.3275911*x);
+  const y = 1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);
+  return s*y;
+}
+function phiCDF(z){ return 0.5*(1+erf(z/Math.SQRT2)); }
+function phiPDF(x, mu, sd){
+  const z=(x-mu)/sd;
+  return Math.exp(-0.5*z*z)/(sd*Math.sqrt(2*Math.PI));
+}
+function normal01(){ /* Box–Muller */
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+/* ================= distribuciones de partida =================
+   Cada una define: rango, CDF (para discretizar con precisión),
+   momentos exactos y un método de muestreo. */
+const M = 160; // bins de la discretización base (continuas)
+
+const DISTS = [
+  {
+    id:'uniforme', nombre:'Uniforme', detalle:'plana en (0, 1)',
+    tipo:'cont', a:0, b:1, mu:0.5, sigma:Math.sqrt(1/12),
+    cdf:x=>Math.min(1,Math.max(0,x)),
+    sample:()=>Math.random()
+  },
+  {
+    id:'exponencial', nombre:'Exponencial', detalle:'muy asimétrica (λ = 1)',
+    tipo:'cont', a:0, b:8, mu:1, sigma:1,
+    cdf:x=>x<=0?0:1-Math.exp(-x),
+    sample:()=>-Math.log(1-Math.random())
+  },
+  {
+    id:'bimodal', nombre:'Bimodal', detalle:'dos jorobas simétricas',
+    tipo:'cont', a:-4.5, b:4.5, mu:0, sigma:Math.sqrt(2.5),
+    cdf:x=>0.5*phiCDF((x+1.5)/0.5)+0.5*phiCDF((x-1.5)/0.5),
+    sample:()=> (Math.random()<0.5?-1.5:1.5) + 0.5*normal01()
+  },
+  {
+    id:'dado', nombre:'Dado', detalle:'discreta: valores 1 a 6',
+    tipo:'disc', valores:[1,2,3,4,5,6], mu:3.5, sigma:Math.sqrt(35/12),
+    sample:()=>1+Math.floor(Math.random()*6)
+  },
+  {
+    id:'arcoseno', nombre:'Forma de U', detalle:'Beta(½, ½), masa en los bordes',
+    tipo:'cont', a:0, b:1, mu:0.5, sigma:Math.sqrt(1/8),
+    cdf:x=>{ x=Math.min(1,Math.max(0,x)); return (2/Math.PI)*Math.asin(Math.sqrt(x)); },
+    sample:()=>{ const u=Math.random(); const s=Math.sin(Math.PI*u/2); return s*s; }
+  }
+];
+
+/* discretiza una distribución base como vector de masas */
+function masaBase(d){
+  if(d.tipo==='disc'){
+    const n=d.valores.length;
+    return {h:1, x0:d.valores[0], masa:new Float64Array(n).fill(1/n)};
+  }
+  const h=(d.b-d.a)/M, masa=new Float64Array(M);
+  let total=0;
+  for(let i=0;i<M;i++){
+    masa[i]=d.cdf(d.a+(i+1)*h)-d.cdf(d.a+i*h);
+    total+=masa[i];
+  }
+  for(let i=0;i<M;i++) masa[i]/=total; // renormaliza (colas truncadas)
+  return {h, x0:d.a+0.5*h, masa};
+}
+
+/* convolución de vectores de masa */
+function convolucion(p,q){
+  const r=new Float64Array(p.length+q.length-1);
+  for(let i=0;i<p.length;i++){
+    const pi=p[i];
+    if(pi===0) continue;
+    for(let j=0;j<q.length;j++) r[i+j]+=pi*q[j];
+  }
+  return r;
+}
+
+/* caché: distribución exacta de la suma de n copias */
+const cacheSumas = {};
+function sumaExacta(d, n){
+  if(!cacheSumas[d.id]) cacheSumas[d.id]=[null];
+  const c=cacheSumas[d.id];
+  if(c[n]) return c[n];
+  const base=masaBase(d);
+  if(!c[1]) c[1]=base;
+  let k=c.length-1;
+  while(k<n){
+    const prev=c[k];
+    c[k+1]={h:base.h, x0:prev.x0+base.x0, masa:convolucion(prev.masa, base.masa)};
+    k++;
+  }
+  return c[n];
+}
+
+/* ================= estado ================= */
+let distActual = DISTS[0];
+let nActual = 1;
+let modoMedia = false;        // false = suma, true = media
+let pestanya = 'teoria';      // 'teoria' | 'sim'
+let simDatos = null;          // {conteos, binW, x0, total}
+let simEnCurso = false;
+const reducirMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= tarjetas ================= */
+const contTarjetas=document.getElementById('tarjetas');
+DISTS.forEach((d,idx)=>{
+  const b=document.createElement('button');
+  b.className='tarjeta'+(idx===0?' activa':'');
+  b.setAttribute('aria-pressed', idx===0?'true':'false');
+  b.innerHTML=`<canvas width="260" height="128" aria-hidden="true"></canvas>
+    <div class="nombre">${d.nombre}</div><div class="detalle">${d.detalle}</div>`;
+  b.addEventListener('click',()=>{
+    distActual=d; simDatos=null;
+    document.querySelectorAll('.tarjeta').forEach(t=>{t.classList.remove('activa'); t.setAttribute('aria-pressed','false');});
+    b.classList.add('activa'); b.setAttribute('aria-pressed','true');
+    actualizarFicha(); dibujar();
+  });
+  contTarjetas.appendChild(b);
+  dibujarMini(b.querySelector('canvas'), d);
+});
+
+function dibujarMini(cv, d){
+  const ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const base=masaBase(d);
+  ctx.strokeStyle='#0F766E'; ctx.fillStyle='rgba(15,118,110,.15)'; ctx.lineWidth=3;
+  if(d.tipo==='disc'){
+    const n=base.masa.length, bw=W/(n*1.8);
+    for(let i=0;i<n;i++){
+      const x=(i+0.5)*(W/n)-bw/2, h=base.masa[i]/Math.max(...base.masa)*(H-16);
+      ctx.fillRect(x, H-4-h, bw, h);
+      ctx.strokeRect(x, H-4-h, bw, h);
+    }
+    return;
+  }
+  const dens=[...base.masa].map(m=>m/base.h);
+  let dmax=Math.max(...dens);
+  if(d.id==='arcoseno') dmax=Math.min(dmax, 4); // recorta los picos infinitos
+  ctx.beginPath();
+  for(let i=0;i<dens.length;i++){
+    const x=i/(dens.length-1)*W;
+    const y=H-4-Math.min(dens[i],dmax)/dmax*(H-16);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  ctx.lineTo(W,H-4); ctx.lineTo(0,H-4); ctx.closePath(); ctx.fill();
+}
+
+/* ================= ficha ================= */
+function fmt(x){ return (Math.round(x*1000)/1000).toString().replace('.',','); }
+function actualizarFicha(){
+  const d=distActual;
+  document.getElementById('ficha').innerHTML=
+    `<span class="fnombre">${d.nombre}</span>
+     <span class="fdato">media <b>μ = ${fmt(d.mu)}</b></span>
+     <span class="fdato">desviación típica <b>σ = ${fmt(d.sigma)}</b></span>
+     <span class="fdato">${d.tipo==='disc'?'variable discreta':'variable continua'}</span>`;
+}
+
+/* ================= controles ================= */
+const slider=document.getElementById('sliderN');
+function fijarN(n){
+  nActual=n; slider.value=n; simDatos=null;
+  document.getElementById('txtN').textContent='n = '+n;
+  document.getElementById('txtNsub').textContent=n===1?'1 variable':n+' variables';
+  document.querySelectorAll('#atajos button').forEach(b=>
+    b.classList.toggle('activo', +b.dataset.n===n));
+  dibujar();
+}
+slider.addEventListener('input',()=>fijarN(+slider.value));
+document.querySelectorAll('#atajos button').forEach(b=>
+  b.addEventListener('click',()=>fijarN(+b.dataset.n)));
+
+document.getElementById('btnSuma').addEventListener('click',e=>{
+  modoMedia=false; simDatos=null;
+  e.target.classList.add('activo');
+  document.getElementById('btnMedia').classList.remove('activo');
+  dibujar();
+});
+document.getElementById('btnMedia').addEventListener('click',e=>{
+  modoMedia=true; simDatos=null;
+  e.target.classList.add('activo');
+  document.getElementById('btnSuma').classList.remove('activo');
+  dibujar();
+});
+
+/* pestañas */
+const tabTeoria=document.getElementById('tabTeoria'), tabSim=document.getElementById('tabSim');
+function fijarPestanya(p){
+  pestanya=p;
+  tabTeoria.classList.toggle('activa', p==='teoria');
+  tabSim.classList.toggle('activa', p==='sim');
+  tabTeoria.setAttribute('aria-selected', p==='teoria');
+  tabSim.setAttribute('aria-selected', p==='sim');
+  document.getElementById('barraSim').style.display = p==='sim'?'flex':'none';
+  document.getElementById('legTeo').style.display   = p==='teoria'?'inline-flex':'none';
+  document.getElementById('legHisto').style.display = p==='sim'?'inline-flex':'none';
+  dibujar();
+}
+tabTeoria.addEventListener('click',()=>fijarPestanya('teoria'));
+tabSim.addEventListener('click',()=>fijarPestanya('sim'));
+
+/* ================= ventana de dibujo ================= */
+function ventana(){
+  const d=distActual, n=nActual;
+  const mu = modoMedia ? d.mu : n*d.mu;
+  const sd = modoMedia ? d.sigma/Math.sqrt(n) : d.sigma*Math.sqrt(n);
+  let xmin=mu-4.2*sd, xmax=mu+4.2*sd;
+  // recorta al soporte real
+  const soporteMin = d.tipo==='disc' ? d.valores[0]*n : d.a*n;
+  const soporteMax = d.tipo==='disc' ? d.valores[d.valores.length-1]*n : d.b*n;
+  const sMin = modoMedia ? soporteMin/n : soporteMin;
+  const sMax = modoMedia ? soporteMax/n : soporteMax;
+  xmin=Math.max(xmin, sMin - (sMax-sMin)*0.03);
+  xmax=Math.min(xmax, sMax + (sMax-sMin)*0.03);
+  return {xmin, xmax, mu, sd};
+}
+
+/* ================= dibujo principal ================= */
+const lienzo=document.getElementById('lienzo');
+const ctx=lienzo.getContext('2d');
+
+function preparaCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const r=lienzo.getBoundingClientRect();
+  lienzo.width=r.width*dpr; lienzo.height=r.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function dibujar(){
+  const {W,H}=preparaCanvas();
+  const mL=44, mR=14, mT=14, mB=34;
+  const anchoP=W-mL-mR, altoP=H-mT-mB;
+  const d=distActual, n=nActual;
+  const v=ventana();
+  const escala = modoMedia ? n : 1;   // densidad de la media = densidad de la suma × n
+  const exacta=sumaExacta(d,n);
+
+  /* --- densidades exactas dentro de la ventana --- */
+  const puntos=[]; // {x, dens} en unidades mostradas
+  const esDisc = d.tipo==='disc';
+  for(let i=0;i<exacta.masa.length;i++){
+    let x=exacta.x0+i*exacta.h;
+    if(modoMedia) x/=n;
+    if(x<v.xmin-exacta.h||x>v.xmax+exacta.h) continue;
+    const dens = esDisc ? exacta.masa[i] : exacta.masa[i]/exacta.h*escala;
+    puntos.push({x, dens});
+  }
+
+  /* --- escala vertical --- */
+  const picoNormal = phiPDF(v.mu, v.mu, v.sd);
+  let yMax;
+  if(esDisc){
+    const maxMasa=Math.max(...puntos.map(p=>p.dens), 1e-9);
+    yMax=Math.max(maxMasa, picoNormal*(modoMedia?exacta.h/n:exacta.h))*1.15;
+  } else {
+    let maxD=Math.max(...puntos.map(p=>p.dens), 1e-9);
+    maxD=Math.min(maxD, picoNormal*6); // recorta picos tipo arcoseno
+    yMax=Math.max(maxD, picoNormal)*1.12;
+  }
+  if(pestanya==='sim' && simDatos){
+    const N=simDatos.total;
+    for(const c of simDatos.conteos){
+      const hh=c/(N*simDatos.binW);
+      if(hh>yMax) yMax=hh*1.05;
+    }
+  }
+
+  const px = x => mL + (x-v.xmin)/(v.xmax-v.xmin)*anchoP;
+  const py = y => mT + altoP - Math.min(y,yMax)/yMax*altoP;
+
+  /* --- ejes y rejilla --- */
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#E4EAF1'; ctx.lineWidth=1;
+  const nTicks=6;
+  ctx.font='12px "IBM Plex Sans", sans-serif'; ctx.fillStyle='#5B6B80';
+  for(let t=0;t<=nTicks;t++){
+    const x=v.xmin+(v.xmax-v.xmin)*t/nTicks;
+    const X=px(x);
+    ctx.beginPath(); ctx.moveTo(X,mT); ctx.lineTo(X,mT+altoP); ctx.stroke();
+    const et=(Math.abs(x)>=100?x.toFixed(0):Math.abs(x)>=10?x.toFixed(1):x.toFixed(2)).replace('.',',');
+    ctx.textAlign='center';
+    ctx.fillText(et, X, H-12);
+  }
+  ctx.strokeStyle='#B9C7D6';
+  ctx.beginPath(); ctx.moveTo(mL,mT+altoP); ctx.lineTo(mL+anchoP,mT+altoP); ctx.stroke();
+
+  /* --- pestaña simulación: histograma --- */
+  if(pestanya==='sim' && simDatos){
+    ctx.fillStyle='rgba(15,118,110,.16)'; ctx.strokeStyle='#0F766E'; ctx.lineWidth=1.2;
+    const N=simDatos.total;
+    for(let i=0;i<simDatos.conteos.length;i++){
+      const c=simDatos.conteos[i]; if(!c) continue;
+      const x0=simDatos.x0+i*simDatos.binW;
+      const hDens=c/(N*simDatos.binW);
+      const X=px(x0), Xw=px(x0+simDatos.binW)-X, Y=py(hDens);
+      ctx.fillRect(X,Y,Xw,mT+altoP-Y);
+      ctx.strokeRect(X,Y,Xw,mT+altoP-Y);
+    }
+  }
+
+  /* --- curva o barras exactas (solo pestaña teórica) --- */
+  if(pestanya==='teoria'){
+    if(esDisc){
+      ctx.fillStyle='rgba(15,118,110,.16)'; ctx.strokeStyle='#0F766E'; ctx.lineWidth=1.6;
+      const paso=(modoMedia?exacta.h/n:exacta.h);
+      const bw=Math.max(2,(px(v.xmin+paso)-px(v.xmin))*0.62);
+      for(const p of puntos){
+        const X=px(p.x)-bw/2, Y=py(p.dens);
+        ctx.fillRect(X,Y,bw,mT+altoP-Y);
+        ctx.strokeRect(X,Y,bw,mT+altoP-Y);
+      }
+    } else {
+      ctx.strokeStyle='#0F766E'; ctx.lineWidth=2.6;
+      ctx.beginPath();
+      let primero=true;
+      for(const p of puntos){
+        const X=px(p.x), Y=py(p.dens);
+        primero?ctx.moveTo(X,Y):ctx.lineTo(X,Y);
+        primero=false;
+      }
+      ctx.stroke();
+      // relleno suave
+      ctx.lineTo(px(puntos[puntos.length-1].x), mT+altoP);
+      ctx.lineTo(px(puntos[0].x), mT+altoP);
+      ctx.closePath();
+      ctx.fillStyle='rgba(15,118,110,.10)';
+      ctx.fill();
+    }
+  }
+
+  /* --- normal del TCL (siempre) --- */
+  ctx.strokeStyle='#D98E04'; ctx.lineWidth=2.4; ctx.setLineDash([7,5]);
+  ctx.beginPath();
+  const pasos=240;
+  for(let i=0;i<=pasos;i++){
+    const x=v.xmin+(v.xmax-v.xmin)*i/pasos;
+    let dens=phiPDF(x, v.mu, v.sd);
+    if(esDisc && pestanya==='teoria') dens*= (modoMedia?exacta.h/n:exacta.h); // compara con masas
+    const X=px(x), Y=py(dens);
+    i===0?ctx.moveTo(X,Y):ctx.lineTo(X,Y);
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+
+  actualizarParecido(exacta, v);
+}
+
+/* --- indicador: 1 − distancia en variación total --- */
+function actualizarParecido(exacta, v){
+  const d=distActual, n=nActual;
+  const muS=n*d.mu, sdS=d.sigma*Math.sqrt(n);
+  let tv=0;
+  for(let i=0;i<exacta.masa.length;i++){
+    const x=exacta.x0+i*exacta.h;
+    const mN=phiPDF(x, muS, sdS)*exacta.h;
+    tv+=Math.abs(exacta.masa[i]-mN);
+  }
+  tv=Math.min(1, 0.5*tv);
+  const parecido=Math.max(0,(1-tv))*100;
+  document.getElementById('txtParecido').textContent=parecido.toFixed(1).replace('.',',')+' %';
+  document.getElementById('rellenoParecido').style.width=parecido+'%';
+}
+
+/* ================= simulación ================= */
+const btnLanzar=document.getElementById('btnLanzar');
+const contador=document.getElementById('contador');
+
+btnLanzar.addEventListener('click',()=>{
+  if(simEnCurso) return;
+  simEnCurso=true; btnLanzar.disabled=true;
+  const d=distActual, n=nActual, TOTAL=5000;
+  const v=ventana();
+  const NB=61, binW=(v.xmax-v.xmin)/NB;
+  simDatos={conteos:new Float64Array(NB), binW, x0:v.xmin, total:0};
+  const porFrame = reducirMovimiento ? TOTAL : 250;
+
+  function tanda(){
+    const fin=Math.min(simDatos.total+porFrame, TOTAL);
+    while(simDatos.total<fin){
+      let s=0;
+      for(let k=0;k<n;k++) s+=d.sample();
+      if(modoMedia) s/=n;
+      const i=Math.floor((s-simDatos.x0)/simDatos.binW);
+      if(i>=0&&i<NB) simDatos.conteos[i]++;
+      simDatos.total++;
+    }
+    contador.textContent=simDatos.total.toLocaleString('es-ES')+' / '+TOTAL.toLocaleString('es-ES')+' experimentos';
+    dibujar();
+    if(simDatos.total<TOTAL){ requestAnimationFrame(tanda); }
+    else { simEnCurso=false; btnLanzar.disabled=false; }
+  }
+  requestAnimationFrame(tanda);
+});
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>dibujar());
+actualizarFicha();
+fijarN(1);
+</script>
+</body>
+</html>
