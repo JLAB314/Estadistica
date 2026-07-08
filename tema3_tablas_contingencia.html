@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El detective de tablas — tablas de contingencia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --ambar:#D98E04;
+    --coral:#E4572E;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --mal:#C0392B;
+    --mal-fondo:#FBEEEC;
+    --rojo-total:#C0392B;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:860px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:660px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .paso{display:flex; align-items:baseline; gap:10px; margin:38px 0 12px;}
+  .paso .num{
+    font-family:'Space Grotesk', sans-serif; font-weight:700;
+    color:var(--blanco); background:var(--tinta);
+    width:26px; height:26px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:.85rem; flex:none; transform:translateY(3px);
+  }
+  h2{font-family:'Space Grotesk', sans-serif; font-size:1.15rem; font-weight:700;}
+  h2 small{color:var(--tinta-suave); font-size:.92rem; display:block; font-weight:400;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:20px 22px; box-shadow:var(--sombra);
+  }
+
+  /* ---- tablas de contingencia ---- */
+  .zona-tablas{display:flex; gap:26px; flex-wrap:wrap; justify-content:center;}
+  .bloque-tabla{text-align:center;}
+  .bloque-tabla .titulo-t{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.85rem;
+    color:var(--tinta-suave); margin-bottom:6px; letter-spacing:.05em; text-transform:uppercase;
+  }
+  table.cont{border-collapse:collapse; margin:0 auto; font-size:.95rem;}
+  table.cont th, table.cont td{
+    border:1.5px solid #9AA8B8; padding:7px 14px; min-width:74px; text-align:center;
+  }
+  table.cont th{background:#E4E8ED; font-weight:600; font-family:'Space Grotesk',sans-serif; font-size:.88rem;}
+  table.cont .tot{color:var(--rojo-total); font-weight:700;}
+  table.cont th.tot{background:#E4E8ED;}
+  table.cont td.esquina, table.cont th.vacia{border:none; background:transparent;}
+  table.cont td{background:var(--blanco); font-variant-numeric:tabular-nums;}
+  /* resaltado de la pregunta */
+  td.objetivo{
+    outline:3.5px solid var(--ambar); outline-offset:-2px;
+    background:#FDF6E9 !important; font-weight:700;
+    animation:late 1.2s ease-in-out infinite;
+  }
+  @keyframes late{0%,100%{outline-color:var(--ambar);}50%{outline-color:#F3C766;}}
+  td.acierto-c{background:var(--ok-fondo) !important; outline:3px solid var(--ok); outline-offset:-2px;}
+  td.fallo-c{background:var(--mal-fondo) !important; outline:3px solid var(--mal); outline-offset:-2px;}
+
+  /* ---- opciones parte 1 ---- */
+  .opciones{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin-top:18px;}
+  .opciones button{
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:.88rem;
+    padding:11px 10px; border-radius:10px; cursor:pointer;
+    background:var(--blanco); color:var(--tinta); border:2px solid var(--borde);
+    transition:transform .1s, border-color .15s;
+  }
+  .opciones button:not([disabled]):hover{transform:translateY(-2px); border-color:var(--verde);}
+  .opciones button:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .opciones button[disabled]{cursor:default; opacity:.55;}
+  .opciones button.correcta{background:var(--ok-fondo); border-color:var(--ok); color:var(--ok); opacity:1;}
+  .opciones button.incorrecta{background:var(--mal-fondo); border-color:var(--mal); color:var(--mal); opacity:1;}
+
+  .enunciado{
+    font-size:1.02rem; font-weight:500; margin:16px 0 0; text-align:center;
+  }
+  .enunciado b{color:var(--ambar);}
+
+  .feedback{
+    margin-top:14px; border-radius:10px; padding:12px 16px; font-size:.94rem;
+    display:none; border-left:5px solid;
+  }
+  .feedback.visible{display:block;}
+  .feedback.bien{background:var(--ok-fondo); border-color:var(--ok);}
+  .feedback.mal{background:var(--mal-fondo); border-color:var(--mal);}
+  .feedback .veredicto{font-family:'Space Grotesk',sans-serif; font-weight:700; margin-bottom:3px;}
+  .feedback.bien .veredicto{color:var(--ok);}
+  .feedback.mal .veredicto{color:var(--mal);}
+
+  .barra-inferior{
+    margin-top:16px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  }
+  .contador{font-size:.9rem; color:var(--tinta-suave); font-variant-numeric:tabular-nums;}
+  .contador b{color:var(--verde);}
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.95rem;
+    border:none; border-radius:999px; padding:10px 24px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .btn.tinta{background:var(--tinta); color:var(--blanco); margin-left:auto; visibility:hidden;}
+  .btn.tinta.visible{visibility:visible;}
+  .btn.tinta:hover{filter:brightness(1.25);}
+  .parte-completa{
+    display:none; margin-top:14px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; color:var(--ok);
+  }
+  .parte-completa.visible{display:block;}
+
+  /* ---- parte 2: sudoku ---- */
+  td input{
+    width:64px; padding:5px 4px; text-align:center; font-family:inherit; font-size:.95rem;
+    border:2px solid var(--coral); border-radius:6px; background:#FFF9F7;
+    font-variant-numeric:tabular-nums;
+  }
+  td input:focus-visible{outline:3px solid var(--ambar); outline-offset:1px;}
+  td input.ok{border-color:var(--ok); background:var(--ok-fondo); color:var(--ok); font-weight:700;}
+  td input.mal{border-color:var(--mal); background:var(--mal-fondo); color:var(--mal);}
+  .nota-sudoku{font-size:.9rem; color:var(--tinta-suave); text-align:center; margin-top:10px;}
+
+  /* ---- parte 3 ---- */
+  .caso3{display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; justify-content:center;}
+  .perfiles{min-width:260px; flex:1; max-width:380px;}
+  .perfiles .titulo-t{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.85rem;
+    color:var(--tinta-suave); margin-bottom:8px; letter-spacing:.05em; text-transform:uppercase;
+    text-align:center;
+  }
+  .perfil-fila{display:grid; grid-template-columns:86px 1fr; gap:10px; align-items:center; margin-bottom:8px;}
+  .perfil-fila .nombre-f{font-size:.85rem; font-weight:600; text-align:right;}
+  .barra100{display:flex; height:30px; border-radius:6px; overflow:hidden; border:1px solid var(--borde);}
+  .barra100 span{
+    display:flex; align-items:center; justify-content:center;
+    font-size:.72rem; font-weight:700; color:var(--blanco);
+    font-family:'Space Grotesk',sans-serif; overflow:hidden; white-space:nowrap;
+  }
+  .leyenda-cols{display:flex; gap:14px; justify-content:center; margin-top:6px; font-size:.8rem; color:var(--tinta-suave); flex-wrap:wrap;}
+  .leyenda-cols i{width:11px; height:11px; border-radius:3px; display:inline-block; margin-right:5px; transform:translateY(1px);}
+  .botones-id{display:flex; gap:10px; justify-content:center; margin-top:18px;}
+  .btn.verde{background:var(--verde); color:var(--blanco);}
+  .btn.verde:hover:not([disabled]){filter:brightness(1.12);}
+  .btn.coral{background:var(--coral); color:var(--blanco);}
+  .btn.coral:hover:not([disabled]){filter:brightness(1.07);}
+  .btn[disabled]{opacity:.5; cursor:default;}
+  .btn.marca-ok{outline:3px solid var(--ok); outline-offset:2px; opacity:1;}
+  .btn.marca-mal{outline:3px solid var(--mal); outline-offset:2px; opacity:.8;}
+
+  /* ---- chuleta ---- */
+  details.chuleta{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra); margin-top:36px;
+  }
+  details.chuleta summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:1rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.chuleta summary::-webkit-details-marker{display:none;}
+  details.chuleta summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.chuleta[open] summary::before{transform:rotate(90deg);}
+  .chuleta-cuerpo{padding:0 18px 18px; font-size:.93rem;}
+  .chuleta-cuerpo dl{display:grid; grid-template-columns:auto 1fr; gap:6px 14px;}
+  .chuleta-cuerpo dt{font-weight:700; font-family:'Space Grotesk',sans-serif; white-space:nowrap;}
+  .frase-clave{
+    margin-top:14px; background:#F4F7FA; border-left:4px solid var(--verde);
+    padding:10px 14px; border-radius:0 8px 8px 0;
+  }
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important;}
+  }
+  @media (max-width:600px){
+    table.cont th, table.cont td{padding:6px 8px; min-width:56px; font-size:.85rem;}
+    td input{width:52px;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de probabilidad</div>
+    <h1>El detective de tablas</h1>
+    <p class="sub">Una encuesta a 50 estudiantes cruza el <b>grado que cursan</b> (ADE o Derecho)
+    con su <b>nivel jugando a videojuegos</b> (no juega, principiante o pro). Tres retos:
+    ponerle nombre a cada número, completar una tabla incompleta y detectar si dos variables
+    son independientes.</p>
+  </header>
+
+  <!-- ============ PARTE 1 ============ -->
+  <div class="paso"><span class="num">1</span><h2>¿Cómo se llama este número?
+    <small>Un número de la tabla parpadea en ámbar. Elige su nombre correcto.</small></h2></div>
+
+  <div class="panel">
+    <div class="zona-tablas">
+      <div class="bloque-tabla">
+        <div class="titulo-t">Frecuencias absolutas</div>
+        <table class="cont" id="tablaAbs"></table>
+      </div>
+      <div class="bloque-tabla">
+        <div class="titulo-t">Frecuencias relativas (÷ 50)</div>
+        <table class="cont" id="tablaRel"></table>
+      </div>
+    </div>
+    <p class="enunciado" id="enunciado1"></p>
+    <div class="opciones" id="ops1">
+      <button data-r="fc">Frecuencia conjunta</button>
+      <button data-r="fm">Frecuencia marginal</button>
+      <button data-r="frc">Frecuencia relativa conjunta</button>
+      <button data-r="frm">Frecuencia relativa marginal</button>
+      <button data-r="n">Tamaño muestral (n)</button>
+    </div>
+    <div class="feedback" id="fb1"><div class="veredicto"></div><div class="texto"></div></div>
+    <div class="barra-inferior">
+      <span class="contador" id="cont1">Pregunta 1 de 10 · <b>0 ✓</b></span>
+      <span class="parte-completa" id="fin1">✓ Parte 1 completada</span>
+      <button class="btn tinta" id="sig1">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ============ PARTE 2 ============ -->
+  <div class="paso"><span class="num">2</span><h2>Complétala
+    <small>Otro curso, otra encuesta: ahora con tres grados. Faltan cinco frecuencias conjuntas, pero los totales están. Dedúcelas y escríbelas (pulsa Enter o sal de la casilla para comprobar).</small></h2></div>
+
+  <div class="panel">
+    <div class="zona-tablas">
+      <div class="bloque-tabla">
+        <table class="cont" id="tablaSudoku"></table>
+      </div>
+    </div>
+    <p class="nota-sudoku">Recuerda: cada <b style="color:var(--rojo-total)">TOTAL</b> es la suma de su fila o de su columna. La tabla tiene estructura: ningún número está suelto.</p>
+    <div class="feedback" id="fb2"><div class="veredicto"></div><div class="texto"></div></div>
+    <div class="barra-inferior">
+      <span class="contador" id="cont2">0 de 5 casillas · <b>0 ✓ a la primera</b></span>
+      <span class="parte-completa" id="fin2">✓ Parte 2 completada</span>
+    </div>
+  </div>
+
+  <!-- ============ PARTE 3 ============ -->
+  <div class="paso"><span class="num">3</span><h2>¿Son independientes?
+    <small>Junto a cada tabla, sus perfiles de fila como barras al 100 %. Si las variables son independientes, todas las filas son proporcionales y las barras quedan idénticas. ¿Lo son?</small></h2></div>
+
+  <div class="panel">
+    <div class="caso3">
+      <div class="bloque-tabla">
+        <div class="titulo-t" id="titulo3"></div>
+        <table class="cont" id="tabla3"></table>
+      </div>
+      <div class="perfiles">
+        <div class="titulo-t">Perfiles de fila (100 %)</div>
+        <div id="barras3"></div>
+        <div class="leyenda-cols" id="leyenda3"></div>
+      </div>
+    </div>
+    <div class="botones-id">
+      <button class="btn verde" id="btnInd">Independientes</button>
+      <button class="btn coral" id="btnDep">Dependientes</button>
+    </div>
+    <div class="feedback" id="fb3"><div class="veredicto"></div><div class="texto"></div></div>
+    <div class="barra-inferior">
+      <span class="contador" id="cont3">Tabla 1 de 5 · <b>0 ✓</b></span>
+      <span class="parte-completa" id="fin3">✓ Parte 3 completada · ¡ejercicio terminado!</span>
+      <button class="btn tinta" id="sig3">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ============ chuleta ============ -->
+  <details class="chuleta">
+    <summary>Chuleta: los nombres y el criterio de independencia</summary>
+    <div class="chuleta-cuerpo">
+      <dl>
+        <dt>Frecuencia conjunta</dt><dd>nº de individuos con un valor de cada variable a la vez (ADE <b>y</b> principiante).</dd>
+        <dt>Frecuencia marginal</dt><dd>total de una fila o de una columna: cuántos hay de una sola categoría, ignorando la otra variable.</dd>
+        <dt>Frecuencia relativa (conjunta o marginal)</dt><dd>la misma idea, dividida entre el tamaño muestral n: proporción o porcentaje.</dd>
+        <dt>Tamaño muestral n</dt><dd>el gran total de la esquina: todos los individuos encuestados.</dd>
+      </dl>
+      <div class="frase-clave">
+        <b>Independencia:</b> dos variables son independientes cuando <b>todas las filas son proporcionales</b>
+        (y entonces las columnas también lo son): los perfiles de fila al 100 % quedan idénticos.
+        Equivalentemente, cada frecuencia conjunta ≈ (total de su fila × total de su columna) / n.
+      </div>
+    </div>
+  </details>
+
+  <footer>Ejercicio interactivo de tablas de contingencia · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= PARTE 1: las dos tablas de la diapositiva ================= */
+const FILAS1=['ADE','Derecho'], COLS1=['No juega','Principiante','Pro'];
+const DATOS1=[[2,5,10],[8,15,10]];          // absolutas
+const N1=50;
+
+function construirTabla(idTabla, datos, esRelativa){
+  const t=document.getElementById(idTabla);
+  const fmt=v=>esRelativa? Math.round(v/N1*100)+'%' : v;
+  let html='<tr><th class="vacia"></th>';
+  COLS1.forEach(c=>html+='<th>'+c+'</th>');
+  html+='<th class="tot">TOTAL</th></tr>';
+  datos.forEach((fila,i)=>{
+    html+='<tr><th>'+FILAS1[i]+'</th>';
+    fila.forEach((v,j)=>html+=`<td data-c="${i}-${j}">${fmt(v)}</td>`);
+    const totF=fila.reduce((a,x)=>a+x,0);
+    html+=`<td class="tot" data-c="f${i}">${fmt(totF)}</td></tr>`;
+  });
+  html+='<tr><th class="tot">TOTAL</th>';
+  COLS1.forEach((_,j)=>{
+    const totC=datos.reduce((a,f)=>a+f[j],0);
+    html+=`<td class="tot" data-c="c${j}">${fmt(totC)}</td>`;
+  });
+  html+=`<td class="tot" data-c="n">${esRelativa?'100%':N1}</td></tr>`;
+  t.innerHTML=html;
+}
+construirTabla('tablaAbs', DATOS1, false);
+construirTabla('tablaRel', DATOS1, true);
+
+/* rondas: tabla (abs/rel), celda, respuesta, explicación */
+const NOM={fc:'frecuencia conjunta', fm:'frecuencia marginal', frc:'frecuencia relativa conjunta',
+           frm:'frecuencia relativa marginal', n:'tamaño muestral (n)'};
+const RONDAS1=[
+ {t:'tablaAbs', c:'0-1', r:'fc',
+  exp:'El 5 cuenta a los estudiantes que cursan ADE Y son principiantes a la vez: cruce de un valor de cada variable → frecuencia conjunta (de ADE y principiante).'},
+ {t:'tablaAbs', c:'c0', r:'fm',
+  exp:'El 10 es el total de la columna "no juega": cuántos no juegan, sin importar su grado → frecuencia marginal (de "no juega"). Vive en los márgenes de la tabla.'},
+ {t:'tablaAbs', c:'f1', r:'fm',
+  exp:'El 33 es el total de la fila Derecho: todos los de Derecho, ignorando si juegan o no → frecuencia marginal (de Derecho).'},
+ {t:'tablaAbs', c:'n', r:'n',
+  exp:'El 50 de la esquina es el gran total: todos los estudiantes encuestados. Es el tamaño muestral n, el número entre el que dividimos para pasar a la tabla relativa.'},
+ {t:'tablaRel', c:'0-1', r:'frc',
+  exp:'El 10% es el 5 de antes dividido entre 50: proporción de estudiantes que son de ADE Y principiantes → frecuencia relativa conjunta (de ADE y principiante).'},
+ {t:'tablaAbs', c:'1-0', r:'fc',
+  exp:'El 8 cuenta a los que cursan Derecho Y no juegan: cruce de dos valores → frecuencia conjunta (de Derecho y "no juega").'},
+ {t:'tablaRel', c:'f1', r:'frm',
+  exp:'El 66% es el 33 de Derecho dividido entre 50: proporción total de estudiantes de Derecho → frecuencia relativa marginal (de Derecho).'},
+ {t:'tablaRel', c:'c0', r:'frm',
+  exp:'El 20% es el 10 de "no juega" entre 50: proporción que no juega, sin importar el grado → frecuencia relativa marginal (de "no juega").'},
+ {t:'tablaAbs', c:'f0', r:'fm',
+  exp:'El 17 es el total de la fila ADE → frecuencia marginal (de ADE).'},
+ {t:'tablaRel', c:'1-2', r:'frc',
+  exp:'El 20% es el 10 (Derecho y pro) dividido entre 50 → frecuencia relativa conjunta (de Derecho y pro).'}
+];
+
+let ronda1=0, ok1=0, resp1=false;
+const ops1=[...document.querySelectorAll('#ops1 button')];
+
+function pintaRonda1(){
+  resp1=false;
+  document.querySelectorAll('#tablaAbs td, #tablaRel td').forEach(td=>
+    td.classList.remove('objetivo','acierto-c','fallo-c'));
+  const r=RONDAS1[ronda1];
+  const td=document.querySelector('#'+r.t+' td[data-c="'+r.c+'"]');
+  td.classList.add('objetivo');
+  document.getElementById('enunciado1').innerHTML=
+    '¿Cómo se llama el número <b>'+td.textContent+'</b> que parpadea en la tabla de '+
+    (r.t==='tablaAbs'?'frecuencias absolutas':'frecuencias relativas')+'?';
+  ops1.forEach(b=>{ b.disabled=false; b.classList.remove('correcta','incorrecta'); });
+  document.getElementById('fb1').classList.remove('visible','bien','mal');
+  document.getElementById('sig1').classList.remove('visible');
+  document.getElementById('cont1').innerHTML='Pregunta '+(ronda1+1)+' de '+RONDAS1.length+' · <b>'+ok1+' ✓</b>';
+}
+
+ops1.forEach(b=>b.addEventListener('click',()=>{
+  if(resp1) return;
+  resp1=true;
+  const r=RONDAS1[ronda1];
+  const bien=b.dataset.r===r.r;
+  if(bien) ok1++;
+  ops1.forEach(x=>{
+    x.disabled=true;
+    if(x.dataset.r===r.r) x.classList.add('correcta');
+    else if(x===b) x.classList.add('incorrecta');
+  });
+  const td=document.querySelector('#'+r.t+' td[data-c="'+r.c+'"]');
+  td.classList.remove('objetivo');
+  td.classList.add(bien?'acierto-c':'fallo-c');
+  const fb=document.getElementById('fb1');
+  fb.querySelector('.veredicto').textContent=bien
+    ? '✓ Correcto: '+NOM[r.r]
+    : '✗ Era '+NOM[r.r]+', no '+NOM[b.dataset.r]+'.';
+  fb.querySelector('.texto').textContent=r.exp;
+  fb.classList.add('visible', bien?'bien':'mal');
+  document.getElementById('cont1').innerHTML='Pregunta '+(ronda1+1)+' de '+RONDAS1.length+' · <b>'+ok1+' ✓</b>';
+  if(ronda1<RONDAS1.length-1){
+    document.getElementById('sig1').classList.add('visible');
+  } else {
+    document.getElementById('fin1').classList.add('visible');
+  }
+}));
+document.getElementById('sig1').addEventListener('click',()=>{ ronda1++; pintaRonda1(); });
+
+/* ================= PARTE 2: sudoku ================= */
+const FILAS2=['ADE','Derecho','Economía'], COLS2=['No juega','Principiante','Pro'];
+const DATOS2=[[4,6,10],[9,12,9],[7,2,1]];
+const HUECOS=new Set(['0-1','1-0','1-2','2-1','2-2']);  // 5 celdas ocultas, deducibles
+let hechas2=0, primeras2=0;
+const fallado2=new Set();
+
+function construirSudoku(){
+  const t=document.getElementById('tablaSudoku');
+  let html='<tr><th class="vacia"></th>';
+  COLS2.forEach(c=>html+='<th>'+c+'</th>');
+  html+='<th class="tot">TOTAL</th></tr>';
+  DATOS2.forEach((fila,i)=>{
+    html+='<tr><th>'+FILAS2[i]+'</th>';
+    fila.forEach((v,j)=>{
+      const clave=i+'-'+j;
+      if(HUECOS.has(clave)){
+        html+=`<td><input type="number" inputmode="numeric" data-clave="${clave}" data-v="${v}" aria-label="Casilla ${FILAS2[i]}, ${COLS2[j]}"></td>`;
+      } else {
+        html+='<td>'+v+'</td>';
+      }
+    });
+    html+='<td class="tot">'+fila.reduce((a,x)=>a+x,0)+'</td></tr>';
+  });
+  html+='<tr><th class="tot">TOTAL</th>';
+  COLS2.forEach((_,j)=>{
+    html+='<td class="tot">'+DATOS2.reduce((a,f)=>a+f[j],0)+'</td>';
+  });
+  html+='<td class="tot">'+DATOS2.flat().reduce((a,x)=>a+x,0)+'</td></tr>';
+  t.innerHTML=html;
+
+  t.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ comprobarCelda(inp); }});
+    inp.addEventListener('blur',()=>{ if(inp.value!=='') comprobarCelda(inp); });
+  });
+}
+construirSudoku();
+
+function comprobarCelda(inp){
+  if(inp.classList.contains('ok')) return;
+  const v=+inp.dataset.v, dado=+inp.value;
+  const clave=inp.dataset.clave;
+  const [i,j]=clave.split('-').map(Number);
+  const fb=document.getElementById('fb2');
+  if(dado===v){
+    inp.classList.remove('mal'); inp.classList.add('ok');
+    inp.disabled=true;
+    if(!fallado2.has(clave)) primeras2++;
+    hechas2++;
+    fb.querySelector('.veredicto').textContent='✓ Correcto: '+v;
+    fb.querySelector('.texto').textContent='La casilla ('+FILAS2[i]+', '+COLS2[j]+') se deduce restando: total de su fila menos lo ya conocido, o total de su columna menos lo ya conocido. Las marginales son sumas.';
+    fb.classList.remove('mal'); fb.classList.add('visible','bien');
+    if(hechas2===HUECOS.size){
+      document.getElementById('fin2').classList.add('visible');
+      fb.querySelector('.texto').textContent+=' ¡Tabla completa! Fíjate: con las marginales dadas, bastaba conocer unas pocas conjuntas para reconstruir todo.';
+    }
+  } else {
+    fallado2.add(clave);
+    inp.classList.add('mal');
+    const totF=DATOS2[i].reduce((a,x)=>a+x,0);
+    const totC=DATOS2.reduce((a,f)=>a+f[j],0);
+    fb.querySelector('.veredicto').textContent='✗ Ese valor rompe la tabla.';
+    fb.querySelector('.texto').textContent='Pista: la fila '+FILAS2[i]+' debe sumar '+totF+' y la columna "'+COLS2[j]+'" debe sumar '+totC+'. Comprueba cuánto falta para completar una de las dos.';
+    fb.classList.remove('bien'); fb.classList.add('visible','mal');
+  }
+  document.getElementById('cont2').innerHTML=hechas2+' de '+HUECOS.size+' casillas · <b>'+primeras2+' ✓ a la primera</b>';
+}
+
+/* ================= PARTE 3: ¿independientes? ================= */
+const COLORES3=['#0F766E','#D98E04','#E4572E','#8A6FB8'];
+const CASOS3=[
+ {titulo:'Sexo × Turno de clase', filas:['Hombres','Mujeres'], cols:['Mañana','Tarde'],
+  datos:[[30,20],[60,40]], ind:true,
+  exp:'El 60 % de los hombres va por la mañana… y el 60 % de las mujeres también. Los perfiles de fila son idénticos: filas proporcionales → independientes. Saber el sexo no cambia nada sobre el turno.'},
+ {titulo:'Edad × Plataforma preferida', filas:['Jóvenes','Adultos','Mayores'], cols:['Móvil','Consola','PC'],
+  datos:[[10,25,15],[20,15,15],[32,4,4]], ind:false,
+  exp:'Los perfiles cambian a la vista: la consola es la preferida del 50 % de los jóvenes, pero solo del 10 % de los mayores, que se van masivamente al móvil (80 %). Perfiles distintos → dependientes: la edad informa sobre la plataforma.'},
+ {titulo:'Curso × Transporte al campus', filas:['1.º','2.º','3.º'], cols:['Bus','Andando'],
+  datos:[[10,30],[5,15],[20,60]], ind:true,
+  exp:'En los tres cursos el reparto es exactamente 25 % bus / 75 % andando, aunque los totales de cada curso sean muy distintos. Filas proporcionales → independientes. Ojo: independencia no significa filas iguales, sino perfiles iguales.'},
+ {titulo:'Grado × ¿Juega a videojuegos?', filas:['ADE','Derecho'], cols:['Juega','No juega'],
+  datos:[[15,2],[18,15]], ind:false,
+  exp:'Juega el 88 % de ADE frente al 55 % de Derecho: los perfiles no coinciden → dependientes. Conocer el grado cambia lo que esperamos sobre el hábito de juego.'},
+ {titulo:'¿Hace deporte? × ¿Fuma?', filas:['Deportistas','Sedentarios'], cols:['Fuma','No fuma'],
+  datos:[[5,45],[20,30]], ind:false,
+  exp:'Fuma el 10 % de los deportistas frente al 40 % de los sedentarios: perfiles muy distintos → dependientes (asociación clara entre las dos variables).'}
+];
+
+let caso3=0, ok3=0, resp3=false;
+
+function pintaCaso3(){
+  resp3=false;
+  const c=CASOS3[caso3];
+  document.getElementById('titulo3').textContent=c.titulo;
+  /* tabla */
+  let html='<tr><th class="vacia"></th>';
+  c.cols.forEach(x=>html+='<th>'+x+'</th>');
+  html+='<th class="tot">TOTAL</th></tr>';
+  c.datos.forEach((fila,i)=>{
+    html+='<tr><th>'+c.filas[i]+'</th>';
+    fila.forEach(v=>html+='<td>'+v+'</td>');
+    html+='<td class="tot">'+fila.reduce((a,x)=>a+x,0)+'</td></tr>';
+  });
+  html+='<tr><th class="tot">TOTAL</th>';
+  c.cols.forEach((_,j)=>html+='<td class="tot">'+c.datos.reduce((a,f)=>a+f[j],0)+'</td>');
+  html+='<td class="tot">'+c.datos.flat().reduce((a,x)=>a+x,0)+'</td></tr>';
+  document.getElementById('tabla3').innerHTML=html;
+  /* barras 100% */
+  const zb=document.getElementById('barras3');
+  zb.innerHTML='';
+  c.datos.forEach((fila,i)=>{
+    const tot=fila.reduce((a,x)=>a+x,0);
+    let barra='<div class="perfil-fila"><span class="nombre-f">'+c.filas[i]+'</span><span class="barra100">';
+    fila.forEach((v,j)=>{
+      const pct=v/tot*100;
+      barra+='<span style="width:'+pct+'%; background:'+COLORES3[j]+'">'+(pct>=14?Math.round(pct)+'%':'')+'</span>';
+    });
+    barra+='</span></div>';
+    zb.insertAdjacentHTML('beforeend', barra);
+  });
+  const zl=document.getElementById('leyenda3');
+  zl.innerHTML=c.cols.map((x,j)=>'<span><i style="background:'+COLORES3[j]+'"></i>'+x+'</span>').join('');
+  /* botones */
+  const bI=document.getElementById('btnInd'), bD=document.getElementById('btnDep');
+  [bI,bD].forEach(b=>{ b.disabled=false; b.classList.remove('marca-ok','marca-mal'); });
+  document.getElementById('fb3').classList.remove('visible','bien','mal');
+  document.getElementById('sig3').classList.remove('visible');
+  document.getElementById('cont3').innerHTML='Tabla '+(caso3+1)+' de '+CASOS3.length+' · <b>'+ok3+' ✓</b>';
+}
+
+function responder3(diceInd){
+  if(resp3) return;
+  resp3=true;
+  const c=CASOS3[caso3];
+  const bien=diceInd===c.ind;
+  if(bien) ok3++;
+  const bI=document.getElementById('btnInd'), bD=document.getElementById('btnDep');
+  [bI,bD].forEach(b=>b.disabled=true);
+  const correcto=c.ind?bI:bD, elegido=diceInd?bI:bD;
+  correcto.classList.add('marca-ok');
+  if(!bien) elegido.classList.add('marca-mal');
+  const fb=document.getElementById('fb3');
+  fb.querySelector('.veredicto').textContent=bien
+    ? '✓ Correcto: son '+(c.ind?'independientes':'dependientes')
+    : '✗ En realidad son '+(c.ind?'independientes':'dependientes')+'.';
+  fb.querySelector('.texto').textContent=c.exp;
+  fb.classList.add('visible', bien?'bien':'mal');
+  document.getElementById('cont3').innerHTML='Tabla '+(caso3+1)+' de '+CASOS3.length+' · <b>'+ok3+' ✓</b>';
+  if(caso3<CASOS3.length-1){
+    document.getElementById('sig3').classList.add('visible');
+  } else {
+    document.getElementById('fin3').classList.add('visible');
+  }
+}
+document.getElementById('btnInd').addEventListener('click',()=>responder3(true));
+document.getElementById('btnDep').addEventListener('click',()=>responder3(false));
+document.getElementById('sig3').addEventListener('click',()=>{ caso3++; pintaCaso3(); });
+
+/* ================= arranque ================= */
+pintaRonda1();
+pintaCaso3();
+</script>
+</body>
+</html>
