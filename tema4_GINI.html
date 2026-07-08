@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curva de Lorenz — índice de Gini</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --verde-suave:rgba(15,118,110,.15);
+    --ambar:#D98E04;
+    --coral:#E4572E;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:760px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  .zona-principal{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 250px;
+    gap:16px;
+    align-items:stretch;
+  }
+
+  .indicadores{display:grid; grid-template-columns:1fr; gap:14px;}
+  .indic{
+    background:#F7FAFC; border:1px solid var(--borde); border-radius:var(--radio);
+    padding:14px 18px; transition:box-shadow .2s;
+  }
+  .indic.destello{box-shadow:0 0 0 3px var(--verde-suave);}
+  .indic .nom{
+    font-size:.78rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--tinta-suave); font-weight:600;
+  }
+  .indic .val{
+    font-family:'Space Grotesk', sans-serif; font-size:2.35rem; font-weight:700;
+    font-variant-numeric:tabular-nums; line-height:1.05; margin-top:2px;
+  }
+  .indic .etq{font-size:.92rem; font-weight:600; margin-top:4px;}
+  .indic.gini .val{color:var(--coral);}
+  .indic.area .val{color:var(--ambar); font-size:1.9rem;}
+
+  .aviso-igualdad{
+    text-align:center; font-family:'Space Grotesk',sans-serif; font-weight:700;
+    color:var(--verde); min-height:24px; margin-bottom:6px; opacity:0; transition:opacity .3s;
+  }
+  .aviso-igualdad.visible{opacity:1;}
+
+  #lienzo{width:100%; height:430px; display:block; touch-action:none; cursor:default; outline:none; border-radius:8px;}
+  #lienzo:focus-visible{box-shadow:0 0 0 3px var(--coral);}
+
+  .leyenda{
+    display:flex; gap:22px; flex-wrap:wrap; justify-content:center;
+    margin-top:8px; font-size:.85rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:7px;}
+  .m-lorenz{width:24px; height:12px; background:var(--verde-suave); border-top:3px solid var(--verde); display:inline-block;}
+  .m-igualdad{width:24px; height:0; border-top:3px dashed #8FA3B8; display:inline-block;}
+  .m-area{width:24px; height:12px; background:rgba(228,87,46,.16); border:1px solid rgba(228,87,46,.35); display:inline-block;}
+
+  .ayuda{font-size:.85rem; color:var(--tinta-suave); margin-top:10px; text-align:center;}
+  .ayuda b{color:var(--coral);}
+
+  .mini-explica{
+    background:#F4F7FA;
+    border-left:4px solid var(--verde);
+    padding:10px 14px;
+    border-radius:0 8px 8px 0;
+    font-size:.92rem;
+    color:var(--tinta-suave);
+  }
+  .mini-explica b{color:var(--tinta); font-family:'Space Grotesk',sans-serif;}
+
+  .fila-controles{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px;}
+  .fila-controles .etiq{font-size:.85rem; color:var(--tinta-suave); font-weight:600; margin-right:2px;}
+  .chip{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.86rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:6px 14px; cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  .chip:hover:not([disabled]){border-color:var(--verde);}
+  .chip:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .chip[disabled]{opacity:.4; cursor:default;}
+  .chip.activo{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+  .chip.reto{border-color:var(--ambar);}
+  .chip.reto.activo{background:var(--ambar); border-color:var(--ambar); color:var(--blanco);}
+  .chip.logrado::after{content:' ✓'; font-weight:700;}
+  .chip.reset{background:var(--verde); color:var(--blanco); border-color:var(--verde);}
+  .chip.reset:hover{filter:brightness(1.1);}
+  .sep-v{width:1px; height:22px; background:var(--borde); margin:0 4px;}
+
+  .preset-info{
+    display:none; margin-top:12px; background:#F4F7FA; border-left:4px solid var(--verde);
+    padding:10px 14px; border-radius:0 8px 8px 0; font-size:.93rem;
+  }
+  .preset-info.visible{display:block;}
+  .reto-texto{
+    display:none; margin-top:12px; background:#FDF6E9; border-left:4px solid var(--ambar);
+    padding:10px 14px; border-radius:0 8px 8px 0; font-size:.93rem;
+  }
+  .reto-texto.visible{display:block;}
+  .reto-texto.logrado{background:var(--ok-fondo); border-color:var(--ok);}
+  .reto-texto b{font-family:'Space Grotesk',sans-serif;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:800px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:760px){
+    .zona-principal{grid-template-columns:1fr;}
+    .indicadores{grid-template-columns:1fr 1fr;}
+    #lienzo{height:370px;}
+    .indic .val{font-size:1.8rem;}
+    .indic.area .val{font-size:1.55rem;}
+  }
+  @media (max-width:520px){
+    .indicadores{grid-template-columns:1fr;}
+    #lienzo{height:340px;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de desigualdad</div>
+    <h1>Desplaza la curva de Lorenz</h1>
+    <p class="sub">Parte de una sociedad perfectamente igualitaria y arrastra la curva hacia abajo para aumentar la desigualdad. A la derecha se actualiza el <b>índice de Gini</b>: 0 significa igualdad perfecta y 1 desigualdad máxima.</p>
+  </header>
+
+  <div class="panel">
+    <div class="aviso-igualdad" id="avisoIgualdad">¡Igualdad prácticamente perfecta!</div>
+
+    <div class="zona-principal">
+      <div>
+        <canvas id="lienzo" tabindex="0" aria-label="Curva de Lorenz interactiva con línea de igualdad perfecta"></canvas>
+        <div class="leyenda">
+          <span><span class="m-lorenz"></span> Curva de Lorenz</span>
+          <span><span class="m-igualdad"></span> Igualdad perfecta</span>
+          <span><span class="m-area"></span> Área de desigualdad</span>
+        </div>
+        <div class="ayuda">Arrastra la <b>curva</b> o el <b>punto naranja</b> hacia abajo → más desigualdad · hacia arriba → menos desigualdad</div>
+      </div>
+
+      <div class="indicadores">
+        <div class="indic gini" id="indGini">
+          <div class="nom">Índice de Gini</div>
+          <div class="val" id="valGini">0,00</div>
+          <div class="etq" id="etqGini">Igualdad perfecta</div>
+        </div>
+        <div class="indic area" id="indArea">
+          <div class="nom">Área entre curvas</div>
+          <div class="val" id="valArea">0,00</div>
+          <div class="etq">Gini = 2 × área</div>
+        </div>
+        <div class="mini-explica">
+          <b>Lectura:</b> si el 40% más pobre acumula solo el 20% de la renta, la curva queda por debajo de la diagonal. Cuanto más se hunde, mayor es el Gini.
+        </div>
+      </div>
+    </div>
+
+    <div class="fila-controles">
+      <button class="chip reset" id="btnReset">↺ Volver a igualdad perfecta</button>
+      <span class="sep-v"></span>
+      <span class="etiq">Ejemplos:</span>
+      <button class="chip preset" data-p="baja">Desigualdad baja</button>
+      <button class="chip preset" data-p="media">Desigualdad media</button>
+      <button class="chip preset" data-p="alta">Desigualdad alta</button>
+      <button class="chip preset" data-p="extrema">Muy alta</button>
+    </div>
+    <div class="preset-info" id="presetInfo"></div>
+
+    <div class="fila-controles">
+      <span class="etiq">Retos:</span>
+      <button class="chip reto" data-r="0">Reto 1</button>
+      <button class="chip reto" data-r="1">Reto 2</button>
+      <button class="chip reto" data-r="2">Reto 3</button>
+    </div>
+    <div class="reto-texto" id="retoTexto"></div>
+  </div>
+
+  <details class="nota">
+    <summary>¿Qué mide el índice de Gini?</summary>
+    <div class="nota-cuerpo">
+      <p>La <b>curva de Lorenz</b> ordena a la población de menor a mayor renta y muestra qué porcentaje acumulado de la renta recibe cada porcentaje acumulado de población.</p>
+      <p>La diagonal representa <b>igualdad perfecta</b>: el 20% de la población tendría el 20% de la renta, el 50% tendría el 50%, y así sucesivamente.</p>
+      <p>El <b>índice de Gini</b> mide el área que hay entre la diagonal de igualdad perfecta y la curva de Lorenz. En esta demo, la curva se modeliza como L(p)=p<sup>a</sup>. Por eso el Gini se calcula exactamente como <b>(a − 1)/(a + 1)</b>.</p>
+      <p>Importante: el Gini resume toda la desigualdad en un solo número. Es muy útil para comparar, pero no dice por sí solo dónde se concentra la diferencia: dos distribuciones distintas pueden tener un Gini parecido.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de estadística descriptiva · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Modelo simple de curva de Lorenz:
+   L(p)=p^a, con a>=1.
+   a=1 -> igualdad perfecta.
+   Area bajo Lorenz = 1/(a+1).
+   Area entre diagonal y Lorenz = 1/2 - 1/(a+1).
+   Gini = 2*area = (a-1)/(a+1).
+*/
+let a=1;
+let arrastre=false;
+let y0=0, a0=1;
+let retoActivo=-1;
+const retosLogrados=[false,false,false];
+let geom={};
+
+function giniDesdeA(x){ return (x-1)/(x+1); }
+function areaDesdeA(x){ return giniDesdeA(x)/2; }
+function aDesdeGini(g){ return (1+g)/(1-g); }
+function lorenz(p, exp){ return Math.pow(p, exp); }
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+const PRESETS={
+  baja:{a:aDesdeGini(0.22), info:'<b>Desigualdad baja:</b> la curva se separa poco de la diagonal. La renta está repartida de forma relativamente equilibrada.'},
+  media:{a:aDesdeGini(0.38), info:'<b>Desigualdad media:</b> la curva empieza a hundirse con claridad. Los grupos de menor renta acumulan una proporción menor de la renta total.'},
+  alta:{a:aDesdeGini(0.55), info:'<b>Desigualdad alta:</b> la distancia respecto a la diagonal es grande. Una parte importante de la renta se concentra en los grupos superiores.'},
+  extrema:{a:aDesdeGini(0.75), info:'<b>Desigualdad muy alta:</b> la curva queda muy pegada a los ejes. Los primeros grupos de población acumulan muy poca renta.'}
+};
+
+const RETOS=[
+ {texto:'<b>Reto 1 · Desigualdad moderada:</b> ajusta la curva para conseguir un Gini entre 0,30 y 0,40.',
+  cumple:()=>{ const g=giniDesdeA(a); return g>=0.30 && g<=0.40; }},
+ {texto:'<b>Reto 2 · Desigualdad alta:</b> consigue un Gini entre 0,50 y 0,60.',
+  cumple:()=>{ const g=giniDesdeA(a); return g>=0.50 && g<=0.60; }},
+ {texto:'<b>Reto 3 · Casi igualdad:</b> acerca la curva a la diagonal hasta dejar el Gini por debajo de 0,10.',
+  cumple:()=> giniDesdeA(a)<0.10}
+];
+
+const lienzo=document.getElementById('lienzo');
+const ctx=lienzo.getContext('2d');
+
+function preparaCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const r=lienzo.getBoundingClientRect();
+  lienzo.width=r.width*dpr; lienzo.height=r.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function dibujar(){
+  const {W,H}=preparaCanvas();
+  const mL=58, mR=24, tope=24, base=H-54;
+  const ancho=W-mL-mR, alto=base-tope;
+  const px=p=>mL+p*ancho;
+  const py=q=>base-q*alto;
+  geom={W,H,mL,mR,tope,base,ancho,alto,px,py};
+
+  ctx.clearRect(0,0,W,H);
+
+  /* cuadrícula interna */
+  ctx.strokeStyle='#EDF1F6'; ctx.lineWidth=1;
+  for(let i=0;i<=10;i++){
+    const t=i/10;
+    ctx.beginPath(); ctx.moveTo(px(t),tope); ctx.lineTo(px(t),base); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(mL,py(t)); ctx.lineTo(W-mR,py(t)); ctx.stroke();
+  }
+
+  /* ejes */
+  ctx.strokeStyle='#B9C7D6'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(mL,base); ctx.lineTo(W-mR+4,base); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(mL,base); ctx.lineTo(mL,tope-4); ctx.stroke();
+
+  ctx.font='11px "IBM Plex Sans", sans-serif'; ctx.fillStyle='#5B6B80'; ctx.textAlign='center';
+  for(let i=0;i<=5;i++){
+    const t=i/5;
+    ctx.fillText(Math.round(t*100)+'%', px(t), base+18);
+    ctx.textAlign='right';
+    ctx.fillText(Math.round(t*100)+'%', mL-9, py(t)+4);
+    ctx.textAlign='center';
+  }
+  ctx.font='700 12px "Space Grotesk", sans-serif'; ctx.fillStyle='#1B2A41';
+  ctx.fillText('Población acumulada', mL+ancho/2, H-14);
+  ctx.save();
+  ctx.translate(15, tope+alto/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Renta acumulada', 0, 0);
+  ctx.restore();
+
+  /* diagonal igualdad */
+  ctx.strokeStyle='#8FA3B8'; ctx.lineWidth=2; ctx.setLineDash([7,5]);
+  ctx.beginPath(); ctx.moveTo(px(0),py(0)); ctx.lineTo(px(1),py(1)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  /* área entre diagonal y curva */
+  const N=260;
+  ctx.beginPath();
+  ctx.moveTo(px(0),py(0));
+  for(let i=1;i<=N;i++){
+    const p=i/N;
+    ctx.lineTo(px(p), py(p));
+  }
+  for(let i=N;i>=0;i--){
+    const p=i/N;
+    ctx.lineTo(px(p), py(lorenz(p,a)));
+  }
+  ctx.closePath();
+  ctx.fillStyle='rgba(228,87,46,.14)';
+  ctx.fill();
+
+  /* curva de Lorenz relleno bajo curva */
+  ctx.beginPath();
+  ctx.moveTo(px(0),py(0));
+  for(let i=1;i<=N;i++){
+    const p=i/N;
+    ctx.lineTo(px(p), py(lorenz(p,a)));
+  }
+  ctx.lineTo(px(1),base);
+  ctx.lineTo(px(0),base);
+  ctx.closePath();
+  ctx.fillStyle='rgba(15,118,110,.10)';
+  ctx.fill();
+
+  /* curva */
+  ctx.beginPath();
+  for(let i=0;i<=N;i++){
+    const p=i/N;
+    const x=px(p), y=py(lorenz(p,a));
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle='#0F766E'; ctx.lineWidth=3; ctx.stroke();
+
+  /* punto de arrastre en p=.55 */
+  const pAsa=0.55;
+  const xAsa=px(pAsa), yAsa=py(lorenz(pAsa,a));
+  geom.asa={x:xAsa,y:yAsa,p:pAsa};
+  ctx.beginPath(); ctx.arc(xAsa, yAsa, 10, 0, Math.PI*2);
+  ctx.fillStyle=arrastre?'#C77F04':'#D98E04'; ctx.fill();
+  ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=2; ctx.stroke();
+
+  /* flecha vertical indicativa */
+  ctx.strokeStyle='#D98E04'; ctx.lineWidth=1.6;
+  ctx.beginPath();
+  ctx.moveTo(xAsa, yAsa+16); ctx.lineTo(xAsa, yAsa+25);
+  ctx.moveTo(xAsa-4, yAsa+21); ctx.lineTo(xAsa, yAsa+25); ctx.lineTo(xAsa+4, yAsa+21);
+  ctx.moveTo(xAsa, yAsa-16); ctx.lineTo(xAsa, yAsa-25);
+  ctx.moveTo(xAsa-4, yAsa-21); ctx.lineTo(xAsa, yAsa-25); ctx.lineTo(xAsa+4, yAsa-21);
+  ctx.stroke();
+
+  /* etiquetas sobre el gráfico */
+  ctx.font='700 12px "Space Grotesk", sans-serif';
+  ctx.fillStyle='#8FA3B8'; ctx.textAlign='left';
+  ctx.fillText('igualdad perfecta', px(.62), py(.62)-8);
+  ctx.fillStyle='#0F766E';
+  ctx.fillText('curva de Lorenz', px(.50), py(lorenz(.50,a))+22);
+
+  actualizarIndicadores();
+  comprobarReto();
+}
+
+function fmt(x){
+  const s=(Math.abs(x)<0.005?0:x);
+  return (Math.round(s*100)/100).toLocaleString('es-ES',{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function actualizarIndicadores(){
+  const g=giniDesdeA(a), area=areaDesdeA(a);
+  document.getElementById('valGini').textContent=fmt(g);
+  document.getElementById('valArea').textContent=fmt(area);
+  let etq;
+  if(g<0.10) etq='Igualdad muy alta';
+  else if(g<0.30) etq='Desigualdad baja';
+  else if(g<0.45) etq='Desigualdad media';
+  else if(g<0.60) etq='Desigualdad alta';
+  else etq='Desigualdad muy alta';
+  document.getElementById('etqGini').textContent=etq;
+  document.getElementById('avisoIgualdad').classList.toggle('visible', g<0.03);
+}
+
+function coords(e){ const r=lienzo.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+function aDesdePunto(p, q){
+  /* q=L(p)=p^a -> a=ln(q)/ln(p). Limitamos q para evitar extremos. */
+  const qq=clamp(q, Math.pow(p,9), p);
+  return clamp(Math.log(qq)/Math.log(p), 1, 9);
+}
+
+lienzo.addEventListener('pointerdown',e=>{
+  const {x,y}=coords(e);
+  y0=y; a0=a;
+  arrastre=true;
+  lienzo.setPointerCapture(e.pointerId);
+  moverA(x,y);
+  dibujar();
+  e.preventDefault();
+});
+
+function moverA(x,y){
+  const p=clamp((x-geom.mL)/geom.ancho, 0.08, 0.92);
+  const q=clamp((geom.base-y)/geom.alto, 0.001, p);
+  a=aDesdePunto(p,q);
+}
+
+lienzo.addEventListener('pointermove',e=>{
+  const {x,y}=coords(e);
+  if(arrastre){
+    moverA(x,y);
+    dibujar();
+  } else if(geom.asa){
+    lienzo.style.cursor = Math.hypot(x-geom.asa.x, y-geom.asa.y)<34 ? 'ns-resize' : 'grab';
+  }
+});
+function soltar(e){
+  if(arrastre){
+    arrastre=false;
+    try{ lienzo.releasePointerCapture(e.pointerId); }catch(_){}
+    dibujar();
+  }
+}
+lienzo.addEventListener('pointerup',soltar);
+lienzo.addEventListener('pointercancel',soltar);
+
+/* Teclado: flechas para accesibilidad */
+lienzo.addEventListener('keydown',e=>{
+  const g=giniDesdeA(a);
+  let nuevo=null;
+  if(e.key==='ArrowDown' || e.key==='ArrowRight') nuevo=clamp(g+0.02,0,0.80);
+  if(e.key==='ArrowUp' || e.key==='ArrowLeft') nuevo=clamp(g-0.02,0,0.80);
+  if(nuevo!==null){
+    a=aDesdeGini(nuevo);
+    dibujar();
+    e.preventDefault();
+  }
+});
+
+function animaHacia(aF){
+  if(reducirMovimiento){ a=aF; dibujar(); return; }
+  const aI=a, pasos=22; let k=0;
+  (function paso(){
+    k++;
+    const t=k/pasos, e=1-Math.pow(1-t,3);
+    a=aI+(aF-aI)*e;
+    dibujar();
+    if(k<pasos) requestAnimationFrame(paso);
+  })();
+}
+
+document.getElementById('btnReset').addEventListener('click',()=>{
+  document.getElementById('presetInfo').classList.remove('visible');
+  document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+  animaHacia(1);
+});
+
+document.querySelectorAll('.chip.preset').forEach(b=>
+  b.addEventListener('click',()=>{
+    const p=PRESETS[b.dataset.p];
+    document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+    b.classList.add('activo');
+    const info=document.getElementById('presetInfo');
+    info.innerHTML=p.info; info.classList.add('visible');
+    animaHacia(p.a);
+  }));
+
+const retoTexto=document.getElementById('retoTexto');
+document.querySelectorAll('.chip.reto').forEach(b=>
+  b.addEventListener('click',()=>{
+    const r=+b.dataset.r;
+    if(retoActivo===r){
+      retoActivo=-1; b.classList.remove('activo'); retoTexto.classList.remove('visible');
+    } else {
+      retoActivo=r;
+      document.querySelectorAll('.chip.reto').forEach(x=>x.classList.remove('activo'));
+      b.classList.add('activo'); retoTexto.classList.add('visible');
+    }
+    comprobarReto();
+  }));
+
+function comprobarReto(){
+  if(retoActivo<0) return;
+  const r=RETOS[retoActivo];
+  const logrado=r.cumple();
+  if(logrado && !retosLogrados[retoActivo]){
+    retosLogrados[retoActivo]=true;
+    document.querySelectorAll('.chip.reto')[retoActivo].classList.add('logrado');
+  }
+  retoTexto.classList.toggle('logrado', logrado);
+  retoTexto.innerHTML=r.texto+(logrado?' <b style="color:var(--ok)">✓ ¡Conseguido!</b>':'');
+}
+
+window.addEventListener('resize',()=>dibujar());
+dibujar();
+</script>
+</body>
+</html>
