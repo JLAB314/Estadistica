@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>¿Describe, predice o prescribe?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --desc:#0F766E;         /* descriptivo (verde azulado) */
+    --pred:#D98E04;         /* predictivo (ámbar) */
+    --pres:#E4572E;         /* prescriptivo (coral) */
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --mal:#C0392B;
+    --mal-fondo:#FBEEEC;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:760px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--desc); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:640px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  /* ---- chuleta ---- */
+  details.chuleta{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra); margin-bottom:20px;
+  }
+  details.chuleta summary{
+    cursor:pointer; padding:13px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.chuleta summary::-webkit-details-marker{display:none;}
+  details.chuleta summary::before{content:'▸'; color:var(--desc); transition:transform .15s;}
+  details.chuleta[open] summary::before{transform:rotate(90deg);}
+  details.chuleta summary:focus-visible{outline:3px solid var(--pres); outline-offset:-3px;}
+  .chuleta-cuerpo{padding:0 18px 16px; display:grid; gap:8px;}
+  .defin{
+    display:flex; gap:10px; align-items:baseline; font-size:.95rem;
+  }
+  .defin .tag{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.8rem;
+    color:var(--blanco); border-radius:6px; padding:2px 9px; flex:none;
+  }
+  .defin i{color:var(--tinta-suave); font-style:italic;}
+  .chuleta-nota{font-size:.88rem; color:var(--tinta-suave); margin-top:4px;}
+
+  /* ---- progreso ---- */
+  .barra-sup{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    font-size:.9rem; color:var(--tinta-suave); margin-bottom:8px;
+  }
+  .barra-sup b{font-family:'Space Grotesk',sans-serif; color:var(--tinta); font-size:1rem;}
+  .marcador{margin-left:auto; display:flex; gap:16px; align-items:baseline;}
+  .marcador .aciertos{color:var(--ok); font-weight:600;}
+  .marcador .racha{color:var(--pres); font-weight:600;}
+  .pista{height:8px; background:#E0E7EF; border-radius:999px; overflow:hidden; margin-bottom:22px;}
+  .relleno{
+    height:100%; width:0%; background:linear-gradient(90deg, var(--desc), var(--pred));
+    border-radius:999px; transition:width .3s ease;
+  }
+
+  /* ---- tarjeta del caso ---- */
+  .tarjeta{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:24px 26px; box-shadow:var(--sombra);
+  }
+  .ambito{
+    display:inline-block; font-family:'Space Grotesk',sans-serif; font-weight:700;
+    font-size:.72rem; letter-spacing:.1em; text-transform:uppercase;
+    background:#EDF2F7; color:var(--tinta-suave);
+    border-radius:999px; padding:4px 12px; margin-bottom:12px;
+  }
+  .caso{
+    font-size:1.18rem; font-weight:500; line-height:1.5; min-height:86px;
+  }
+
+  .opciones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:22px;}
+  .opciones button{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:1rem;
+    padding:14px 8px; border-radius:10px; cursor:pointer;
+    background:var(--blanco); color:var(--tinta); border:2px solid var(--borde);
+    transition:transform .1s, border-color .15s, background .15s;
+  }
+  .opciones button:not([disabled]):hover{transform:translateY(-2px);}
+  .opciones button:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .opciones button[data-t="D"]:not([disabled]):hover{border-color:var(--desc);}
+  .opciones button[data-t="P"]:not([disabled]):hover{border-color:var(--pred);}
+  .opciones button[data-t="R"]:not([disabled]):hover{border-color:var(--pres);}
+  .opciones button[disabled]{cursor:default; opacity:.55;}
+  .opciones button.correcta{
+    background:var(--ok-fondo); border-color:var(--ok); color:var(--ok); opacity:1;
+  }
+  .opciones button.incorrecta{
+    background:var(--mal-fondo); border-color:var(--mal); color:var(--mal); opacity:1;
+  }
+
+  .feedback{
+    margin-top:18px; border-radius:10px; padding:14px 18px; font-size:.97rem;
+    display:none; border-left:5px solid;
+  }
+  .feedback.visible{display:block;}
+  .feedback.bien{background:var(--ok-fondo); border-color:var(--ok);}
+  .feedback.mal{background:var(--mal-fondo); border-color:var(--mal);}
+  .feedback .veredicto{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; margin-bottom:4px;
+  }
+  .feedback.bien .veredicto{color:var(--ok);}
+  .feedback.mal .veredicto{color:var(--mal);}
+
+  .pie-tarjeta{margin-top:18px; display:flex; justify-content:flex-end;}
+  .btn-siguiente{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.98rem;
+    background:var(--tinta); color:var(--blanco); border:none;
+    border-radius:999px; padding:11px 26px; cursor:pointer;
+    transition:filter .15s, transform .1s; visibility:hidden;
+  }
+  .btn-siguiente.visible{visibility:visible;}
+  .btn-siguiente:hover{filter:brightness(1.25);}
+  .btn-siguiente:active{transform:scale(.97);}
+  .btn-siguiente:focus-visible{outline:3px solid var(--pres); outline-offset:2px;}
+
+  /* ---- resumen final ---- */
+  .final{display:none;}
+  .final.visible{display:block;}
+  .nota-final{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:28px; box-shadow:var(--sombra); text-align:center;
+  }
+  .nota-final .grande{
+    font-family:'Space Grotesk',sans-serif; font-size:3.2rem; font-weight:700; color:var(--desc);
+  }
+  .nota-final .sobre{color:var(--tinta-suave); margin-top:2px;}
+  .desglose{margin-top:22px; display:grid; gap:12px; text-align:left;}
+  .cat{display:grid; grid-template-columns:110px 1fr 56px; gap:12px; align-items:center; font-size:.92rem;}
+  .cat .nombre-cat{font-family:'Space Grotesk',sans-serif; font-weight:700;}
+  .cat .pista-cat{height:10px; background:#E0E7EF; border-radius:999px; overflow:hidden;}
+  .cat .relleno-cat{height:100%; border-radius:999px; transition:width .5s ease;}
+  .cat .num{text-align:right; color:var(--tinta-suave); font-variant-numeric:tabular-nums;}
+  .consejo{
+    margin-top:20px; background:#F4F7FA; border-left:4px solid var(--pred);
+    padding:12px 16px; border-radius:0 8px 8px 0; text-align:left; font-size:.95rem;
+  }
+  .fallados{margin-top:24px; text-align:left;}
+  .fallados h3{font-family:'Space Grotesk',sans-serif; font-size:1rem; margin-bottom:10px;}
+  .fallo-item{
+    background:#FBFCFE; border:1px solid var(--borde); border-radius:10px;
+    padding:12px 16px; font-size:.9rem; margin-bottom:10px;
+  }
+  .fallo-item .caso-mini{font-weight:600; margin-bottom:4px;}
+  .fallo-item .exp-mini{color:var(--tinta-suave);}
+  .fallo-item .etiquetas{margin-top:6px; font-size:.82rem;}
+  .fallo-item .etiquetas .er{color:var(--mal);}
+  .fallo-item .etiquetas .cor{color:var(--ok); font-weight:600;}
+  .btn-repetir{
+    margin-top:24px;
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:1rem;
+    background:var(--pres); color:var(--blanco); border:none;
+    border-radius:999px; padding:12px 28px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn-repetir:hover{filter:brightness(1.07);}
+  .btn-repetir:active{transform:scale(.97);}
+  .btn-repetir:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+  @media (max-width:560px){
+    .opciones{grid-template-columns:1fr;}
+    .caso{font-size:1.05rem;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de probabilidad</div>
+    <h1>¿Describe, predice o prescribe?</h1>
+    <p class="sub">Lee cada caso y clasifícalo. La pista clave no es la tecnología que usa,
+    sino <b>la pregunta a la que responde</b>: ¿qué ha pasado?, ¿qué pasará? o ¿qué debo hacer?</p>
+  </header>
+
+  <details class="chuleta">
+    <summary>¿Cuál era la diferencia?</summary>
+    <div class="chuleta-cuerpo">
+      <div class="defin"><span class="tag" style="background:var(--desc)">Descriptivo</span>
+        <span><i>¿Qué ha pasado?</i> — Resume, agrupa o analiza datos que ya existen.</span></div>
+      <div class="defin"><span class="tag" style="background:var(--pred)">Predictivo</span>
+        <span><i>¿Qué pasará?</i> — Estima algo futuro o desconocido a partir de los datos.</span></div>
+      <div class="defin"><span class="tag" style="background:var(--pres)">Prescriptivo</span>
+        <span><i>¿Qué debo hacer?</i> — Recomienda o decide una acción concreta.</span></div>
+      <p class="chuleta-nota">Truco: pregúntate qué <b>produce</b> el sistema. ¿Un resumen? Descriptivo.
+      ¿Una estimación? Predictivo. ¿Una recomendación o decisión? Prescriptivo.</p>
+    </div>
+  </details>
+
+  <div id="zonaJuego">
+    <div class="barra-sup">
+      <span>Caso <b id="numCaso">1</b> de <b id="totalCasos">20</b></span>
+      <span class="marcador">
+        <span class="aciertos" id="txtAciertos">0 ✓</span>
+        <span class="racha" id="txtRacha"></span>
+      </span>
+    </div>
+    <div class="pista"><div class="relleno" id="progreso"></div></div>
+
+    <div class="tarjeta">
+      <span class="ambito" id="ambito"></span>
+      <p class="caso" id="textoCaso"></p>
+      <div class="opciones">
+        <button data-t="D">Descriptivo</button>
+        <button data-t="P">Predictivo</button>
+        <button data-t="R">Prescriptivo</button>
+      </div>
+      <div class="feedback" id="feedback" role="status" aria-live="polite">
+        <div class="veredicto" id="veredicto"></div>
+        <div id="explicacion"></div>
+      </div>
+      <div class="pie-tarjeta">
+        <button class="btn-siguiente" id="btnSiguiente">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="final" id="zonaFinal">
+    <div class="nota-final">
+      <div class="grande" id="notaGrande">—</div>
+      <div class="sobre">aciertos sobre 20 casos</div>
+      <div class="desglose" id="desglose"></div>
+      <div class="consejo" id="consejo"></div>
+      <div class="fallados" id="fallados"></div>
+      <button class="btn-repetir" id="btnRepetir">Repetir con otro orden</button>
+    </div>
+  </div>
+
+  <footer>Ejercicio interactivo de analítica de datos · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+/* ============ los 20 casos ============
+   t: D = descriptivo, P = predictivo, R = prescriptivo
+   El orden inicial va de más fácil a más difícil, con parejas "hermanas" juntas. */
+const CASOS=[
+ {amb:'Sanidad', t:'D',
+  caso:'Un hospital calcula el tiempo medio de espera en urgencias durante el último año, desglosado por franja horaria.',
+  exp:'Solo resume datos que ya existen: responde a ¿qué ha pasado? No estima nada futuro ni recomienda ninguna acción.'},
+ {amb:'Meteorología', t:'P',
+  caso:'La app del tiempo estima que mañana hay un 80 % de probabilidad de lluvia en tu ciudad.',
+  exp:'Estima algo que aún no ha ocurrido: responde a ¿qué pasará? La app no te dice qué hacer (no te ordena coger el paraguas), solo anticipa.'},
+ {amb:'Tráfico', t:'R',
+  caso:'El GPS te sugiere la ruta más rápida para llegar a tu destino, evitando un atasco.',
+  exp:'Recomienda una acción concreta (ve por aquí): responde a ¿qué debo hacer? Para hacerlo usa predicciones por dentro, pero su salida es una recomendación.'},
+ {amb:'Comercio', t:'D',
+  caso:'Un cuadro de mando muestra las ventas del trimestre por región, con gráficos interactivos y comparativas con el año anterior.',
+  exp:'Por muy sofisticados que sean los gráficos, todo son datos pasados resumidos: ¿qué ha pasado? La tecnología vistosa no lo convierte en predictivo.'},
+ {amb:'Tráfico', t:'P',
+  caso:'El mismo GPS estima que, con el tráfico actual, llegarás a tu destino a las 15:40.',
+  exp:'Compara con el caso anterior: aquí el GPS no recomienda nada, solo estima un dato futuro (tu hora de llegada). Mismo aparato, pregunta distinta: ¿qué pasará?'},
+ {amb:'Música', t:'D',
+  caso:'Tu resumen anual de la plataforma de música: minutos escuchados, canción más repetida y tus 5 artistas favoritos del año.',
+  exp:'Es un resumen de tu historial: ¿qué ha pasado? No estima nada ni te sugiere qué escuchar; solo describe lo que ya hiciste.'},
+ {amb:'Energía', t:'P',
+  caso:'La red eléctrica estima, hora a hora, cuánta electricidad se consumirá mañana en todo el país.',
+  exp:'Anticipa un valor futuro (la demanda de mañana): ¿qué pasará? Que después alguien use esa cifra para tomar decisiones no cambia lo que hace el modelo.'},
+ {amb:'Agricultura', t:'R',
+  caso:'Un sistema de riego inteligente decide cuánta agua aplicar a cada zona del campo según la humedad del suelo.',
+  exp:'No solo analiza ni estima: decide y ejecuta una acción (regar tanto aquí, tanto allá). Responde a ¿qué debo hacer?, y además lo hace él mismo.'},
+ {amb:'Banca', t:'P',
+  caso:'Un banco calcula la probabilidad de que un solicitante devuelva el préstamo antes de concedérselo (scoring crediticio).',
+  exp:'Estima algo desconocido (si devolverá o no el préstamo): ¿qué pasará? Ojo: conceder o denegar el préstamo sería la parte prescriptiva, pero el scoring en sí solo estima.'},
+ {amb:'Tráfico', t:'D',
+  caso:'El ayuntamiento publica un informe con las horas punta y los diez cruces más congestionados del último mes.',
+  exp:'Datos pasados, ordenados y resumidos: ¿qué ha pasado? Un ranking o un top 10 de cosas ya ocurridas sigue siendo análisis descriptivo.'},
+ {amb:'Educación', t:'P',
+  caso:'Una universidad estima, al final del primer semestre, qué estudiantes tienen alto riesgo de abandonar el grado.',
+  exp:'Estima un suceso futuro e incierto (el abandono): ¿qué pasará? Identificar riesgo es predecir; todavía no se ha decidido qué hacer con esa información.'},
+ {amb:'Educación', t:'R',
+  caso:'Con esas estimaciones de riesgo, el sistema asigna automáticamente tutorías personalizadas a los estudiantes que más las necesitan.',
+  exp:'Pareja del caso anterior: ahora sí se pasa a la acción. El sistema decide a quién dar tutorías: ¿qué debo hacer? Predicción y prescripción suelen trabajar en cadena.'},
+ {amb:'Streaming', t:'R',
+  caso:'La plataforma de series te recomienda qué ver esta noche basándose en tu historial.',
+  exp:'El clásico que engaña: por dentro predice qué te gustará, pero lo que te entrega es una recomendación de acción (mira esta serie): ¿qué debo hacer? Los recomendadores son prescriptivos.'},
+ {amb:'Telefonía', t:'P',
+  caso:'Un modelo estima la probabilidad de que cada cliente se dé de baja de la compañía el próximo mes.',
+  exp:'Suena a que "hay que hacer algo", pero fíjate en la salida: una probabilidad, no una acción. Estima un suceso futuro: ¿qué pasará? Es el famoso modelo de churn.'},
+ {amb:'Telefonía', t:'R',
+  caso:'El mismo sistema decide, además, a qué clientes concretos enviarles un descuento para evitar que se vayan.',
+  exp:'Pareja del anterior: ahora la salida ya es una acción (enviar descuento a estos clientes). En cuanto el sistema elige qué hacer, es prescriptivo.'},
+ {amb:'Redes sociales', t:'D',
+  caso:'Una marca analiza con inteligencia artificial el sentimiento (positivo, negativo, neutro) de los miles de tuits publicados durante el lanzamiento de su producto.',
+  exp:'Trampa habitual: usa IA, pero ¿qué produce? Un análisis de opiniones que ya se publicaron: ¿qué ha pasado? Usar técnicas avanzadas no convierte el análisis en predictivo.'},
+ {amb:'Deportes', t:'R',
+  caso:'Un sistema recomienda a un club de fútbol qué jugador fichar, dentro del presupuesto disponible, para cubrir la baja de su defensa central.',
+  exp:'La salida es una recomendación de decisión (ficha a este jugador): ¿qué debo hacer? Internamente estimará rendimientos futuros, pero el producto final es prescriptivo.'},
+ {amb:'Comercio', t:'D',
+  caso:'Un supermercado agrupa a sus clientes en cinco segmentos según sus hábitos de compra (clustering), y describe el perfil de cada grupo.',
+  exp:'Otra trampa: el clustering es una técnica de machine learning, pero aquí solo descubre y describe estructura en datos existentes: ¿qué ha pasado / cómo son mis clientes? No estima futuro ni decide acciones.'},
+ {amb:'Aerolíneas', t:'R',
+  caso:'El sistema de una aerolínea fija automáticamente el precio de cada billete, subiéndolo o bajándolo cada hora para maximizar los ingresos del vuelo.',
+  exp:'Decide una acción concreta (poner este precio ahora) y la ejecuta: ¿qué debo hacer? Es prescriptivo con optimización dentro; predecir la demanda es solo su ingrediente.'},
+ {amb:'Deportes', t:'P',
+  caso:'Un modelo estima cuál será el valor de mercado de un joven futbolista dentro de dos temporadas.',
+  exp:'Estima una cantidad futura (su valor dentro de dos años): ¿qué pasará? Nadie decide nada todavía: no hay recomendación de compra ni de venta, solo la estimación.'}
+];
+
+const NOMBRES={D:'Descriptivo', P:'Predictivo', R:'Prescriptivo'};
+const COLORES={D:'var(--desc)', P:'var(--pred)', R:'var(--pres)'};
+const PREGUNTAS={D:'¿qué ha pasado?', P:'¿qué pasará?', R:'¿qué debo hacer?'};
+
+/* ============ estado ============ */
+let orden=[];        // índices de CASOS en el orden de esta partida
+let pos=0;
+let aciertos=0;
+let racha=0, mejorRacha=0;
+let resultados=[];   // {idx, elegido, correcto:boolean}
+let respondido=false;
+
+/* ============ referencias DOM ============ */
+const el={
+  numCaso:document.getElementById('numCaso'),
+  totalCasos:document.getElementById('totalCasos'),
+  txtAciertos:document.getElementById('txtAciertos'),
+  txtRacha:document.getElementById('txtRacha'),
+  progreso:document.getElementById('progreso'),
+  ambito:document.getElementById('ambito'),
+  textoCaso:document.getElementById('textoCaso'),
+  botones:[...document.querySelectorAll('.opciones button')],
+  feedback:document.getElementById('feedback'),
+  veredicto:document.getElementById('veredicto'),
+  explicacion:document.getElementById('explicacion'),
+  btnSiguiente:document.getElementById('btnSiguiente'),
+  zonaJuego:document.getElementById('zonaJuego'),
+  zonaFinal:document.getElementById('zonaFinal'),
+  notaGrande:document.getElementById('notaGrande'),
+  desglose:document.getElementById('desglose'),
+  consejo:document.getElementById('consejo'),
+  fallados:document.getElementById('fallados'),
+  btnRepetir:document.getElementById('btnRepetir')
+};
+
+/* ============ flujo del juego ============ */
+function barajar(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function empezar(mezclar){
+  orden = mezclar ? barajar(CASOS.map((_,i)=>i)) : CASOS.map((_,i)=>i);
+  pos=0; aciertos=0; racha=0; mejorRacha=0; resultados=[];
+  el.zonaFinal.classList.remove('visible');
+  el.zonaJuego.style.display='';
+  el.totalCasos.textContent=CASOS.length;
+  mostrarCaso();
+}
+
+function mostrarCaso(){
+  respondido=false;
+  const c=CASOS[orden[pos]];
+  el.numCaso.textContent=pos+1;
+  el.progreso.style.width=(pos/CASOS.length*100)+'%';
+  el.ambito.textContent=c.amb;
+  el.textoCaso.textContent=c.caso;
+  el.botones.forEach(b=>{
+    b.disabled=false;
+    b.classList.remove('correcta','incorrecta');
+  });
+  el.feedback.classList.remove('visible','bien','mal');
+  el.btnSiguiente.classList.remove('visible');
+  el.btnSiguiente.textContent = pos===CASOS.length-1 ? 'Ver resultado →' : 'Siguiente →';
+}
+
+function responder(elegido){
+  if(respondido) return;
+  respondido=true;
+  const c=CASOS[orden[pos]];
+  const bien = elegido===c.t;
+  resultados.push({idx:orden[pos], elegido, correcto:bien});
+
+  el.botones.forEach(b=>{
+    b.disabled=true;
+    if(b.dataset.t===c.t) b.classList.add('correcta');
+    else if(b.dataset.t===elegido) b.classList.add('incorrecta');
+  });
+
+  if(bien){
+    aciertos++; racha++;
+    if(racha>mejorRacha) mejorRacha=racha;
+    el.veredicto.textContent='✓ Correcto: es '+NOMBRES[c.t].toLowerCase()+' — '+PREGUNTAS[c.t];
+  } else {
+    racha=0;
+    el.veredicto.textContent='✗ Era '+NOMBRES[c.t].toLowerCase()+' ('+PREGUNTAS[c.t]+'), no '+NOMBRES[elegido].toLowerCase()+'.';
+  }
+  el.explicacion.textContent=c.exp;
+  el.feedback.classList.add('visible', bien?'bien':'mal');
+
+  el.txtAciertos.textContent=aciertos+' ✓';
+  el.txtRacha.textContent = racha>=3 ? '🔥 racha de '+racha : '';
+  el.btnSiguiente.classList.add('visible');
+  el.btnSiguiente.focus({preventScroll:true});
+}
+
+el.botones.forEach(b=>b.addEventListener('click',()=>responder(b.dataset.t)));
+
+el.btnSiguiente.addEventListener('click',()=>{
+  if(pos<CASOS.length-1){ pos++; mostrarCaso(); }
+  else terminar();
+});
+
+/* ============ pantalla final ============ */
+function terminar(){
+  el.zonaJuego.style.display='none';
+  el.zonaFinal.classList.add('visible');
+  el.notaGrande.textContent=aciertos+' / '+CASOS.length;
+
+  /* desglose por categoría */
+  const porCat={D:{ok:0,tot:0}, P:{ok:0,tot:0}, R:{ok:0,tot:0}};
+  for(const r of resultados){
+    const t=CASOS[r.idx].t;
+    porCat[t].tot++;
+    if(r.correcto) porCat[t].ok++;
+  }
+  el.desglose.innerHTML='';
+  for(const t of ['D','P','R']){
+    const {ok,tot}=porCat[t];
+    const pct=tot? ok/tot*100 : 0;
+    el.desglose.insertAdjacentHTML('beforeend',
+      `<div class="cat">
+        <span class="nombre-cat" style="color:${COLORES[t]}">${NOMBRES[t]}</span>
+        <span class="pista-cat"><span class="relleno-cat" style="width:${pct}%; background:${COLORES[t]}; display:block"></span></span>
+        <span class="num">${ok} / ${tot}</span>
+      </div>`);
+  }
+
+  /* consejo según la peor categoría */
+  let peor='D', peorPct=2;
+  for(const t of ['D','P','R']){
+    const {ok,tot}=porCat[t];
+    const p=tot? ok/tot : 1;
+    if(p<peorPct){ peorPct=p; peor=t; }
+  }
+  const consejos={
+    D:'Donde más fallaste fue en los <b>descriptivos</b>. Recuerda: si el sistema solo resume o analiza datos que ya existen —aunque use gráficos espectaculares o técnicas de IA como el clustering o el análisis de sentimiento— sigue respondiendo a <i>¿qué ha pasado?</i>',
+    P:'Donde más fallaste fue en los <b>predictivos</b>. Recuerda: predecir es <i>estimar</i> algo futuro o desconocido. Si la salida es una probabilidad o una cantidad estimada —y nadie decide todavía qué hacer— es predictivo, por mucho que "pida" una acción a gritos.',
+    R:'Donde más fallaste fue en los <b>prescriptivos</b>. Recuerda: en cuanto la salida es una <i>recomendación o decisión</i> (una ruta, una serie, un precio, un descuento), es prescriptivo, aunque por dentro funcione con predicciones. Mira qué produce, no qué usa.'
+  };
+  if(aciertos===CASOS.length){
+    el.consejo.innerHTML='<b>¡Pleno absoluto!</b> Dominas la diferencia. Si quieres, repite con otro orden para comprobar que no fue suerte 😉';
+  } else {
+    el.consejo.innerHTML=consejos[peor]+(mejorRacha>=5?' Por cierto: tu mejor racha fue de <b>'+mejorRacha+' seguidos</b>.':'');
+  }
+
+  /* lista de fallos con sus explicaciones */
+  const fallos=resultados.filter(r=>!r.correcto);
+  if(fallos.length===0){
+    el.fallados.innerHTML='';
+  } else {
+    let html='<h3>Los casos que fallaste, para releer:</h3>';
+    for(const f of fallos){
+      const c=CASOS[f.idx];
+      html+=`<div class="fallo-item">
+        <div class="caso-mini">${c.caso}</div>
+        <div class="exp-mini">${c.exp}</div>
+        <div class="etiquetas">Respondiste <span class="er">${NOMBRES[f.elegido]}</span> ·
+        era <span class="cor">${NOMBRES[c.t]}</span></div>
+      </div>`;
+    }
+    el.fallados.innerHTML=html;
+  }
+}
+
+el.btnRepetir.addEventListener('click',()=>empezar(true));
+
+/* ============ arranque ============ */
+empezar(false);
+</script>
+</body>
+</html>
