@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Covarianza y correlación — diagrama interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --verde-suave:rgba(15,118,110,.15);
+    --ambar:#D98E04;
+    --coral:#E4572E;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:710px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  .indicadores{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;}
+  .indic{
+    background:#F7FAFC; border:1px solid var(--borde); border-radius:var(--radio);
+    padding:14px 18px; transition:box-shadow .2s;
+  }
+  .indic.destello{box-shadow:0 0 0 3px var(--verde-suave);}
+  .indic .nom{
+    font-size:.78rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--tinta-suave); font-weight:600;
+  }
+  .indic .val{
+    font-family:'Space Grotesk', sans-serif; font-size:2rem; font-weight:700;
+    font-variant-numeric:tabular-nums; line-height:1.1; margin-top:2px;
+  }
+  .indic .etq{font-size:.92rem; font-weight:600; margin-top:2px;}
+  .indic.cov .val{color:var(--coral);}
+  .indic.corr .val{color:var(--ambar);}
+
+  .aviso-normal{
+    text-align:center; font-family:'Space Grotesk',sans-serif; font-weight:700;
+    color:var(--verde); min-height:24px; margin-bottom:6px; opacity:0; transition:opacity .3s;
+  }
+  .aviso-normal.visible{opacity:1;}
+
+  #lienzo{width:100%; height:440px; display:block; touch-action:none; cursor:default; outline:none; border-radius:8px;}
+  #lienzo:focus-visible{box-shadow:0 0 0 3px var(--coral);}
+
+  .leyenda{
+    display:flex; gap:22px; flex-wrap:wrap; justify-content:center;
+    margin-top:8px; font-size:.85rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:7px;}
+  .m-punto{width:14px; height:14px; border-radius:50%; background:var(--verde); border:2px solid white; box-shadow:0 0 0 1px rgba(27,42,65,.2); display:inline-block;}
+  .m-media{width:24px; height:0; border-top:2px dashed var(--coral); display:inline-block;}
+  .m-recta{width:26px; height:0; border-top:3px solid var(--ambar); display:inline-block; transform:rotate(-18deg);}
+
+  .ayuda{font-size:.85rem; color:var(--tinta-suave); margin-top:10px; text-align:center;}
+  .ayuda b{color:var(--coral);}
+
+  .fila-controles{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px;}
+  .fila-controles .etiq{font-size:.85rem; color:var(--tinta-suave); font-weight:600; margin-right:2px;}
+  .chip{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.86rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:6px 14px; cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  .chip:hover:not([disabled]){border-color:var(--verde);}
+  .chip:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .chip[disabled]{opacity:.4; cursor:default;}
+  .chip.activo{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+  .chip.reto{border-color:var(--ambar);}
+  .chip.reto.activo{background:var(--ambar); border-color:var(--ambar); color:var(--blanco);}
+  .chip.logrado::after{content:' ✓'; font-weight:700;}
+  .chip.reset{background:var(--verde); color:var(--blanco); border-color:var(--verde);}
+  .chip.reset:hover{filter:brightness(1.1);}
+  .sep-v{width:1px; height:22px; background:var(--borde); margin:0 4px;}
+
+  .preset-info{
+    display:none; margin-top:12px; background:#F4F7FA; border-left:4px solid var(--verde);
+    padding:10px 14px; border-radius:0 8px 8px 0; font-size:.93rem;
+  }
+  .preset-info.visible{display:block;}
+  .reto-texto{
+    display:none; margin-top:12px; background:#FDF6E9; border-left:4px solid var(--ambar);
+    padding:10px 14px; border-radius:0 8px 8px 0; font-size:.93rem;
+  }
+  .reto-texto.visible{display:block;}
+  .reto-texto.logrado{background:var(--ok-fondo); border-color:var(--ok);}
+  .reto-texto b{font-family:'Space Grotesk',sans-serif;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+  .formula{font-family:'Space Grotesk',sans-serif; background:#F4F7FA; border:1px solid var(--borde); padding:9px 12px; border-radius:8px; display:inline-block; margin-top:10px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #lienzo{height:360px;} .indicadores{grid-template-columns:1fr;} .indic .val{font-size:1.6rem;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de probabilidad</div>
+    <h1>Covarianza y correlación</h1>
+    <p class="sub">Mueve los 10 puntos del diagrama de dispersión. Al arrastrarlos, la demo recalcula la
+    <b>covarianza muestral</b> y el <b>coeficiente de correlación de Pearson</b>. La recta amarilla muestra la tendencia lineal aproximada.</p>
+  </header>
+
+  <div class="panel">
+    <div class="indicadores">
+      <div class="indic cov" id="indCov">
+        <div class="nom">Covarianza muestral</div>
+        <div class="val" id="valCov">0,00</div>
+        <div class="etq" id="etqCov">Sin tendencia clara</div>
+      </div>
+      <div class="indic corr" id="indCorr">
+        <div class="nom">Coeficiente de correlación</div>
+        <div class="val" id="valCorr">0,00</div>
+        <div class="etq" id="etqCorr">Correlación nula o muy débil</div>
+      </div>
+    </div>
+
+    <div class="aviso-normal" id="avisoEspecial">Relación lineal prácticamente perfecta</div>
+
+    <canvas id="lienzo" tabindex="0"
+      aria-label="Diagrama de dispersión con diez puntos arrastrables para estudiar covarianza y correlación"></canvas>
+    <div class="leyenda">
+      <span><span class="m-punto"></span> Punto arrastrable</span>
+      <span><span class="m-media"></span> Medias de X e Y</span>
+      <span><span class="m-recta"></span> Tendencia lineal</span>
+    </div>
+    <div class="ayuda">Arrastra <b>cualquier punto</b> · hacia diagonal ascendente → correlación positiva · hacia diagonal descendente → negativa</div>
+
+    <div class="fila-controles">
+      <button class="chip reset" id="btnReset">↺ Volver al inicio</button>
+      <span class="sep-v"></span>
+      <span class="etiq">Ejemplos:</span>
+      <button class="chip preset" data-p="pos">Positiva fuerte</button>
+      <button class="chip preset" data-p="neg">Negativa fuerte</button>
+      <button class="chip preset" data-p="nula">Casi nula</button>
+      <button class="chip preset" data-p="outlier">Con atípico</button>
+    </div>
+    <div class="preset-info" id="presetInfo"></div>
+
+    <div class="fila-controles">
+      <span class="etiq">Retos:</span>
+      <button class="chip reto" data-r="0">Reto 1</button>
+      <button class="chip reto" data-r="1">Reto 2</button>
+      <button class="chip reto" data-r="2">Reto 3</button>
+    </div>
+    <div class="reto-texto" id="retoTexto"></div>
+  </div>
+
+  <details class="nota">
+    <summary>¿Qué diferencia hay entre covarianza y correlación?</summary>
+    <div class="nota-cuerpo">
+      <p><b>La covarianza</b> indica si dos variables se mueven juntas. Si es positiva, valores altos de X suelen ir con valores altos de Y. Si es negativa, valores altos de X suelen ir con valores bajos de Y.</p>
+      <p><b>La correlación</b> estandariza esa misma idea dividiendo por las desviaciones típicas. Por eso siempre queda entre −1 y 1 y permite comparar relaciones aunque las variables estén medidas en unidades distintas.</p>
+      <p><span class="formula">r = cov(X,Y) / (s<sub>X</sub> · s<sub>Y</sub>)</span></p>
+      <p><b>Idea clave:</b> la covarianza depende de la escala de las variables; la correlación no. Si multiplicas todos los valores de Y por 10, la covarianza cambia, pero la correlación se mantiene.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de estadística descriptiva · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const lienzo=document.getElementById('lienzo');
+const ctx=lienzo.getContext('2d');
+let geom={};
+let puntoActivo=-1;
+let retoActivo=-1;
+const retosLogrados=[false,false,false];
+
+const INICIO=[
+  {x:1.1,y:1.9},{x:2.0,y:2.8},{x:2.7,y:3.0},{x:3.6,y:4.4},{x:4.3,y:4.1},
+  {x:5.2,y:5.6},{x:6.1,y:5.7},{x:7.0,y:7.1},{x:8.1,y:7.8},{x:8.8,y:8.7}
+];
+let puntos=INICIO.map(p=>({...p}));
+
+const PRESETS={
+  pos:{p:[{x:1.0,y:1.4},{x:1.9,y:2.2},{x:2.7,y:3.1},{x:3.5,y:3.7},{x:4.4,y:4.8},{x:5.2,y:5.0},{x:6.1,y:6.3},{x:7.0,y:7.2},{x:8.0,y:8.1},{x:9.0,y:8.8}], info:'<b>Correlación positiva fuerte:</b> cuando X aumenta, Y tiende a aumentar también. La nube queda cerca de una diagonal ascendente.'},
+  neg:{p:[{x:1.0,y:8.8},{x:1.9,y:8.0},{x:2.8,y:7.2},{x:3.7,y:6.4},{x:4.6,y:5.2},{x:5.5,y:4.8},{x:6.4,y:3.7},{x:7.3,y:2.9},{x:8.2,y:2.0},{x:9.0,y:1.3}], info:'<b>Correlación negativa fuerte:</b> cuando X aumenta, Y tiende a disminuir. La nube queda cerca de una diagonal descendente.'},
+  nula:{p:[{x:1.1,y:5.0},{x:2.0,y:2.0},{x:2.8,y:8.0},{x:3.7,y:3.4},{x:4.8,y:6.8},{x:5.6,y:1.6},{x:6.3,y:5.5},{x:7.1,y:8.7},{x:8.2,y:2.9},{x:9.0,y:6.0}], info:'<b>Correlación casi nula:</b> no aparece una tendencia lineal clara. Puede haber dispersión, pero no una dirección dominante.'},
+  outlier:{p:[{x:1.1,y:1.4},{x:1.9,y:2.0},{x:2.8,y:2.9},{x:3.7,y:3.5},{x:4.6,y:4.2},{x:5.5,y:5.0},{x:6.3,y:5.8},{x:7.2,y:6.4},{x:8.1,y:7.2},{x:9.2,y:1.2}], info:'<b>Con valor atípico:</b> un solo punto extremo puede alterar mucho la covarianza, la recta y la correlación. Es una buena forma de ver la sensibilidad de Pearson.'}
+};
+
+const RETOS=[
+ {texto:'<b>Reto 1 · Correlación positiva:</b> consigue r ≥ 0,80 moviendo los puntos hacia una diagonal ascendente.', cumple:m=>m.r>=0.80},
+ {texto:'<b>Reto 2 · Correlación negativa:</b> consigue r ≤ −0,80 moviendo los puntos hacia una diagonal descendente.', cumple:m=>m.r<=-0.80},
+ {texto:'<b>Reto 3 · Covarianza casi cero:</b> deja la covarianza entre −0,20 y 0,20, aunque los puntos sigan dispersos.', cumple:m=>Math.abs(m.cov)<=0.20}
+];
+
+function estadisticos(){
+  const n=puntos.length;
+  const mx=puntos.reduce((a,p)=>a+p.x,0)/n;
+  const my=puntos.reduce((a,p)=>a+p.y,0)/n;
+  let sxy=0,sxx=0,syy=0;
+  for(const p of puntos){
+    const dx=p.x-mx, dy=p.y-my;
+    sxy+=dx*dy; sxx+=dx*dx; syy+=dy*dy;
+  }
+  const cov=sxy/(n-1);
+  const sx=Math.sqrt(sxx/(n-1));
+  const sy=Math.sqrt(syy/(n-1));
+  const r=(sx===0||sy===0)?0:cov/(sx*sy);
+  const beta=(sxx===0)?0:sxy/sxx;
+  const alpha=my-beta*mx;
+  return {mx,my,cov,sx,sy,r,beta,alpha};
+}
+
+function fmt(x){
+  const s=(Math.abs(x)<0.005?0:x);
+  return (Math.round(s*100)/100).toLocaleString('es-ES',{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function preparaCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const r=lienzo.getBoundingClientRect();
+  lienzo.width=r.width*dpr; lienzo.height=r.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width,H:r.height};
+}
+
+function dibujar(){
+  const {W,H}=preparaCanvas();
+  const mL=58,mR=22,mT=24,mB=50;
+  const plotW=W-mL-mR, plotH=H-mT-mB;
+  const xMin=0,xMax=10,yMin=0,yMax=10;
+  const px=x=>mL+(x-xMin)/(xMax-xMin)*plotW;
+  const py=y=>mT+(yMax-y)/(yMax-yMin)*plotH;
+  const invX=X=>xMin+(X-mL)/plotW*(xMax-xMin);
+  const invY=Y=>yMax-(Y-mT)/plotH*(yMax-yMin);
+  geom={W,H,mL,mR,mT,mB,plotW,plotH,px,py,invX,invY};
+
+  ctx.clearRect(0,0,W,H);
+
+  ctx.fillStyle='#FFFFFF';
+  ctx.fillRect(mL,mT,plotW,plotH);
+
+  ctx.strokeStyle='#EDF1F6'; ctx.lineWidth=1;
+  ctx.font='11px "IBM Plex Sans", sans-serif'; ctx.fillStyle='#5B6B80'; ctx.textAlign='center'; ctx.textBaseline='top';
+  for(let x=0;x<=10;x++){
+    const X=px(x);
+    ctx.beginPath(); ctx.moveTo(X,mT); ctx.lineTo(X,mT+plotH); ctx.stroke();
+    if(x%2===0) ctx.fillText(String(x),X,mT+plotH+10);
+  }
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  for(let y=0;y<=10;y++){
+    const Y=py(y);
+    ctx.beginPath(); ctx.moveTo(mL,Y); ctx.lineTo(mL+plotW,Y); ctx.stroke();
+    if(y%2===0) ctx.fillText(String(y),mL-10,Y);
+  }
+
+  ctx.strokeStyle='#B9C7D6'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.rect(mL,mT,plotW,plotH); ctx.stroke();
+  ctx.fillStyle='#1B2A41'; ctx.font='700 12px "Space Grotesk", sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('X',mL+plotW/2,H-20);
+  ctx.save(); ctx.translate(16,mT+plotH/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center'; ctx.fillText('Y',0,0); ctx.restore();
+
+  const e=estadisticos();
+
+  ctx.setLineDash([6,5]); ctx.strokeStyle='#E4572E'; ctx.lineWidth=1.7;
+  ctx.beginPath(); ctx.moveTo(px(e.mx),mT); ctx.lineTo(px(e.mx),mT+plotH); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(mL,py(e.my)); ctx.lineTo(mL+plotW,py(e.my)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#E4572E'; ctx.font='700 12px "Space Grotesk", sans-serif';
+  ctx.textAlign='left'; ctx.textBaseline='top'; ctx.fillText('media X',px(e.mx)+5,mT+6);
+  ctx.textAlign='right'; ctx.textBaseline='bottom'; ctx.fillText('media Y',mL+plotW-6,py(e.my)-5);
+
+  const yA=e.alpha+e.beta*xMin;
+  const yB=e.alpha+e.beta*xMax;
+  function clipY(y){return Math.max(yMin,Math.min(yMax,y));}
+  ctx.strokeStyle='#D98E04'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(px(xMin),py(clipY(yA))); ctx.lineTo(px(xMax),py(clipY(yB))); ctx.stroke();
+
+  puntos.forEach((p,i)=>{
+    const X=px(p.x), Y=py(p.y);
+    ctx.beginPath(); ctx.arc(X,Y,puntoActivo===i?10:8,0,Math.PI*2);
+    ctx.fillStyle=puntoActivo===i?'#0B5F59':'#0F766E'; ctx.fill();
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=2.5; ctx.stroke();
+    ctx.strokeStyle='rgba(27,42,65,.18)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle='#FFFFFF'; ctx.font='700 9px "Space Grotesk", sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(String(i+1),X,Y+.2);
+  });
+
+  actualizarIndicadores(e);
+  comprobarReto(e);
+}
+
+function actualizarIndicadores(e){
+  document.getElementById('valCov').textContent=fmt(e.cov);
+  document.getElementById('valCorr').textContent=fmt(e.r);
+  let ecov;
+  if(e.cov>0.15) ecov='Positiva — X e Y se mueven en la misma dirección';
+  else if(e.cov<-0.15) ecov='Negativa — X e Y se mueven en direcciones opuestas';
+  else ecov='Cercana a cero — sin tendencia lineal clara';
+  document.getElementById('etqCov').textContent=ecov;
+
+  const a=Math.abs(e.r);
+  let er;
+  if(a>=0.9) er=(e.r>0?'Positiva':'Negativa')+' casi perfecta';
+  else if(a>=0.7) er=(e.r>0?'Positiva':'Negativa')+' fuerte';
+  else if(a>=0.4) er=(e.r>0?'Positiva':'Negativa')+' moderada';
+  else if(a>=0.15) er=(e.r>0?'Positiva':'Negativa')+' débil';
+  else er='Correlación nula o muy débil';
+  document.getElementById('etqCorr').textContent=er;
+  document.getElementById('avisoEspecial').classList.toggle('visible', a>=0.97);
+}
+
+function coords(ev){const r=lienzo.getBoundingClientRect(); return {x:ev.clientX-r.left,y:ev.clientY-r.top};}
+function puntoMasCercano(x,y){
+  let mejor=-1, dist=Infinity;
+  puntos.forEach((p,i)=>{
+    const d=Math.hypot(x-geom.px(p.x), y-geom.py(p.y));
+    if(d<dist){dist=d; mejor=i;}
+  });
+  return dist<=22?mejor:-1;
+}
+
+lienzo.addEventListener('pointerdown',ev=>{
+  const {x,y}=coords(ev);
+  const i=puntoMasCercano(x,y);
+  if(i>=0){
+    puntoActivo=i;
+    lienzo.setPointerCapture(ev.pointerId);
+    dibujar();
+    ev.preventDefault();
+  }
+});
+lienzo.addEventListener('pointermove',ev=>{
+  const {x,y}=coords(ev);
+  if(puntoActivo>=0){
+    puntos[puntoActivo].x=Math.max(0,Math.min(10,geom.invX(x)));
+    puntos[puntoActivo].y=Math.max(0,Math.min(10,geom.invY(y)));
+    document.querySelectorAll('.chip.preset').forEach(b=>b.classList.remove('activo'));
+    document.getElementById('presetInfo').classList.remove('visible');
+    dibujar();
+    ev.preventDefault();
+  } else {
+    lienzo.style.cursor=puntoMasCercano(x,y)>=0?'grab':'default';
+  }
+});
+function soltar(ev){
+  if(puntoActivo>=0){
+    puntoActivo=-1;
+    try{lienzo.releasePointerCapture(ev.pointerId);}catch(_){ }
+    dibujar();
+  }
+}
+lienzo.addEventListener('pointerup',soltar);
+lienzo.addEventListener('pointercancel',soltar);
+
+function animaPuntos(destino){
+  if(reducirMovimiento){puntos=destino.map(p=>({...p})); dibujar(); return;}
+  const origen=puntos.map(p=>({...p}));
+  const pasos=24; let k=0;
+  (function paso(){
+    k++;
+    const t=k/pasos, ease=1-Math.pow(1-t,3);
+    puntos=puntos.map((p,i)=>({x:origen[i].x+(destino[i].x-origen[i].x)*ease, y:origen[i].y+(destino[i].y-origen[i].y)*ease}));
+    dibujar();
+    if(k<pasos) requestAnimationFrame(paso);
+  })();
+}
+
+document.getElementById('btnReset').addEventListener('click',()=>{
+  document.getElementById('presetInfo').classList.remove('visible');
+  document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+  animaPuntos(INICIO);
+});
+
+document.querySelectorAll('.chip.preset').forEach(b=>
+  b.addEventListener('click',()=>{
+    const p=PRESETS[b.dataset.p];
+    document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+    b.classList.add('activo');
+    const info=document.getElementById('presetInfo');
+    info.innerHTML=p.info; info.classList.add('visible');
+    animaPuntos(p.p);
+  })
+);
+
+const retoTexto=document.getElementById('retoTexto');
+document.querySelectorAll('.chip.reto').forEach(b=>
+  b.addEventListener('click',()=>{
+    const r=+b.dataset.r;
+    if(retoActivo===r){
+      retoActivo=-1; b.classList.remove('activo'); retoTexto.classList.remove('visible');
+    } else {
+      retoActivo=r;
+      document.querySelectorAll('.chip.reto').forEach(x=>x.classList.remove('activo'));
+      b.classList.add('activo'); retoTexto.classList.add('visible');
+    }
+    comprobarReto(estadisticos());
+  })
+);
+
+function comprobarReto(e){
+  if(retoActivo<0) return;
+  const r=RETOS[retoActivo];
+  const logrado=r.cumple(e);
+  if(logrado && !retosLogrados[retoActivo]){
+    retosLogrados[retoActivo]=true;
+    document.querySelectorAll('.chip.reto')[retoActivo].classList.add('logrado');
+  }
+  retoTexto.classList.toggle('logrado', logrado);
+  retoTexto.innerHTML=r.texto+(logrado?' <b style="color:var(--ok)">✓ ¡Conseguido!</b>':'');
+}
+
+window.addEventListener('resize',()=>dibujar());
+dibujar();
+</script>
+</body>
+</html>
