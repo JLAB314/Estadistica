@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Población o muestra: completa la historia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --ambar:#D98E04;
+    --coral:#E4572E;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --mal:#C0392B;
+    --mal-fondo:#FBEEEC;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:820px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 22px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:660px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  /* ---- pestañas de problemas ---- */
+  .pestanas{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .pestanas button{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.92rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta-suave);
+    border-radius:999px; padding:8px 18px; cursor:pointer;
+    transition:background .15s, border-color .15s, color .15s;
+  }
+  .pestanas button:hover{border-color:var(--verde);}
+  .pestanas button:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .pestanas button.activa{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+  .pestanas button .check{color:var(--ok); margin-left:4px;}
+  .pestanas button.activa .check{color:#7FD9A8;}
+
+  /* ---- tarjeta del problema ---- */
+  .tarjeta{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:24px 28px; box-shadow:var(--sombra);
+  }
+  .cab-problema{
+    display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:14px;
+  }
+  .cab-problema .titulo{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.1rem;
+  }
+  .cab-problema .contador{
+    margin-left:auto; font-size:.88rem; color:var(--tinta-suave);
+    font-variant-numeric:tabular-nums;
+  }
+  .cab-problema .contador .fallos{color:var(--mal);}
+
+  .parrafo{font-size:1.08rem; line-height:2.15;}
+
+  /* ---- huecos ---- */
+  .hueco{
+    display:inline-flex; gap:2px; align-items:baseline;
+    border-bottom:2px dotted var(--coral);
+    padding:0 3px; margin:0 2px; white-space:nowrap;
+  }
+  .hueco button{
+    font-family:inherit; font-size:.95em; font-weight:600;
+    color:var(--coral); background:none; border:none; cursor:pointer;
+    padding:1px 5px; border-radius:6px;
+    transition:background .12s;
+  }
+  .hueco button:hover{background:rgba(228,87,46,.1);}
+  .hueco button:focus-visible{outline:2.5px solid var(--tinta); outline-offset:1px;}
+  .hueco .sep{color:var(--coral); font-weight:600; user-select:none;}
+  .hueco.error{animation:sacudida .35s;}
+  @keyframes sacudida{
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-4px);}
+    50%{transform:translateX(4px);}
+    75%{transform:translateX(-3px);}
+  }
+  .resuelto{
+    color:var(--ok); font-weight:600;
+    border-bottom:2px solid var(--ok);
+    padding:0 3px; margin:0 2px;
+    animation:aparece .3s ease;
+  }
+  .resuelto .simbolo{
+    font-weight:500; color:var(--tinta-suave); font-size:.88em;
+  }
+  @keyframes aparece{from{background:var(--ok-fondo);} to{background:transparent;}}
+
+  /* ---- feedback y pista ---- */
+  .feedback{
+    margin-top:16px; border-radius:10px; padding:12px 16px; font-size:.94rem;
+    display:none; border-left:5px solid var(--mal); background:var(--mal-fondo);
+  }
+  .feedback.visible{display:block;}
+  .feedback b{color:var(--mal);}
+  .pista-caja{
+    margin-top:16px; border-radius:0 8px 8px 0; padding:12px 16px; font-size:.94rem;
+    display:none; border-left:4px solid var(--ambar); background:#FDF6E9;
+  }
+  .pista-caja.visible{display:block;}
+
+  .pie-tarjeta{
+    margin-top:18px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .btn-pista{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.9rem;
+    background:var(--blanco); color:var(--tinta); border:1.5px solid var(--borde);
+    border-radius:999px; padding:8px 18px; cursor:pointer; transition:border-color .15s;
+  }
+  .btn-pista:hover:not([disabled]){border-color:var(--ambar);}
+  .btn-pista:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .btn-pista[disabled]{opacity:.5; cursor:default;}
+  .completado{
+    display:none; font-weight:600; color:var(--ok);
+    font-family:'Space Grotesk',sans-serif;
+  }
+  .completado.visible{display:inline;}
+  .btn-nav{
+    margin-left:auto;
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.95rem;
+    background:var(--tinta); color:var(--blanco); border:none;
+    border-radius:999px; padding:10px 24px; cursor:pointer;
+    transition:filter .15s; display:none;
+  }
+  .btn-nav.visible{display:inline-block;}
+  .btn-nav:hover{filter:brightness(1.25);}
+  .btn-nav:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+
+  /* ---- resumen final ---- */
+  .final{display:none; margin-top:26px;}
+  .final.visible{display:block;}
+  .nota-final{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:28px; box-shadow:var(--sombra);
+  }
+  .nota-final h2{
+    font-family:'Space Grotesk',sans-serif; font-size:1.4rem; margin-bottom:6px;
+  }
+  .nota-final .resultado{
+    font-size:1rem; color:var(--tinta-suave); margin-bottom:20px;
+  }
+  .nota-final .resultado b{color:var(--tinta); font-family:'Space Grotesk',sans-serif; font-size:1.15rem;}
+  table.sintesis{
+    width:100%; border-collapse:collapse; font-size:.95rem; margin-top:6px;
+  }
+  table.sintesis th, table.sintesis td{
+    border:1px solid var(--borde); padding:10px 14px; text-align:left; vertical-align:top;
+  }
+  table.sintesis th{
+    font-family:'Space Grotesk',sans-serif; background:#F4F7FA; font-size:.98rem;
+  }
+  table.sintesis th.pob{color:var(--verde);}
+  table.sintesis th.mue{color:var(--coral);}
+  table.sintesis td.eti{
+    font-weight:600; background:#FBFCFE; width:140px; font-size:.88rem; color:var(--tinta-suave);
+  }
+  .frase-clave{
+    margin-top:18px; background:#F4F7FA; border-left:4px solid var(--verde);
+    padding:12px 16px; border-radius:0 8px 8px 0; font-size:1rem;
+  }
+  .btn-repetir{
+    margin-top:22px;
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:1rem;
+    background:var(--coral); color:var(--blanco); border:none;
+    border-radius:999px; padding:12px 28px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn-repetir:hover{filter:brightness(1.07);}
+  .btn-repetir:active{transform:scale(.97);}
+  .btn-repetir:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important;}
+  }
+  @media (max-width:560px){
+    .parrafo{font-size:1rem;}
+    .tarjeta{padding:18px;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de probabilidad</div>
+    <h1>Población o muestra: completa la historia</h1>
+    <p class="sub">En cada párrafo hay huecos con dos opciones en rojo. Pulsa la correcta:
+    si aciertas, el hueco se fija en verde; si fallas, te explicamos por qué y puedes volver a intentarlo.
+    Puedes resolver los huecos en el orden que quieras.</p>
+  </header>
+
+  <div class="pestanas" id="pestanas"></div>
+
+  <div id="zonaProblemas"></div>
+
+  <div class="final" id="zonaFinal">
+    <div class="nota-final">
+      <h2>¡Los tres problemas completados!</h2>
+      <p class="resultado" id="resultadoFinal"></p>
+      <table class="sintesis">
+        <tr>
+          <td class="eti"></td>
+          <th class="pob">Población</th>
+          <th class="mue">Muestra</th>
+        </tr>
+        <tr>
+          <td class="eti">Qué es</td>
+          <td>Todos los individuos objeto de estudio</td>
+          <td>Subconjunto seleccionado (¡representativo!)</td>
+        </tr>
+        <tr>
+          <td class="eti">Tamaño</td>
+          <td><b>N</b> (mayúscula)</td>
+          <td><b>n</b> (minúscula)</td>
+        </tr>
+        <tr>
+          <td class="eti">Medida resumen</td>
+          <td><b>Parámetro</b> — letras griegas: μ, σ, p</td>
+          <td><b>Estadístico</b> — letras latinas: x̄, s, p̂</td>
+        </tr>
+        <tr>
+          <td class="eti">¿Se conoce?</td>
+          <td>Típicamente <b>desconocido</b></td>
+          <td><b>Conocido</b> (lo calculamos nosotros)</td>
+        </tr>
+      </table>
+      <div class="frase-clave">
+        <b>La frase que lo resume todo:</b> el <span style="color:var(--coral)">estadístico</span>,
+        calculado sobre la <span style="color:var(--coral)">muestra</span>, <b>estima</b> el
+        <span style="color:var(--verde)">parámetro</span> de la
+        <span style="color:var(--verde)">población</span>.
+      </div>
+      <button class="btn-repetir" id="btnRepetir">Repetir los tres problemas</button>
+    </div>
+  </div>
+
+  <footer>Ejercicio interactivo de inferencia estadística · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+/* ================= los tres problemas =================
+   Cada problema es una lista de trozos: cadenas de texto y huecos.
+   Hueco: {o:[opción0, opción1], c:índice correcto, exp:'explicación si fallas', sim:'símbolo opcional'} */
+
+const PROBLEMAS=[
+{
+  titulo:'Problema 1 · Tweets al día',
+  trozos:[
+    'Queremos estudiar el número promedio de tweets que un usuario de Twitter envía al día. Todos los usuarios de Twitter es lo que denominamos ',
+    {o:['población','muestra'], c:0,
+     exp:'Hablamos de TODOS los usuarios, sin seleccionar ninguno: eso es la población. La muestra sería un subconjunto elegido de ella.'},
+    ', el número de ellos se denomina tamaño ',
+    {o:['poblacional','muestral'], c:0,
+     exp:'Es el número de individuos de la población completa, así que es el tamaño poblacional.'},
+    ', y se denota con la letra ',
+    {o:['N','n'], c:0,
+     exp:'La N mayúscula se reserva para el tamaño de la población; la n minúscula, para el de la muestra.'},
+    '. La variable poblacional objeto de estudio es ',
+    {o:['el número de tweets','la media de tweets'], c:0,
+     exp:'La variable es lo que se mide sobre CADA individuo: cuántos tweets envía cada usuario. La media ya es un resumen de toda la población, no la variable.'},
+    ' enviados, y el parámetro poblacional es ',
+    {o:['el número de tweets','la media de tweets'], c:1,
+     exp:'El parámetro es un resumen numérico de la población entera: aquí, la media de tweets de todos los usuarios. El número de tweets de cada usuario es la variable, no el parámetro.'},
+    ' enviados por todos los usuarios de Twitter. El parámetro poblacional típicamente va a ser un valor ',
+    {o:['conocido','desconocido'], c:1,
+     exp:'Para conocerlo exactamente habría que medir a TODOS los usuarios, algo casi siempre inviable. Por eso el parámetro es típicamente desconocido… y por eso existe la inferencia.'},
+    ', pero podemos estimarlo tomando una ',
+    {o:['población','muestra'], c:1,
+     exp:'Estimamos precisamente porque no podemos medir la población entera: seleccionamos un subconjunto, la muestra.'},
+    ' de tamaño ',
+    {o:['N','n'], c:1,
+     exp:'El tamaño de la muestra se escribe con n minúscula. La N mayúscula ya la usamos para la población.'},
+    '. Sobre ella calcularemos la media, que es lo que se conoce como ',
+    {o:['estadístico','parámetro'], c:0, sim:'x̄',
+     exp:'Todo lo que se calcula sobre la muestra es un estadístico. El parámetro es la versión poblacional, la que no conocemos.'},
+    ', y lógicamente es ',
+    {o:['conocido','desconocido'], c:0,
+     exp:'El estadístico lo calculamos nosotros con los datos de la muestra que tenemos delante: es conocido.'},
+    '. Esta media me dará una aproximación al valor de la media ',
+    {o:['poblacional','muestral'], c:0,
+     exp:'La media muestral ya la tenemos: lo que queremos aproximar es la media de la población entera, la poblacional.'},
+    ', es decir, al ',
+    {o:['estadístico','parámetro'], c:1, sim:'μ',
+     exp:'Lo desconocido, lo que queremos estimar, es el parámetro. El estadístico es la herramienta con la que lo aproximamos.'},
+    ' desconocido.'
+  ]
+},
+{
+  titulo:'Problema 2 · Recién nacidos',
+  trozos:[
+    'Queremos conocer la estatura media de los recién nacidos en España durante este año. La población está formada por ',
+    {o:['todos los recién nacidos en España este año','los 500 bebés medidos en los hospitales'], c:0,
+     exp:'La población es el conjunto COMPLETO que queremos estudiar: todos los nacidos este año. Los 500 bebés son solo el subconjunto que mediremos.'},
+    ', y su número total es el tamaño poblacional ',
+    {o:['N','n'], c:0,
+     exp:'Tamaño de la población → N mayúscula.'},
+    '. Medir a todos sería carísimo y lento, así que seleccionamos 500 bebés en 10 hospitales repartidos por el país: esos 500 bebés forman la ',
+    {o:['muestra','población'], c:0,
+     exp:'Es un subconjunto seleccionado de la población para ser medido: la muestra.'},
+    ', y 500 es el tamaño muestral ',
+    {o:['n','N'], c:0,
+     exp:'Tamaño de la muestra → n minúscula. Aquí n = 500.'},
+    '. Para que la estimación sea fiable, lo importante es que la muestra sea ',
+    {o:['representativa de la población','lo más grande posible, sin importar cómo se elija'], c:0,
+     exp:'Una muestra enorme pero mal elegida (por ejemplo, solo bebés de un único hospital privado) engaña más que una pequeña y bien elegida. Primero representatividad; el tamaño ayuda después.'},
+    ' (por eso se eligen hospitales variados y bebés al azar). La estatura media de todos los recién nacidos del país es el ',
+    {o:['parámetro','estadístico'], c:0, sim:'μ',
+     exp:'Resumen numérico de la población completa → parámetro. Se suele denotar con letras griegas: aquí, μ.'},
+    ', que es un valor ',
+    {o:['desconocido','conocido'], c:0,
+     exp:'No hemos medido a todos los recién nacidos (justo por eso muestreamos), así que el parámetro es desconocido.'},
+    '. La estatura media de los 500 bebés de la muestra es el ',
+    {o:['estadístico','parámetro'], c:0, sim:'x̄',
+     exp:'Calculado sobre la muestra → estadístico. Se denota con letras latinas: la media muestral es x̄.'},
+    ', que sí es ',
+    {o:['conocido','desconocido'], c:0,
+     exp:'Lo hemos calculado nosotros con las 500 mediciones: es un número concreto y conocido.'},
+    ' y que utilizaremos para ',
+    {o:['estimar el parámetro','conocer exactamente el parámetro'], c:0,
+     exp:'El estadístico aproxima al parámetro, pero no coincide exactamente con él: otra muestra daría otro valor. Por eso decimos que lo estima.'},
+    '.'
+  ]
+},
+{
+  titulo:'Problema 3 · Bombillas defectuosas',
+  trozos:[
+    'Una fábrica produce 2 millones de bombillas al año y quiere conocer la proporción de bombillas defectuosas. La población son ',
+    {o:['los 2 millones de bombillas fabricadas','las 400 bombillas que se van a probar'], c:0,
+     exp:'La población es la producción completa sobre la que queremos la respuesta: los 2 millones. Las 400 probadas serán la muestra.'},
+    ', de modo que N = ',
+    {o:['2.000.000','400'], c:0,
+     exp:'N mayúscula es el tamaño de la población: los 2 millones de bombillas.'},
+    '. Hay un detalle importante: probar una bombilla hasta el fallo la destruye, así que examinar la población completa ',
+    {o:['destruiría toda la producción','sería posible, aunque caro'], c:0,
+     exp:'Si el ensayo destruye el producto, medir toda la población equivale a quedarse sin nada que vender. En estos casos muestrear no es una opción para ahorrar: es la única posibilidad.'},
+    ': aquí muestrear es obligatorio. Se prueban 400 bombillas elegidas al azar, que constituyen la ',
+    {o:['muestra','población'], c:0,
+     exp:'El subconjunto seleccionado y examinado es la muestra.'},
+    ', con n = ',
+    {o:['400','2.000.000'], c:0,
+     exp:'n minúscula es el tamaño de la muestra: 400 bombillas.'},
+    '. La proporción de defectuosas entre todas las bombillas fabricadas es el ',
+    {o:['parámetro','estadístico'], c:0, sim:'p',
+     exp:'Resumen de la población completa → parámetro. Fíjate: no es una media, es una proporción, y se denota p.'},
+    ', un valor ',
+    {o:['desconocido','conocido'], c:0,
+     exp:'Nunca examinaremos los 2 millones (los destruiríamos), así que la proporción poblacional es desconocida.'},
+    '. La proporción de defectuosas entre las 400 probadas es un ',
+    {o:['estadístico','parámetro'], c:0, sim:'p̂',
+     exp:'Calculado sobre la muestra → estadístico. Se denota p̂ ("p sombrero"): el sombrero indica que es una estimación.'},
+    ', que es ',
+    {o:['conocido','desconocido'], c:0,
+     exp:'Contamos las defectuosas entre las 400 probadas y dividimos: número concreto y conocido.'},
+    ' y que usamos para ',
+    {o:['estimar la proporción poblacional','calcular exactamente la proporción poblacional'], c:0,
+     exp:'Con una muestra solo podemos estimar: p̂ se acercará a p, pero no tiene por qué coincidir exactamente.'},
+    '. Moraleja: el parámetro no siempre es una media — aquí es una ',
+    {o:['proporción','desviación típica'], c:0,
+     exp:'En este problema el parámetro de interés es la proporción de defectuosas, p. Parámetro es cualquier resumen numérico de la población: una media, una proporción, una desviación…'},
+    '.'
+  ]
+}];
+
+/* ================= estado ================= */
+const estado=PROBLEMAS.map(p=>{
+  const huecos=p.trozos.filter(t=>typeof t!=='string').length;
+  return {resueltos:0, total:huecos, fallos:0, primeras:0, contestadosMal:new Set(),
+          pistasUsadas:0, completo:false};
+});
+let actual=0;
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= construcción del DOM ================= */
+const zonaProblemas=document.getElementById('zonaProblemas');
+const zonaPestanas=document.getElementById('pestanas');
+
+function construir(){
+  zonaProblemas.innerHTML='';
+  zonaPestanas.innerHTML='';
+
+  PROBLEMAS.forEach((p,pi)=>{
+    /* pestaña */
+    const tab=document.createElement('button');
+    tab.innerHTML='Problema '+(pi+1)+'<span class="check"></span>';
+    tab.addEventListener('click',()=>mostrarProblema(pi));
+    zonaPestanas.appendChild(tab);
+
+    /* tarjeta */
+    const card=document.createElement('div');
+    card.className='tarjeta';
+    card.dataset.pi=pi;
+    card.style.display='none';
+
+    const cab=document.createElement('div');
+    cab.className='cab-problema';
+    cab.innerHTML=`<span class="titulo">${p.titulo}</span>
+      <span class="contador"><span class="hechos">0</span>/${estado[pi].total} huecos ·
+      <span class="fallos">0 fallos</span></span>`;
+    card.appendChild(cab);
+
+    const parr=document.createElement('p');
+    parr.className='parrafo';
+    let gi=0;
+    for(const t of p.trozos){
+      if(typeof t==='string'){
+        parr.appendChild(document.createTextNode(t));
+      } else {
+        parr.appendChild(crearHueco(pi, gi, t));
+        gi++;
+      }
+    }
+    card.appendChild(parr);
+
+    const fb=document.createElement('div');
+    fb.className='feedback'; fb.setAttribute('role','status'); fb.setAttribute('aria-live','polite');
+    card.appendChild(fb);
+
+    const pc=document.createElement('div');
+    pc.className='pista-caja';
+    card.appendChild(pc);
+
+    const pie=document.createElement('div');
+    pie.className='pie-tarjeta';
+    pie.innerHTML=`<button class="btn-pista">💡 Pista (quedan 2)</button>
+      <span class="completado">✓ ¡Problema completado!</span>
+      <button class="btn-nav"></button>`;
+    card.appendChild(pie);
+
+    pie.querySelector('.btn-pista').addEventListener('click',()=>darPista(pi));
+    pie.querySelector('.btn-nav').addEventListener('click',()=>{
+      if(pi<PROBLEMAS.length-1) mostrarProblema(pi+1);
+      else revisarFinal(true);
+    });
+
+    zonaProblemas.appendChild(card);
+  });
+}
+
+function crearHueco(pi, gi, g){
+  const span=document.createElement('span');
+  span.className='hueco';
+  span.dataset.gi=gi;
+  const b0=document.createElement('button');
+  b0.textContent=g.o[0];
+  const sep=document.createElement('span');
+  sep.className='sep'; sep.textContent='/';
+  const b1=document.createElement('button');
+  b1.textContent=g.o[1];
+  b0.addEventListener('click',()=>responder(pi,gi,0,span,g));
+  b1.addEventListener('click',()=>responder(pi,gi,1,span,g));
+  span.append(b0,sep,b1);
+  return span;
+}
+
+/* ================= lógica de respuesta ================= */
+function responder(pi, gi, elegido, span, g){
+  const st=estado[pi];
+  const card=zonaProblemas.querySelector(`.tarjeta[data-pi="${pi}"]`);
+  const fb=card.querySelector('.feedback');
+
+  if(elegido===g.c){
+    /* acierto: fija el hueco */
+    if(!st.contestadosMal.has(gi)) st.primeras++;
+    st.resueltos++;
+    const res=document.createElement('span');
+    res.className='resuelto';
+    res.textContent=g.o[g.c];
+    if(g.sim) res.innerHTML+=' <span class="simbolo">('+g.sim+')</span>';
+    span.replaceWith(res);
+    fb.classList.remove('visible');
+    actualizarContadores(pi);
+    if(st.resueltos===st.total) completarProblema(pi);
+  } else {
+    /* fallo */
+    st.fallos++;
+    st.contestadosMal.add(gi);
+    span.classList.remove('error');
+    void span.offsetWidth;           // reinicia la animación
+    span.classList.add('error');
+    fb.innerHTML='<b>No es «'+g.o[elegido]+'».</b> '+g.exp+' Vuelve a intentarlo.';
+    fb.classList.add('visible');
+    actualizarContadores(pi);
+  }
+}
+
+function actualizarContadores(pi){
+  const st=estado[pi];
+  const card=zonaProblemas.querySelector(`.tarjeta[data-pi="${pi}"]`);
+  card.querySelector('.hechos').textContent=st.resueltos;
+  card.querySelector('.fallos').textContent=st.fallos+(st.fallos===1?' fallo':' fallos');
+}
+
+function completarProblema(pi){
+  const st=estado[pi];
+  st.completo=true;
+  const card=zonaProblemas.querySelector(`.tarjeta[data-pi="${pi}"]`);
+  card.querySelector('.completado').classList.add('visible');
+  card.querySelector('.btn-pista').disabled=true;
+  const nav=card.querySelector('.btn-nav');
+  nav.textContent = pi<PROBLEMAS.length-1 ? 'Siguiente problema →' : 'Ver el resumen →';
+  nav.classList.add('visible');
+  zonaPestanas.children[pi].querySelector('.check').textContent=' ✓';
+  revisarFinal(false);
+}
+
+/* ================= pistas ================= */
+function darPista(pi){
+  const st=estado[pi];
+  if(st.pistasUsadas>=2 || st.completo) return;
+  const card=zonaProblemas.querySelector(`.tarjeta[data-pi="${pi}"]`);
+  const primerHueco=card.querySelector('.hueco');
+  if(!primerHueco) return;
+  st.pistasUsadas++;
+  const gi=+primerHueco.dataset.gi;
+  const g=PROBLEMAS[pi].trozos.filter(t=>typeof t!=='string')[gi];
+  const pc=card.querySelector('.pista-caja');
+  pc.innerHTML='<b>Pista para el primer hueco pendiente</b> («'+g.o[0]+' / '+g.o[1]+'»): '+g.exp;
+  pc.classList.add('visible');
+  const btn=card.querySelector('.btn-pista');
+  btn.textContent='💡 Pista (queda '+(2-st.pistasUsadas)+')';
+  if(st.pistasUsadas>=2){ btn.disabled=true; btn.textContent='💡 Sin pistas'; }
+  if(!reducirMovimiento){
+    primerHueco.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+}
+
+/* ================= navegación y final ================= */
+function mostrarProblema(pi){
+  actual=pi;
+  document.querySelectorAll('.tarjeta').forEach(c=>
+    c.style.display = +c.dataset.pi===pi ? '' : 'none');
+  [...zonaPestanas.children].forEach((t,i)=>
+    t.classList.toggle('activa', i===pi));
+}
+
+function revisarFinal(desplazar){
+  const todos=estado.every(s=>s.completo);
+  const zf=document.getElementById('zonaFinal');
+  if(!todos){ zf.classList.remove('visible'); return; }
+  const totalHuecos=estado.reduce((a,s)=>a+s.total,0);
+  const primeras=estado.reduce((a,s)=>a+s.primeras,0);
+  const fallos=estado.reduce((a,s)=>a+s.fallos,0);
+  document.getElementById('resultadoFinal').innerHTML=
+    'Aciertos a la primera: <b>'+primeras+' de '+totalHuecos+'</b> huecos'+
+    (fallos>0?' · '+fallos+' intentos fallidos por el camino':' · ¡sin un solo fallo!')+
+    '. Esta tabla queda como chuleta:';
+  zf.classList.add('visible');
+  if(desplazar) zf.scrollIntoView({behavior:reducirMovimiento?'auto':'smooth', block:'start'});
+}
+
+document.getElementById('btnRepetir').addEventListener('click',()=>{
+  estado.forEach(s=>{
+    s.resueltos=0; s.fallos=0; s.primeras=0; s.contestadosMal.clear();
+    s.pistasUsadas=0; s.completo=false;
+  });
+  document.getElementById('zonaFinal').classList.remove('visible');
+  construir();
+  mostrarProblema(0);
+  window.scrollTo({top:0, behavior:reducirMovimiento?'auto':'smooth'});
+});
+
+/* ================= arranque ================= */
+construir();
+mostrarProblema(0);
+</script>
+</body>
+</html>
