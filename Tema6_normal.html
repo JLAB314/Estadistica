@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Normal interactiva — densidad y acumulada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --verde-suave:rgba(15,118,110,.15);
+    --ambar:#D98E04;
+    --coral:#E4572E;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:720px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  .indicadores{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;}
+  .indic{
+    background:#F7FAFC; border:1px solid var(--borde); border-radius:var(--radio);
+    padding:14px 18px; transition:box-shadow .2s;
+  }
+  .indic .nom{
+    font-size:.78rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--tinta-suave); font-weight:600;
+  }
+  .indic .val{
+    font-family:'Space Grotesk', sans-serif; font-size:2rem; font-weight:700;
+    font-variant-numeric:tabular-nums; line-height:1.1; margin-top:2px;
+  }
+  .indic .etq{font-size:.92rem; font-weight:600; margin-top:2px; color:var(--tinta-suave);}
+  .indic.media .val{color:var(--coral);}
+  .indic.varianza .val{color:var(--ambar);}
+
+  .controles-param{
+    display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;
+  }
+  .control-param{
+    background:#F7FAFC; border:1px solid var(--borde); border-radius:var(--radio);
+    padding:14px 16px;
+  }
+  .control-param .fila-superior{display:flex; justify-content:space-between; align-items:baseline; gap:10px;}
+  .control-param .nombre{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; color:var(--tinta);
+  }
+  .control-param .valor{
+    font-family:'Space Grotesk', sans-serif; font-size:1.7rem; font-weight:700;
+    font-variant-numeric:tabular-nums; color:var(--verde);
+  }
+  .botonera{display:flex; gap:8px; margin-top:10px;}
+  .flecha{
+    flex:1; font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:1.1rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:7px 10px; cursor:pointer;
+    transition:background .15s, border-color .15s, transform .15s;
+  }
+  .flecha:hover{border-color:var(--verde); background:#ecf6ff; transform:translateY(-1px);}
+  .flecha:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+
+  #lienzo{width:100%; height:520px; display:block; outline:none; border-radius:8px; background:#FFFFFF;}
+  #lienzo:focus-visible{box-shadow:0 0 0 3px var(--coral);}
+
+  .leyenda{
+    display:flex; gap:22px; flex-wrap:wrap; justify-content:center;
+    margin-top:10px; font-size:.85rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:7px;}
+  .m-dens{width:24px; height:12px; background:var(--verde-suave); border-top:3px solid var(--verde); display:inline-block;}
+  .m-acum{width:24px; height:0; border-top:3px solid var(--ambar); display:inline-block;}
+  .m-media{width:3px; height:14px; background:var(--coral); display:inline-block;}
+  .m-sigma{width:24px; height:0; border-top:3px dashed #8FA3B8; display:inline-block;}
+
+  .ayuda{font-size:.85rem; color:var(--tinta-suave); margin-top:10px; text-align:center;}
+  .ayuda b{color:var(--coral);}
+
+  .fila-controles{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px;}
+  .fila-controles .etiq{font-size:.85rem; color:var(--tinta-suave); font-weight:600; margin-right:2px;}
+  .chip{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.86rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:6px 14px; cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  .chip:hover{border-color:var(--verde);}
+  .chip:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .chip.activo{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+  .chip.reset{background:var(--verde); color:var(--blanco); border-color:var(--verde);}
+  .chip.reset:hover{filter:brightness(1.1);}
+  .sep-v{width:1px; height:22px; background:var(--borde); margin:0 4px;}
+
+  .preset-info{
+    display:none; margin-top:12px; background:#F4F7FA; border-left:4px solid var(--verde);
+    padding:10px 14px; border-radius:0 8px 8px 0; font-size:.93rem;
+  }
+  .preset-info.visible{display:block;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:700px){
+    #lienzo{height:500px;}
+    .indicadores,.controles-param{grid-template-columns:1fr;}
+    .indic .val{font-size:1.6rem;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de probabilidad</div>
+    <h1>Distribución normal</h1>
+    <p class="sub">Modifica la media <b>μ</b> y la desviación típica <b>σ</b>. Abajo se dibujan la función de densidad y la función de distribución acumulada de una normal N(μ, σ).</p>
+  </header>
+
+  <div class="panel">
+    <div class="indicadores">
+      <div class="indic media">
+        <div class="nom">Valor esperado E(X)</div>
+        <div class="val" id="valEsperanza">0,00</div>
+        <div class="etq">En una normal, E(X) = μ</div>
+      </div>
+      <div class="indic varianza">
+        <div class="nom">Varianza Var(X)</div>
+        <div class="val" id="valVarianza">1,00</div>
+        <div class="etq">En una normal, Var(X) = σ²</div>
+      </div>
+    </div>
+
+    <div class="controles-param">
+      <div class="control-param">
+        <div class="fila-superior">
+          <div class="nombre">Media μ</div>
+          <div class="valor" id="muTxt">0,0</div>
+        </div>
+        <div class="botonera">
+          <button class="flecha" id="muMenos" aria-label="Bajar media">−</button>
+          <button class="flecha" id="muMas" aria-label="Subir media">+</button>
+        </div>
+      </div>
+      <div class="control-param">
+        <div class="fila-superior">
+          <div class="nombre">Desviación típica σ</div>
+          <div class="valor" id="sigmaTxt">1,0</div>
+        </div>
+        <div class="botonera">
+          <button class="flecha" id="sigmaMenos" aria-label="Bajar desviación típica">−</button>
+          <button class="flecha" id="sigmaMas" aria-label="Subir desviación típica">+</button>
+        </div>
+      </div>
+    </div>
+
+    <canvas id="lienzo" tabindex="0" aria-label="Gráficos de densidad y acumulada de la distribución normal"></canvas>
+
+    <div class="leyenda">
+      <span><span class="m-dens"></span> Densidad f(x)</span>
+      <span><span class="m-acum"></span> Acumulada F(x)</span>
+      <span><span class="m-media"></span> Media μ</span>
+      <span><span class="m-sigma"></span> μ ± σ</span>
+    </div>
+    <div class="ayuda">Usa las flechas para ver cómo <b>μ desplaza</b> la curva y cómo <b>σ la ensancha o estrecha</b>.</div>
+
+    <div class="fila-controles">
+      <button class="chip reset" id="btnReset">↺ Volver a N(0,1)</button>
+      <span class="sep-v"></span>
+      <span class="etiq">Ejemplos:</span>
+      <button class="chip preset" data-p="centrada">Normal estándar</button>
+      <button class="chip preset" data-p="derecha">Media positiva</button>
+      <button class="chip preset" data-p="estrecha">Menor dispersión</button>
+      <button class="chip preset" data-p="ancha">Mayor dispersión</button>
+    </div>
+    <div class="preset-info" id="presetInfo"></div>
+  </div>
+
+  <details class="nota">
+    <summary>¿Qué cambia cuando modificamos μ y σ?</summary>
+    <div class="nota-cuerpo">
+      <p><b>La media μ</b> mueve toda la distribución a izquierda o derecha. La forma no cambia: solo cambia el centro.</p>
+      <p><b>La desviación típica σ</b> controla la dispersión. Si σ es pequeña, la curva es alta y estrecha; si σ es grande, la curva es más baja y extendida.</p>
+      <p><b>La función acumulada F(x)</b> representa la probabilidad de obtener un valor menor o igual que x. Por eso siempre crece desde 0 hasta 1.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de probabilidad · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+let mu=0;
+let sigma=1;
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const PRESETS={
+  centrada:{mu:0, sigma:1, info:'<b>Normal estándar:</b> media 0 y desviación típica 1. Es la referencia habitual para trabajar con puntuaciones tipificadas.'},
+  derecha:{mu:2, sigma:1, info:'<b>Media positiva:</b> la curva mantiene la misma forma, pero se desplaza hacia la derecha porque μ aumenta.'},
+  estrecha:{mu:0, sigma:0.6, info:'<b>Menor dispersión:</b> al bajar σ, los valores se concentran más alrededor de la media. La densidad se vuelve más alta y estrecha.'},
+  ancha:{mu:0, sigma:1.8, info:'<b>Mayor dispersión:</b> al subir σ, los valores se reparten en un rango más amplio. La densidad se vuelve más baja y ancha.'}
+};
+
+const lienzo=document.getElementById('lienzo');
+const ctx=lienzo.getContext('2d');
+
+function fmt(x, dec=2){
+  const s=(Math.abs(x)<0.0005?0:x);
+  return s.toLocaleString('es-ES',{minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+
+function pdfNormal(x, m, s){
+  const z=(x-m)/s;
+  return Math.exp(-0.5*z*z)/(s*Math.sqrt(2*Math.PI));
+}
+
+function erf(x){
+  const sign=x>=0?1:-1;
+  x=Math.abs(x);
+  const a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+
+function cdfNormal(x, m, s){
+  return 0.5*(1+erf((x-m)/(s*Math.SQRT2)));
+}
+
+function preparaCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const r=lienzo.getBoundingClientRect();
+  lienzo.width=r.width*dpr; lienzo.height=r.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function rangoX(){
+  const minBase=-5, maxBase=5;
+  const min= Math.min(minBase, mu-4*sigma);
+  const max= Math.max(maxBase, mu+4*sigma);
+  return {min, max};
+}
+
+function dibujaEjes(x0,y0,w,h, titulo, yMax, yTicks){
+  ctx.strokeStyle='#B9C7D6'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x0,y0+h); ctx.lineTo(x0+w,y0+h); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0,y0+h); ctx.stroke();
+
+  ctx.font='700 14px "Space Grotesk", sans-serif';
+  ctx.fillStyle='#1B2A41'; ctx.textAlign='left';
+  ctx.fillText(titulo, x0, y0-8);
+
+  ctx.font='11px "IBM Plex Sans", sans-serif';
+  ctx.fillStyle='#5B6B80'; ctx.textAlign='right';
+  for(let i=0;i<=yTicks;i++){
+    const val=yMax*i/yTicks;
+    const yy=y0+h-(val/yMax)*h;
+    ctx.strokeStyle='#EDF1F6'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x0,yy); ctx.lineTo(x0+w,yy); ctx.stroke();
+    ctx.fillText(fmt(val, yMax<=1?1:2), x0-6, yy+4);
+  }
+}
+
+function dibujar(){
+  const {W,H}=preparaCanvas();
+  ctx.clearRect(0,0,W,H);
+
+  const margen={l:54,r:24,t:34,b:38};
+  const gap=54;
+  const alto=(H-margen.t-margen.b-gap)/2;
+  const ancho=W-margen.l-margen.r;
+  const g1={x:margen.l,y:margen.t,w:ancho,h:alto};
+  const g2={x:margen.l,y:margen.t+alto+gap,w:ancho,h:alto};
+  const rx=rangoX();
+  const px=x=>g1.x+(x-rx.min)/(rx.max-rx.min)*g1.w;
+  const py1=y=>g1.y+g1.h-y/(1/(sigma*Math.sqrt(2*Math.PI))*1.15)*g1.h;
+  const py2=y=>g2.y+g2.h-y*g2.h;
+
+  dibujaEjes(g1.x,g1.y,g1.w,g1.h,'Función de densidad f(x)',1/(sigma*Math.sqrt(2*Math.PI))*1.15,4);
+  dibujaEjes(g2.x,g2.y,g2.w,g2.h,'Función de distribución acumulada F(x)',1,4);
+
+  const ticks=8;
+  ctx.font='11px "IBM Plex Sans", sans-serif'; ctx.fillStyle='#5B6B80'; ctx.textAlign='center';
+  for(let i=0;i<=ticks;i++){
+    const x=rx.min+(rx.max-rx.min)*i/ticks;
+    const X=px(x);
+    ctx.strokeStyle='#EDF1F6'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(X,g1.y); ctx.lineTo(X,g1.y+g1.h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X,g2.y); ctx.lineTo(X,g2.y+g2.h); ctx.stroke();
+    ctx.fillText(fmt(x,1), X, g1.y+g1.h+18);
+    ctx.fillText(fmt(x,1), X, g2.y+g2.h+18);
+  }
+
+  // Densidad
+  const n=420;
+  ctx.beginPath();
+  for(let i=0;i<=n;i++){
+    const x=rx.min+(rx.max-rx.min)*i/n;
+    const y=pdfNormal(x,mu,sigma);
+    const X=px(x), Y=py1(y);
+    if(i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+  }
+  ctx.strokeStyle='#0F766E'; ctx.lineWidth=2.8; ctx.stroke();
+
+  // Relleno densidad
+  ctx.lineTo(px(rx.max), g1.y+g1.h);
+  ctx.lineTo(px(rx.min), g1.y+g1.h);
+  ctx.closePath();
+  ctx.fillStyle='rgba(15,118,110,.13)'; ctx.fill();
+
+  // Acumulada
+  ctx.beginPath();
+  for(let i=0;i<=n;i++){
+    const x=rx.min+(rx.max-rx.min)*i/n;
+    const y=cdfNormal(x,mu,sigma);
+    const X=px(x), Y=py2(y);
+    if(i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+  }
+  ctx.strokeStyle='#D98E04'; ctx.lineWidth=2.8; ctx.stroke();
+
+  // Media y mu +- sigma
+  function linea(x, graf, color, etiqueta, dash=false){
+    const X=graf.x+(x-rx.min)/(rx.max-rx.min)*graf.w;
+    if(X<graf.x || X>graf.x+graf.w) return;
+    ctx.save();
+    ctx.strokeStyle=color; ctx.lineWidth=2.2;
+    if(dash) ctx.setLineDash([6,5]);
+    ctx.beginPath(); ctx.moveTo(X,graf.y); ctx.lineTo(X,graf.y+graf.h); ctx.stroke();
+    ctx.restore();
+    if(etiqueta){
+      ctx.font='700 12px "Space Grotesk", sans-serif'; ctx.fillStyle=color; ctx.textAlign='center';
+      ctx.fillText(etiqueta, X, graf.y+graf.h-8);
+    }
+  }
+  linea(mu,g1,'#E4572E','μ');
+  linea(mu,g2,'#E4572E','μ');
+  linea(mu-sigma,g1,'#8FA3B8','',true);
+  linea(mu+sigma,g1,'#8FA3B8','',true);
+  linea(mu-sigma,g2,'#8FA3B8','',true);
+  linea(mu+sigma,g2,'#8FA3B8','',true);
+
+  actualizarTextos();
+}
+
+function actualizarTextos(){
+  document.getElementById('muTxt').textContent=fmt(mu,1);
+  document.getElementById('sigmaTxt').textContent=fmt(sigma,1);
+  document.getElementById('valEsperanza').textContent=fmt(mu,2);
+  document.getElementById('valVarianza').textContent=fmt(sigma*sigma,2);
+}
+
+function setParams(nMu,nSigma){
+  mu=Math.max(-5,Math.min(5,Math.round(nMu*10)/10));
+  sigma=Math.max(0.2,Math.min(3,Math.round(nSigma*10)/10));
+  document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+  dibujar();
+}
+
+function animaHacia(muF,sigmaF){
+  if(reducirMovimiento){ setParams(muF,sigmaF); return; }
+  const muI=mu, sigmaI=sigma, pasos=20; let k=0;
+  (function paso(){
+    k++;
+    const t=k/pasos, e=1-Math.pow(1-t,3);
+    mu=muI+(muF-muI)*e;
+    sigma=sigmaI+(sigmaF-sigmaI)*e;
+    dibujar();
+    if(k<pasos) requestAnimationFrame(paso); else {mu=muF; sigma=sigmaF; dibujar();}
+  })();
+}
+
+document.getElementById('muMenos').addEventListener('click',()=>setParams(mu-0.2,sigma));
+document.getElementById('muMas').addEventListener('click',()=>setParams(mu+0.2,sigma));
+document.getElementById('sigmaMenos').addEventListener('click',()=>setParams(mu,sigma-0.1));
+document.getElementById('sigmaMas').addEventListener('click',()=>setParams(mu,sigma+0.1));
+
+document.getElementById('btnReset').addEventListener('click',()=>{
+  document.getElementById('presetInfo').classList.remove('visible');
+  document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+  animaHacia(0,1);
+});
+
+document.querySelectorAll('.chip.preset').forEach(b=>
+  b.addEventListener('click',()=>{
+    const p=PRESETS[b.dataset.p];
+    document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+    b.classList.add('activo');
+    const info=document.getElementById('presetInfo');
+    info.innerHTML=p.info; info.classList.add('visible');
+    animaHacia(p.mu,p.sigma);
+  })
+);
+
+window.addEventListener('resize',()=>dibujar());
+dibujar();
+</script>
+</body>
+</html>
