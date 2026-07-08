@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deforma la campana — asimetría y curtosis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --verde-suave:rgba(15,118,110,.15);
+    --ambar:#D98E04;
+    --coral:#E4572E;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:680px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  /* indicadores */
+  .indicadores{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;}
+  .indic{
+    background:#F7FAFC; border:1px solid var(--borde); border-radius:var(--radio);
+    padding:14px 18px; transition:box-shadow .2s;
+  }
+  .indic.destello{box-shadow:0 0 0 3px var(--verde-suave);}
+  .indic .nom{
+    font-size:.78rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--tinta-suave); font-weight:600;
+  }
+  .indic .val{
+    font-family:'Space Grotesk', sans-serif; font-size:2rem; font-weight:700;
+    font-variant-numeric:tabular-nums; line-height:1.1; margin-top:2px;
+  }
+  .indic .etq{font-size:.92rem; font-weight:600; margin-top:2px;}
+  .indic.asim .val{color:var(--coral);}
+  .indic.curt .val{color:var(--ambar);}
+
+  .aviso-normal{
+    text-align:center; font-family:'Space Grotesk',sans-serif; font-weight:700;
+    color:var(--verde); min-height:24px; margin-bottom:6px; opacity:0; transition:opacity .3s;
+  }
+  .aviso-normal.visible{opacity:1;}
+
+  #lienzo{width:100%; height:400px; display:block; touch-action:none; cursor:default; outline:none; border-radius:8px;}
+  #lienzo:focus-visible{box-shadow:0 0 0 3px var(--coral);}
+
+  .leyenda{
+    display:flex; gap:22px; flex-wrap:wrap; justify-content:center;
+    margin-top:8px; font-size:.85rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:7px;}
+  .m-curva{width:24px; height:12px; background:var(--verde-suave); border-top:3px solid var(--verde); display:inline-block;}
+  .m-normal{width:24px; height:0; border-top:3px dashed #8FA3B8; display:inline-block;}
+  .m-media{width:3px; height:14px; background:var(--coral); display:inline-block;}
+  .m-mediana{width:3px; height:14px; background:var(--tinta); display:inline-block;}
+
+  .ayuda{font-size:.85rem; color:var(--tinta-suave); margin-top:10px; text-align:center;}
+  .ayuda b{color:var(--coral);}
+
+  /* controles */
+  .fila-controles{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px;}
+  .fila-controles .etiq{font-size:.85rem; color:var(--tinta-suave); font-weight:600; margin-right:2px;}
+  .chip{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.86rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:6px 14px; cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  .chip:hover:not([disabled]){border-color:var(--verde);}
+  .chip:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .chip[disabled]{opacity:.4; cursor:default;}
+  .chip.activo{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+  .chip.reto{border-color:var(--ambar);}
+  .chip.reto.activo{background:var(--ambar); border-color:var(--ambar); color:var(--blanco);}
+  .chip.logrado::after{content:' ✓'; font-weight:700;}
+  .chip.reset{background:var(--verde); color:var(--blanco); border-color:var(--verde);}
+  .chip.reset:hover{filter:brightness(1.1);}
+  .sep-v{width:1px; height:22px; background:var(--borde); margin:0 4px;}
+
+  .preset-info{
+    display:none; margin-top:12px; background:#F4F7FA; border-left:4px solid var(--verde);
+    padding:10px 14px; border-radius:0 8px 8px 0; font-size:.93rem;
+  }
+  .preset-info.visible{display:block;}
+  .reto-texto{
+    display:none; margin-top:12px; background:#FDF6E9; border-left:4px solid var(--ambar);
+    padding:10px 14px; border-radius:0 8px 8px 0; font-size:.93rem;
+  }
+  .reto-texto.visible{display:block;}
+  .reto-texto.logrado{background:var(--ok-fondo); border-color:var(--ok);}
+  .reto-texto b{font-family:'Space Grotesk',sans-serif;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #lienzo{height:340px;} .indic .val{font-size:1.6rem;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de probabilidad</div>
+    <h1>Deforma la campana</h1>
+    <p class="sub">Parte de una normal perfecta y defórmala con el ratón. <b>Arrastra en horizontal</b>
+    para pasar masa de una cola a otra (asimetría) y <b>arrastra el pico en vertical</b> para apuntar
+    o aplanar la curva (curtosis). La silueta gris de la normal siempre está detrás como referencia.</p>
+  </header>
+
+  <div class="panel">
+    <div class="indicadores">
+      <div class="indic asim" id="indAsim">
+        <div class="nom">Coeficiente de asimetría</div>
+        <div class="val" id="valAsim">0,00</div>
+        <div class="etq" id="etqAsim">Simétrica</div>
+      </div>
+      <div class="indic curt" id="indCurt">
+        <div class="nom">Exceso de curtosis (normal = 0)</div>
+        <div class="val" id="valCurt">0,00</div>
+        <div class="etq" id="etqCurt">Mesocúrtica</div>
+      </div>
+    </div>
+
+    <div class="aviso-normal" id="avisoNormal">¡Es prácticamente una normal!</div>
+
+    <canvas id="lienzo" tabindex="0"
+      aria-label="Curva de densidad deformable con la silueta de la normal como referencia"></canvas>
+    <div class="leyenda">
+      <span><span class="m-curva"></span> Tu curva</span>
+      <span><span class="m-normal"></span> Normal de referencia</span>
+      <span><span class="m-media"></span> Media</span>
+      <span><span class="m-mediana"></span> Mediana</span>
+    </div>
+    <div class="ayuda">Arrastra <b>horizontalmente</b> → asimetría · arrastra el <b>círculo naranja del pico</b> arriba/abajo → curtosis · o usa los presets</div>
+
+    <div class="fila-controles">
+      <button class="chip reset" id="btnReset">↺ Volver a la normal</button>
+      <span class="sep-v"></span>
+      <span class="etiq">Ejemplos:</span>
+      <button class="chip preset" data-p="der">Asimétrica derecha</button>
+      <button class="chip preset" data-p="izq">Asimétrica izquierda</button>
+      <button class="chip preset" data-p="lepto">Cola pesada</button>
+      <button class="chip preset" data-p="plati">Aplanada</button>
+    </div>
+    <div class="preset-info" id="presetInfo"></div>
+
+    <div class="fila-controles">
+      <span class="etiq">Retos:</span>
+      <button class="chip reto" data-r="0">Reto 1</button>
+      <button class="chip reto" data-r="1">Reto 2</button>
+      <button class="chip reto" data-r="2">Reto 3</button>
+    </div>
+    <div class="reto-texto" id="retoTexto"></div>
+  </div>
+
+  <details class="nota">
+    <summary>¿Qué mide cada uno? (y por qué son independientes)</summary>
+    <div class="nota-cuerpo">
+      <p><b>Asimetría</b> mide si la curva está inclinada hacia un lado. Positiva → la cola larga apunta a la
+      derecha (valores altos poco frecuentes que estiran esa cola; típico de ingresos o precios). Negativa →
+      la cola larga apunta a la izquierda. Cero → simétrica.</p>
+      <p><b>Curtosis</b> (aquí, el <i>exceso</i>, con la normal fijada en 0) mide cuánta masa hay en el pico y
+      sobre todo en las colas frente a una normal. Positiva (leptocúrtica) → pico afilado y colas pesadas:
+      más valores extremos de lo normal. Negativa (platicúrtica) → curva más plana y achatada, con colas ligeras.</p>
+      <p><b>Son independientes:</b> puedes tener mucha de una y nada de la otra. Una curva puede ser muy
+      leptocúrtica y perfectamente simétrica, o muy asimétrica con curtosis casi cero. El error habitual es
+      creer que "una cola larga" implica "pico alto": no es así, y los retos te lo hacen comprobar.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de estadística descriptiva · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= familia sinh-arcsinh (Jones–Pewsey) =================
+   Z = sinh( (1/delta) * asinh(Y) + epsilon/delta ... )  -- usamos la forma:
+   Y ~ N(0,1);  X = sinh( delta^{-1} (asinh(Y) - epsilon) )  [transporte inverso]
+   Densidad en x:
+     S(x) = sinh(delta*asinh(x) + epsilon)         [este es el valor "normalizado"]
+     f(x) = (delta) * (1+S^2)^{1/2} / (2π(1+x^2))^{1/2} * exp(-S^2/2)
+   epsilon controla asimetría (0 = simétrica), delta controla peso de colas
+   (delta=1 => normal; delta<1 => colas pesadas/leptocúrtica; delta>1 => colas ligeras/platicúrtica).
+   Referencia estándar de la distribución SAS de Jones & Pewsey (2009). */
+function densidadSAS(x, eps, del){
+  const asx=Math.asinh(x);
+  const S=Math.sinh(del*asx + eps);
+  const C=Math.cosh(del*asx + eps);
+  return del*C/Math.sqrt(2*Math.PI*(1+x*x)) * Math.exp(-0.5*S*S);
+}
+
+/* momentos por integración numérica (sobre una rejilla amplia) */
+function momentos(eps, del){
+  const a=-14, b=14, n=3000, h=(b-a)/n;
+  let m0=0,m1=0;
+  const xs=new Float64Array(n+1), fs=new Float64Array(n+1);
+  for(let i=0;i<=n;i++){
+    const x=a+i*h; xs[i]=x;
+    const f=densidadSAS(x, eps, del); fs[i]=f;
+    const w=(i===0||i===n)?0.5:1;
+    m0+=w*f; m1+=w*f*x;
+  }
+  m0*=h; m1*=h;
+  const media=m1/m0;
+  let m2=0,m3=0,m4=0;
+  for(let i=0;i<=n;i++){
+    const d=xs[i]-media, w=(i===0||i===n)?0.5:1;
+    const wf=w*fs[i];
+    m2+=wf*d*d; m3+=wf*d*d*d; m4+=wf*d*d*d*d;
+  }
+  m2*=h/m0; m3*=h/m0; m4*=h/m0;
+  const sd=Math.sqrt(m2);
+  /* mediana: valor x con CDF = 0,5, en unidades estandarizadas respecto a media y sd */
+  let acum=0, mediana=media;
+  const objetivo=0.5*m0;
+  for(let i=0;i<=n;i++){
+    const w=(i===0||i===n)?0.5:1;
+    const nuevo=acum+w*fs[i]*h;
+    if(nuevo>=objetivo){
+      const frac=(objetivo-acum)/(w*fs[i]*h||1);
+      mediana=xs[i]+frac*h;
+      break;
+    }
+    acum=nuevo;
+  }
+  const medianaStd=(mediana-media)/sd;
+  return {media, sd, asim:m3/(sd*sd*sd), exc:m4/(m2*m2)-3, medianaStd};
+}
+
+/* ================= estado ================= */
+let eps=0, del=1;          // asimetría / colas
+let arrastre=null;         // 'h' (horizontal→asim) | 'v' (vertical→curtosis)
+let x0=0, y0=0, eps0=0, del0=1;
+let retoActivo=-1;
+const retosLogrados=[false,false,false];
+let momentosCache=momentos(0,1);
+
+function recalc(){ momentosCache=momentos(eps, del); }
+
+/* ================= presets y retos ================= */
+const PRESETS={
+  der:{eps:-0.9, del:1, info:'<b>Asimetría a la derecha:</b> la cola larga apunta hacia los valores altos. Es la forma típica de los ingresos, los precios de vivienda o los tiempos de espera: la mayoría se agolpa a la izquierda y unos pocos valores muy grandes estiran la cola derecha.'},
+  izq:{eps:0.9, del:1, info:'<b>Asimetría a la izquierda:</b> la cola larga apunta hacia los valores bajos. Aparece, por ejemplo, en la edad de jubilación o en notas de un examen muy fácil: casi todos altos, con una cola de valores bajos.'},
+  lepto:{eps:0, del:0.62, info:'<b>Leptocúrtica (cola pesada):</b> pico afilado y colas gruesas. Hay más valores extremos de lo que predice una normal. Frecuente en rendimientos financieros: días de calma y, de vez en cuando, saltos bruscos.'},
+  plati:{eps:0, del:1.6, info:'<b>Platicúrtica (aplanada):</b> curva achatada, con colas ligeras y sin un pico marcado. La masa se reparte de forma más uniforme; los valores extremos son raros.'}
+};
+
+const RETOS=[
+ {texto:'<b>Reto 1 · Asimetría sin curtosis:</b> consigue asimetría claramente positiva (≥ 0,35) manteniendo el exceso de curtosis cerca de 0 (entre −0,5 y 0,5). Demuestra que se puede inclinar la curva sin afilar el pico.',
+  cumple:m=> m.asim>=0.35 && Math.abs(m.exc)<=0.5},
+ {texto:'<b>Reto 2 · Curtosis sin asimetría:</b> haz una curva claramente leptocúrtica (exceso ≥ 0,6) y a la vez simétrica (asimetría entre −0,15 y 0,15). El pico alto no exige inclinar nada.',
+  cumple:m=> m.exc>=0.6 && Math.abs(m.asim)<=0.15},
+ {texto:'<b>Reto 3 · Aplanada y simétrica:</b> consigue una curva platicúrtica (exceso ≤ −0,3) y simétrica (asimetría entre −0,15 y 0,15).',
+  cumple:m=> m.exc<=-0.3 && Math.abs(m.asim)<=0.15}
+];
+
+/* ================= dibujo ================= */
+const lienzo=document.getElementById('lienzo');
+const ctx=lienzo.getContext('2d');
+let geom={};
+
+function preparaCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const r=lienzo.getBoundingClientRect();
+  lienzo.width=r.width*dpr; lienzo.height=r.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+/* la curva se dibuja estandarizada (media 0, sd 1 en pantalla) para centrarla siempre */
+function curvaEstandarizada(eps,del){
+  const m=momentos(eps,del);
+  const pts=[];
+  const RANGO=4.2;   // en desviaciones típicas mostradas
+  const nS=260;
+  for(let i=0;i<=nS;i++){
+    const zStd=-RANGO+(2*RANGO)*i/nS;        // en unidades estandarizadas
+    const x=m.media+zStd*m.sd;               // en unidades de la variable SAS
+    const dens=densidadSAS(x, eps, del)*m.sd; // densidad en unidades estandarizadas
+    pts.push({z:zStd, d:dens});
+  }
+  return pts;
+}
+
+function dibujar(){
+  const {W,H}=preparaCanvas();
+  const mL=24, mR=24, base=H-30, tope=24;
+  const RANGO=4.2;
+  const px=z=>mL+(z+RANGO)/(2*RANGO)*(W-mL-mR);
+
+  const curva=curvaEstandarizada(eps,del);
+  const normal=curvaEstandarizada(0,1);
+  /* escala vertical FIJA basada en el pico de la normal, para que una
+     leptocúrtica suba por encima de la referencia y una platicúrtica baje */
+  let picoNormal=0;
+  for(const p of normal) if(p.d>picoNormal) picoNormal=p.d;
+  const dmax=picoNormal*1.9;
+  const py=d=>base-Math.min(d,dmax*1.02)/dmax*(base-tope);
+
+  ctx.clearRect(0,0,W,H);
+
+  /* eje X */
+  ctx.strokeStyle='#B9C7D6'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(mL-4,base); ctx.lineTo(W-mR+4,base); ctx.stroke();
+  ctx.font='11px "IBM Plex Sans", sans-serif'; ctx.fillStyle='#5B6B80'; ctx.textAlign='center';
+  for(let z=-4;z<=4;z++){
+    const X=px(z);
+    ctx.strokeStyle='#EDF1F6'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(X,tope); ctx.lineTo(X,base); ctx.stroke();
+  }
+
+  /* silueta normal de referencia */
+  ctx.strokeStyle='#8FA3B8'; ctx.lineWidth=2; ctx.setLineDash([7,5]);
+  ctx.beginPath();
+  normal.forEach((p,i)=> i?ctx.lineTo(px(p.z),py(p.d)):ctx.moveTo(px(p.z),py(p.d)));
+  ctx.stroke(); ctx.setLineDash([]);
+
+  /* tu curva rellena */
+  ctx.beginPath();
+  curva.forEach((p,i)=> i?ctx.lineTo(px(p.z),py(p.d)):ctx.moveTo(px(p.z),py(p.d)));
+  ctx.lineTo(px(curva[curva.length-1].z), base);
+  ctx.lineTo(px(curva[0].z), base);
+  ctx.closePath();
+  ctx.fillStyle='rgba(15,118,110,.13)'; ctx.fill();
+  ctx.beginPath();
+  curva.forEach((p,i)=> i?ctx.lineTo(px(p.z),py(p.d)):ctx.moveTo(px(p.z),py(p.d)));
+  ctx.strokeStyle='#0F766E'; ctx.lineWidth=2.8; ctx.stroke();
+
+  /* líneas verticales de media (siempre en z=0) y mediana */
+  const m=momentosCache;
+  function alturaCurva(zBusca){
+    /* densidad estandarizada en zBusca, para no pasarse de la curva */
+    let mejor=curva[0];
+    for(const p of curva) if(Math.abs(p.z-zBusca)<Math.abs(mejor.z-zBusca)) mejor=p;
+    return mejor.d;
+  }
+  function lineaVert(z, color, etiqueta, ladoIzq){
+    const X=px(z), Yc=py(alturaCurva(z));
+    ctx.strokeStyle=color; ctx.lineWidth=2.4;
+    ctx.beginPath(); ctx.moveTo(X, Yc); ctx.lineTo(X, base); ctx.stroke();
+    ctx.fillStyle=color; ctx.font='700 12px "Space Grotesk", sans-serif';
+    ctx.textAlign=ladoIzq?'right':'left';
+    ctx.fillText(etiqueta, X+(ladoIzq?-5:5), base-8);
+  }
+  /* si media y mediana casi coinciden, separamos etiquetas a lados opuestos */
+  const juntas=Math.abs(m.medianaStd)<0.12;
+  lineaVert(0, '#E4572E', 'media', juntas?true:(m.medianaStd>0));
+  lineaVert(m.medianaStd, '#1B2A41', 'mediana', juntas?false:(m.medianaStd<=0));
+
+  /* asas de arrastre: pico (vertical) y flanco derecho (horizontal) */
+  let picoIdx=0; for(let i=1;i<curva.length;i++) if(curva[i].d>curva[picoIdx].d) picoIdx=i;
+  const pico=curva[picoIdx];
+  geom.pico={X:px(pico.z), Y:py(pico.d)-2};
+  /* asa del pico */
+  ctx.beginPath(); ctx.arc(geom.pico.X, geom.pico.Y, 11, 0, Math.PI*2);
+  ctx.fillStyle=arrastre==='v'?'#C77F04':'#D98E04'; ctx.fill();
+  ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=2; ctx.stroke();
+  /* flechas verticales indicativas */
+  ctx.strokeStyle='#D98E04'; ctx.lineWidth=1.6;
+  ctx.beginPath();
+  ctx.moveTo(geom.pico.X, geom.pico.Y-17); ctx.lineTo(geom.pico.X, geom.pico.Y-27);
+  ctx.moveTo(geom.pico.X-4, geom.pico.Y-23); ctx.lineTo(geom.pico.X, geom.pico.Y-27); ctx.lineTo(geom.pico.X+4, geom.pico.Y-23);
+  ctx.moveTo(geom.pico.X, geom.pico.Y+17); ctx.lineTo(geom.pico.X, geom.pico.Y+27);
+  ctx.moveTo(geom.pico.X-4, geom.pico.Y+23); ctx.lineTo(geom.pico.X, geom.pico.Y+27); ctx.lineTo(geom.pico.X+4, geom.pico.Y+23);
+  ctx.stroke();
+
+  geom.px=px; geom.base=base; geom.W=W;
+  actualizarIndicadores();
+  comprobarReto();
+}
+
+/* ================= indicadores ================= */
+let timerA=null, timerC=null;
+function destello(el, timer){
+  el.classList.add('destello');
+  clearTimeout(timer.t);
+  timer.t=setTimeout(()=>el.classList.remove('destello'), reducirMovimiento?0:600);
+}
+function fmt(x){
+  const s=(Math.abs(x)<0.005?0:x);
+  return (Math.round(s*100)/100).toLocaleString('es-ES',{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function actualizarIndicadores(){
+  const m=momentosCache;
+  document.getElementById('valAsim').textContent=fmt(m.asim);
+  document.getElementById('valCurt').textContent=fmt(m.exc);
+  let ea;
+  if(m.asim>0.1) ea='Asimétrica positiva — cola larga a la derecha →';
+  else if(m.asim<-0.1) ea='← Asimétrica negativa — cola larga a la izquierda';
+  else ea='Simétrica';
+  document.getElementById('etqAsim').textContent=ea;
+  let ec;
+  if(m.exc>0.1) ec='Leptocúrtica — pico afilado, colas pesadas';
+  else if(m.exc<-0.1) ec='Platicúrtica — curva aplanada';
+  else ec='Mesocúrtica — como la normal';
+  document.getElementById('etqCurt').textContent=ec;
+
+  const esNormal=Math.abs(m.asim)<0.06 && Math.abs(m.exc)<0.06;
+  document.getElementById('avisoNormal').classList.toggle('visible', esNormal);
+}
+
+/* ================= interacción ================= */
+function coords(e){ const r=lienzo.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+lienzo.addEventListener('pointerdown',e=>{
+  const {x,y}=coords(e);
+  x0=x; y0=y; eps0=eps; del0=del;
+  /* si pincha cerca del pico → curtosis (vertical); si no, asimetría (horizontal) */
+  if(geom.pico && Math.hypot(x-geom.pico.X, y-geom.pico.Y)<26){
+    arrastre='v';
+  } else {
+    arrastre='h';
+  }
+  lienzo.setPointerCapture(e.pointerId);
+  dibujar();
+  e.preventDefault();
+});
+lienzo.addEventListener('pointermove',e=>{
+  const {x,y}=coords(e);
+  if(arrastre==='h'){
+    const dx=(x-x0)/geom.W;               // fracción de anchura arrastrada
+    eps=Math.max(-2.2, Math.min(2.2, eps0 - dx*4.5));  // derecha = cola derecha = asim positiva = eps negativo
+    recalc(); dibujar();
+  } else if(arrastre==='v'){
+    const dy=(y-y0)/(geom.base);          // hacia arriba (dy<0) => afilar
+    del=Math.max(0.42, Math.min(2.4, del0 + dy*2.2));  // subir pico => del menor => leptocúrtica
+    recalc(); dibujar();
+  } else {
+    if(!geom.pico) return;
+    lienzo.style.cursor = Math.hypot(x-geom.pico.X, y-geom.pico.Y)<26 ? 'ns-resize' : 'ew-resize';
+  }
+});
+function soltar(e){
+  if(arrastre){
+    arrastre=null;
+    try{ lienzo.releasePointerCapture(e.pointerId); }catch(_){}
+    dibujar();
+  }
+}
+lienzo.addEventListener('pointerup',soltar);
+lienzo.addEventListener('pointercancel',soltar);
+
+/* ================= reset, presets, retos ================= */
+function animaHacia(epsF, delF){
+  if(reducirMovimiento){ eps=epsF; del=delF; recalc(); dibujar(); return; }
+  const epsI=eps, delI=del, pasos=22; let k=0;
+  (function paso(){
+    k++;
+    const t=k/pasos, e=1-Math.pow(1-t,3);   // easing
+    eps=epsI+(epsF-epsI)*e;
+    del=delI+(delF-delI)*e;
+    recalc(); dibujar();
+    if(k<pasos) requestAnimationFrame(paso);
+  })();
+}
+
+document.getElementById('btnReset').addEventListener('click',()=>{
+  document.getElementById('presetInfo').classList.remove('visible');
+  document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+  animaHacia(0,1);
+});
+
+document.querySelectorAll('.chip.preset').forEach(b=>
+  b.addEventListener('click',()=>{
+    const p=PRESETS[b.dataset.p];
+    document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+    b.classList.add('activo');
+    const info=document.getElementById('presetInfo');
+    info.innerHTML=p.info; info.classList.add('visible');
+    animaHacia(p.eps, p.del);
+  }));
+
+const retoTexto=document.getElementById('retoTexto');
+document.querySelectorAll('.chip.reto').forEach(b=>
+  b.addEventListener('click',()=>{
+    const r=+b.dataset.r;
+    if(retoActivo===r){
+      retoActivo=-1; b.classList.remove('activo'); retoTexto.classList.remove('visible');
+    } else {
+      retoActivo=r;
+      document.querySelectorAll('.chip.reto').forEach(x=>x.classList.remove('activo'));
+      b.classList.add('activo'); retoTexto.classList.add('visible');
+    }
+    comprobarReto(true);
+  }));
+
+function comprobarReto(){
+  if(retoActivo<0) return;
+  const r=RETOS[retoActivo];
+  const logrado=r.cumple(momentosCache);
+  if(logrado && !retosLogrados[retoActivo]){
+    retosLogrados[retoActivo]=true;
+    document.querySelectorAll('.chip.reto')[retoActivo].classList.add('logrado');
+  }
+  retoTexto.classList.toggle('logrado', logrado);
+  retoTexto.innerHTML=r.texto+(logrado?' <b style="color:var(--ok)">✓ ¡Conseguido!</b>':'');
+}
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>dibujar());
+dibujar();
+</script>
+</body>
+</html>
