@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La escalera de los percentiles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --verde-suave:rgba(15,118,110,.16);
+    --ambar:#D98E04;
+    --coral:#E4572E;
+    --coral-suave:rgba(228,87,46,.14);
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --mal:#C0392B;
+    --mal-fondo:#FBEEEC;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:680px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  .fila-controles{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
+  .fila-controles .etiq{font-size:.85rem; color:var(--tinta-suave); font-weight:600; margin-right:2px;}
+  .chip{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.86rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:6px 14px; cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  .chip:hover{border-color:var(--verde);}
+  .chip:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .chip.activo{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+  .sep-v{width:1px; height:22px; background:var(--borde); margin:0 4px;}
+
+  #lienzo{width:100%; height:480px; display:block; touch-action:none; cursor:default; outline:none; border-radius:8px;}
+  #lienzo:focus-visible{box-shadow:0 0 0 3px var(--coral);}
+
+  /* nivel k */
+  .fila-k{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:14px;}
+  .valor-k{
+    font-family:'Space Grotesk', sans-serif; font-size:1.5rem; font-weight:700;
+    color:var(--coral); min-width:120px;
+  }
+  input[type=range]{flex:1; min-width:180px; accent-color:var(--coral); height:30px; cursor:pointer;}
+  input[type=range]:focus-visible{outline:3px solid var(--coral); outline-offset:2px; border-radius:6px;}
+  .atajos-k{display:flex; gap:6px; flex-wrap:wrap;}
+  .atajos-k button{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.84rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:5px 13px; cursor:pointer;
+  }
+  .atajos-k button:hover{border-color:var(--coral);}
+  .atajos-k button:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .atajos-k button.activo{background:var(--coral); color:var(--blanco); border-color:var(--coral);}
+
+  /* resultado destacado */
+  .resultado{
+    margin-top:16px; background:#F4F7FA; border:1px solid var(--borde);
+    border-radius:var(--radio); padding:16px 20px;
+  }
+  .resultado .linea1{font-size:1.05rem;}
+  .resultado .pctl{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; color:var(--coral); font-size:1.15rem;
+  }
+  .resultado .linea2{
+    margin-top:10px; font-size:1.05rem;
+    padding-top:10px; border-top:1px dashed var(--borde);
+  }
+  .resultado .dejadebajo{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; color:var(--verde); font-size:1.35rem;
+  }
+  .resultado .clave{
+    margin-top:10px; font-size:.95rem; color:var(--tinta); background:var(--ok-fondo);
+    border-left:4px solid var(--ok); padding:8px 14px; border-radius:0 8px 8px 0;
+  }
+  .resultado .clave b{color:var(--ok);}
+
+  /* mini-reto */
+  .reto{margin-top:36px;}
+  .reto h2{font-family:'Space Grotesk',sans-serif; font-size:1.15rem; font-weight:700; margin-bottom:4px;}
+  .reto h2 small{color:var(--tinta-suave); font-size:.92rem; display:block; font-weight:400;}
+  .pregunta{margin-top:14px;}
+  .pregunta .q{font-weight:600; margin-bottom:10px;}
+  .pregunta .q .dato{color:var(--coral); font-family:'Space Grotesk',sans-serif;}
+  .resp-num{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .resp-num input{
+    width:110px; padding:9px 12px; font-family:inherit; font-size:1rem;
+    border:2px solid var(--borde); border-radius:10px; font-variant-numeric:tabular-nums;
+  }
+  .resp-num input:focus-visible{outline:3px solid var(--coral); outline-offset:1px;}
+  .opciones{display:flex; gap:10px; flex-wrap:wrap;}
+  .opciones button, .btn-comprobar{
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:.92rem;
+    padding:10px 18px; border-radius:10px; cursor:pointer;
+    background:var(--blanco); color:var(--tinta); border:2px solid var(--borde);
+    transition:transform .1s, border-color .15s;
+  }
+  .opciones button:not([disabled]):hover, .btn-comprobar:hover{transform:translateY(-2px); border-color:var(--verde);}
+  .opciones button:focus-visible, .btn-comprobar:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .opciones button[disabled]{cursor:default; opacity:.55;}
+  .opciones button.correcta{background:var(--ok-fondo); border-color:var(--ok); color:var(--ok); opacity:1;}
+  .opciones button.incorrecta{background:var(--mal-fondo); border-color:var(--mal); color:var(--mal); opacity:1;}
+  .btn-comprobar{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+  .btn-comprobar:hover{filter:brightness(1.2);}
+  .fb-reto{
+    margin-top:10px; border-radius:10px; padding:11px 15px; font-size:.93rem; display:none; border-left:5px solid;
+  }
+  .fb-reto.visible{display:block;}
+  .fb-reto.bien{background:var(--ok-fondo); border-color:var(--ok);}
+  .fb-reto.mal{background:var(--mal-fondo); border-color:var(--mal);}
+  .fb-reto b{font-family:'Space Grotesk',sans-serif;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #lienzo{height:420px;} .valor-k{font-size:1.25rem; min-width:96px;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de probabilidad</div>
+    <h1>La escalera de los percentiles</h1>
+    <p class="sub">El percentil k es el <b>menor valor que deja por debajo (o igual) al menos el k %</b>
+    de los datos. La palabra clave es "al menos": la curva de porcentaje acumulado es una escalera que
+    sube a saltos, y casi nunca pasa <i>exactamente</i> por el k % que buscas. Mueve el nivel y compruébalo.</p>
+  </header>
+
+  <div class="panel">
+    <div class="fila-controles">
+      <span class="etiq">Datos:</span>
+      <button class="chip datos activo" data-d="empates">Con empates (n = 20)</button>
+      <button class="chip datos" data-d="distintos">Sin empates (n = 20)</button>
+      <button class="chip datos" data-d="grande">Muestra grande (n = 200)</button>
+    </div>
+
+    <canvas id="lienzo" tabindex="0"
+      aria-label="Arriba, los datos de la muestra como puntos; abajo, la escalera de porcentaje acumulado con una línea de nivel arrastrable"></canvas>
+
+    <div class="fila-k">
+      <div class="valor-k" id="valorK">k = 90 %</div>
+      <input type="range" id="sliderK" min="1" max="100" step="1" value="90" aria-label="Nivel de percentil k">
+      <div class="atajos-k" id="atajosK">
+        <button data-k="25">P25</button>
+        <button data-k="50">P50</button>
+        <button data-k="75">P75</button>
+        <button data-k="90" class="activo">P90</button>
+      </div>
+    </div>
+
+    <div class="resultado" id="resultado"></div>
+  </div>
+
+  <div class="reto panel">
+    <h2>Mini-reto <small>Tres preguntas sobre la muestra que tienes arriba (cambian si cambias de dataset).</small></h2>
+
+    <div class="pregunta" id="p1">
+      <div class="q"></div>
+      <div class="resp-num">
+        <input type="number" step="1" min="0" max="100" placeholder="%" aria-label="Tu respuesta en porcentaje">
+        <button class="btn-comprobar">Comprobar</button>
+      </div>
+      <div class="fb-reto"></div>
+    </div>
+
+    <div class="pregunta" id="p2">
+      <div class="q"></div>
+      <div class="resp-num">
+        <input type="number" step="0.1" placeholder="valor" aria-label="Tu respuesta: valor del percentil">
+        <button class="btn-comprobar">Comprobar</button>
+      </div>
+      <div class="fb-reto"></div>
+    </div>
+
+    <div class="pregunta" id="p3">
+      <div class="q">El percentil 90 es el valor que deja por debajo (o igual)…</div>
+      <div class="opciones">
+        <button data-c="0">exactamente el 90 % de los datos</button>
+        <button data-c="1">al menos el 90 % de los datos</button>
+        <button data-c="2">como mucho el 90 % de los datos</button>
+      </div>
+      <div class="fb-reto"></div>
+    </div>
+  </div>
+
+  <footer>Demo interactiva de estadística descriptiva · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= datasets (notas de examen, 0–20) ================= */
+function generarGrande(){
+  /* n=200 con forma de campana, redondeadas a 0,1 */
+  const a=[];
+  let s=987654321;
+  const rnd=()=>{ s^=s<<13; s^=s>>>17; s^=s<<5; return ((s>>>0)/4294967296); };
+  for(let i=0;i<200;i++){
+    let z=0; for(let j=0;j<6;j++) z+=rnd(); z=(z-3)/1.2;   /* ~normal */
+    let v=Math.round((11+z*3)*10)/10;
+    v=Math.min(20, Math.max(0, v));
+    a.push(v);
+  }
+  return a.sort((x,y)=>x-y);
+}
+const DATASETS={
+  /* empates deliberados; ordenados. Percentil 90 (pos 0,9·20=18 → dato 18.º y 19.º = 17,3) */
+  empates:[4.5,6,6,7.5,8,8,9,9,9,10.5,11,12,12,13.5,14,15.5,16,17.3,17.3,19].sort((a,b)=>a-b),
+  distintos:[3.2,4.8,5.5,6.7,7.4,8.1,8.9,9.6,10.3,11.0,11.8,12.5,13.4,14.1,15.0,15.8,16.6,17.5,18.4,19.3],
+  grande:generarGrande()
+};
+
+let datasetKey='empates';
+let datos=DATASETS[datasetKey];
+let k=90;                 // nivel en %
+let dragK=false;
+
+/* ================= percentil "escalera": menor valor con acumulado ≥ k% ================= */
+function porcentajeAcumulado(x){    // % de datos ≤ x
+  let c=0; for(const v of datos) if(v<=x) c++;
+  return c/datos.length*100;
+}
+function percentil(kk){
+  /* menor valor de la muestra cuyo % acumulado alcanza o supera kk */
+  for(const v of datos){
+    if(porcentajeAcumulado(v)>=kk-1e-9) return v;
+  }
+  return datos[datos.length-1];
+}
+function fmt(x){ return (Math.round(x*10)/10).toLocaleString('es-ES'); }
+function fmtPct(x){ return (Math.round(x*10)/10).toLocaleString('es-ES'); }
+
+/* ================= dibujo ================= */
+const lienzo=document.getElementById('lienzo');
+const ctx=lienzo.getContext('2d');
+let escalaX=null, yEscBase=0, yEscTop=0;
+
+function preparaCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const r=lienzo.getBoundingClientRect();
+  lienzo.width=r.width*dpr; lienzo.height=r.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function dibujar(){
+  const {W,H}=preparaCanvas();
+  const mL=44, mR=24;
+  const xmin=0, xmax=20;
+  const px=v=>mL+(v-xmin)/(xmax-xmin)*(W-mL-mR);
+  escalaX=px;
+
+  const yPuntosBase=150;             // zona de puntos (arriba)
+  yEscTop=210; yEscBase=H-34;        // zona de escalera (abajo)
+  const py=p=>yEscBase-(p/100)*(yEscBase-yEscTop);
+
+  ctx.clearRect(0,0,W,H);
+
+  const P=percentil(k);
+  const pctDebajo=porcentajeAcumulado(P);
+
+  /* ---- rejilla eje X (común) ---- */
+  ctx.font='12px "IBM Plex Sans", sans-serif'; ctx.textAlign='center';
+  for(let v=0;v<=20;v+=2){
+    const X=px(v);
+    ctx.strokeStyle='#E7EDF3'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(X,20); ctx.lineTo(X,yEscBase); ctx.stroke();
+    ctx.fillStyle='#5B6B80'; ctx.fillText(v, X, yEscBase+20);
+  }
+
+  /* ---- línea vertical del percentil (atraviesa las dos zonas) ---- */
+  const Xp=px(P);
+  ctx.strokeStyle='var(--coral)'; ctx.strokeStyle='#E4572E'; ctx.lineWidth=2.2; ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(Xp,30); ctx.lineTo(Xp,yEscBase); ctx.stroke();
+  ctx.setLineDash([]);
+
+  /* ================= zona de puntos ================= */
+  /* apilamiento por valor */
+  const torres=new Map();
+  datos.forEach(v=>{ torres.set(v,(torres.get(v)||0)+1); });
+  const grande=datos.length>50;
+  const r=grande?3.2:8;
+  const sep=grande?7:19;
+  ctx.textAlign='left';
+  ctx.fillStyle='#5B6B80'; ctx.font='11px "IBM Plex Sans", sans-serif';
+  ctx.fillText('Cada punto es un estudiante (nota del examen). Verde: nota ≤ percentil.', mL, 28);
+
+  for(const [v,cnt] of torres){
+    const dentro=v<=P+1e-9;
+    for(let n=0;n<cnt;n++){
+      const X=px(v), Y=yPuntosBase-n*sep;
+      ctx.beginPath(); ctx.arc(X,Y,r,0,Math.PI*2);
+      ctx.fillStyle=dentro?'#0F766E':'#E4572E';
+      ctx.globalAlpha=grande?0.75:1;
+      ctx.fill(); ctx.globalAlpha=1;
+      if(!grande){ ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=2; ctx.stroke(); }
+    }
+  }
+
+  /* ================= zona escalera ================= */
+  /* eje Y de porcentaje */
+  ctx.strokeStyle='#B9C7D6'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(mL,yEscTop-4); ctx.lineTo(mL,yEscBase); ctx.lineTo(W-mR,yEscBase); ctx.stroke();
+  ctx.fillStyle='#5B6B80'; ctx.font='11px "IBM Plex Sans", sans-serif'; ctx.textAlign='right';
+  for(let p=0;p<=100;p+=25){
+    const Y=py(p);
+    ctx.strokeStyle='#E7EDF3'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(mL,Y); ctx.lineTo(W-mR,Y); ctx.stroke();
+    ctx.fillStyle='#5B6B80'; ctx.fillText(p+'%', mL-8, Y+4);
+  }
+  ctx.textAlign='left';
+  ctx.fillStyle='#5B6B80';
+  ctx.fillText('% de datos ≤ x  (escalera acumulada)', mL+6, yEscTop-10);
+
+  /* la escalera */
+  const vals=[...torres.keys()].sort((a,b)=>a-b);
+  ctx.strokeStyle='#1B2A41'; ctx.lineWidth=2.4;
+  ctx.beginPath();
+  ctx.moveTo(mL, py(0));
+  let acum=0;
+  let prevX=mL;
+  for(const v of vals){
+    const X=px(v);
+    ctx.lineTo(X, py(acum));       // tramo horizontal hasta el dato
+    acum += torres.get(v)/datos.length*100;
+    ctx.lineTo(X, py(acum));       // salto vertical del escalón
+    prevX=X;
+  }
+  ctx.lineTo(W-mR, py(acum));
+  ctx.stroke();
+  /* puntos de los escalones */
+  acum=0;
+  for(const v of vals){
+    acum += torres.get(v)/datos.length*100;
+    if(!grande){
+      ctx.beginPath(); ctx.arc(px(v), py(acum), 3.5, 0, Math.PI*2);
+      ctx.fillStyle='#1B2A41'; ctx.fill();
+    }
+  }
+
+  /* línea horizontal del nivel k (arrastrable) */
+  const Yk=py(k);
+  ctx.strokeStyle='#E4572E'; ctx.lineWidth=2.4;
+  ctx.beginPath(); ctx.moveTo(mL,Yk); ctx.lineTo(W-mR,Yk); ctx.stroke();
+  /* asa */
+  ctx.beginPath(); ctx.arc(W-mR-2, Yk, 8, 0, Math.PI*2);
+  ctx.fillStyle=dragK?'#C43F1F':'#E4572E'; ctx.fill();
+  ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle='#E4572E'; ctx.font='700 12px "Space Grotesk", sans-serif'; ctx.textAlign='left';
+  ctx.fillText('k = '+k+'%', mL+4, Yk-6);
+
+  /* marca del % que realmente deja debajo */
+  const Yd=py(pctDebajo);
+  ctx.fillStyle='#0F766E';
+  ctx.beginPath(); ctx.arc(Xp, Yd, 5, 0, Math.PI*2); ctx.fill();
+  ctx.textAlign='center';
+  ctx.fillText(fmtPct(pctDebajo)+'%', Xp, Yd-9);
+
+  /* etiqueta del percentil en el eje X */
+  ctx.fillStyle='#E4572E'; ctx.font='700 12px "Space Grotesk", sans-serif'; ctx.textAlign='center';
+  ctx.fillText('P'+k+' = '+fmt(P), Xp, yEscBase+20);
+
+  actualizarResultado(P, pctDebajo);
+}
+
+/* ================= resultado textual ================= */
+function actualizarResultado(P, pctDebajo){
+  const cont=document.getElementById('resultado');
+  const holgura=pctDebajo-k;
+  let clave;
+  if(Math.abs(holgura)<1e-6){
+    clave='En este caso concreto la escalera cae <b>justo</b> en el '+k+' %: aquí sí coincide exactamente. '+
+      'Pero es la excepción, no la regla — mueve un poco el nivel y verás que enseguida deja de cuadrar.';
+  } else {
+    clave='Fíjate: <b>no</b> deja exactamente el '+k+' %, sino el '+fmtPct(pctDebajo)+' %. '+
+      'La escalera salta por encima del '+k+' % de golpe (los datos van de uno en uno), así que el percentil '+
+      'es el primer valor que <b>alcanza o supera</b> ese nivel. Por eso se dice "al menos el '+k+' %".';
+  }
+  cont.innerHTML=
+    '<div class="linea1">El percentil '+k+' de esta muestra es <span class="pctl">P'+k+' = '+fmt(P)+'</span>.</div>'+
+    '<div class="linea2">Porcentaje de datos que realmente quedan por debajo o igual a '+fmt(P)+': '+
+      '<span class="dejadebajo">'+fmtPct(pctDebajo)+' %</span></div>'+
+    '<div class="clave">'+clave+'</div>';
+}
+
+/* ================= controles de k ================= */
+const slider=document.getElementById('sliderK');
+function fijarK(nuevo){
+  k=Math.min(100, Math.max(1, Math.round(nuevo)));
+  slider.value=k;
+  document.getElementById('valorK').textContent='k = '+k+' %';
+  document.querySelectorAll('#atajosK button').forEach(b=>
+    b.classList.toggle('activo', +b.dataset.k===k));
+  dibujar();
+}
+slider.addEventListener('input',()=>fijarK(+slider.value));
+document.querySelectorAll('#atajosK button').forEach(b=>
+  b.addEventListener('click',()=>fijarK(+b.dataset.k)));
+
+/* arrastre de la línea horizontal sobre el canvas */
+function coords(e){ const r=lienzo.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+lienzo.addEventListener('pointerdown',e=>{
+  const {y}=coords(e);
+  const Yk=yEscBase-(k/100)*(yEscBase-yEscTop);
+  if(Math.abs(y-Yk)<18 && y>yEscTop-10){
+    dragK=true; lienzo.setPointerCapture(e.pointerId); dibujar();
+  }
+  e.preventDefault();
+});
+lienzo.addEventListener('pointermove',e=>{
+  const {y}=coords(e);
+  if(dragK){
+    const p=(yEscBase-y)/(yEscBase-yEscTop)*100;
+    fijarK(p);
+  } else {
+    const Yk=yEscBase-(k/100)*(yEscBase-yEscTop);
+    lienzo.style.cursor=(Math.abs(y-Yk)<18 && y>yEscTop-10)?'grab':'default';
+  }
+});
+function soltar(e){ if(dragK){ dragK=false; try{lienzo.releasePointerCapture(e.pointerId);}catch(_){} dibujar(); } }
+lienzo.addEventListener('pointerup',soltar);
+lienzo.addEventListener('pointercancel',soltar);
+
+/* ================= datasets ================= */
+document.querySelectorAll('.chip.datos').forEach(b=>
+  b.addEventListener('click',()=>{
+    datasetKey=b.dataset.d; datos=DATASETS[datasetKey];
+    document.querySelectorAll('.chip.datos').forEach(x=>x.classList.remove('activo'));
+    b.classList.add('activo');
+    dibujar();
+    montarReto();
+  }));
+
+/* ================= mini-reto ================= */
+function montarReto(){
+  /* P1: ¿qué % queda ≤ P75 en esta muestra? */
+  const P75=percentil(75), pct75=porcentajeAcumulado(P75);
+  const p1=document.getElementById('p1');
+  p1.querySelector('.q').innerHTML='1. El percentil 75 de esta muestra es <span class="dato">'+fmt(P75)+
+    '</span>. ¿Qué porcentaje de los datos es <b>≤ '+fmt(P75)+'</b>? (escribe el número, sin el %)';
+  p1.dataset.sol=Math.round(pct75*10)/10;
+  p1.dataset.hecho='';
+
+  /* P2: valor del percentil 50 */
+  const P50=percentil(50);
+  const p2=document.getElementById('p2');
+  p2.querySelector('.q').innerHTML='2. ¿Cuál es el percentil 50 (la mediana según la escalera) de esta muestra? '+
+    'Pista: es el menor valor que acumula al menos el 50 %.';
+  p2.dataset.sol=P50;
+  p2.dataset.hecho='';
+
+  /* limpia feedback y botones */
+  [p1,p2].forEach(p=>{
+    p.querySelector('input').value='';
+    p.querySelector('input').disabled=false;
+    const fb=p.querySelector('.fb-reto'); fb.className='fb-reto';
+  });
+  const p3=document.getElementById('p3');
+  p3.querySelectorAll('button').forEach(b=>{ b.disabled=false; b.classList.remove('correcta','incorrecta'); });
+  p3.querySelector('.fb-reto').className='fb-reto';
+}
+
+function fbNum(p, correcto, msgBien, msgMal){
+  const fb=p.querySelector('.fb-reto');
+  const val=parseFloat(p.querySelector('input').value.replace(',','.'));
+  if(isNaN(val)){ return; }
+  const bien=Math.abs(val-correcto)<0.15;
+  fb.innerHTML=bien?msgBien:msgMal;
+  fb.className='fb-reto visible '+(bien?'bien':'mal');
+}
+
+document.querySelectorAll('#p1 .btn-comprobar').forEach(b=>b.addEventListener('click',()=>{
+  const p=document.getElementById('p1'), sol=+p.dataset.sol;
+  fbNum(p, sol,
+    '✓ Correcto: '+fmtPct(sol)+' %. La escalera se detiene en ese escalón, que llega hasta el '+fmtPct(sol)+' % — normalmente por encima del 75 % exacto.',
+    '✗ No exactamente. Cuenta cuántos datos son ≤ '+fmt(percentil(75))+' y divide entre '+datos.length+': salen '+fmtPct(sol)+' %.');
+}));
+document.querySelectorAll('#p2 .btn-comprobar').forEach(b=>b.addEventListener('click',()=>{
+  const p=document.getElementById('p2'), sol=+p.dataset.sol;
+  fbNum(p, sol,
+    '✓ Correcto: el percentil 50 es '+fmt(sol)+'.',
+    '✗ Casi. El menor valor que acumula al menos el 50 % de esta muestra es '+fmt(sol)+'.');
+}));
+document.querySelectorAll('#p3 button').forEach(b=>b.addEventListener('click',()=>{
+  const p=document.getElementById('p3'), fb=p.querySelector('.fb-reto');
+  const bien=b.dataset.c==='1';
+  p.querySelectorAll('button').forEach(x=>{
+    x.disabled=true;
+    if(x.dataset.c==='1') x.classList.add('correcta');
+    else if(x===b) x.classList.add('incorrecta');
+  });
+  fb.innerHTML=bien
+    ? '✓ Exacto: <b>al menos</b> el 90 %. Como la escalera sube a saltos, casi nunca deja el 90 % clavado: deja ese porcentaje o el primero que lo supere.'
+    : '✗ La correcta es "al menos el 90 %". "Exactamente" falla porque la escalera salta y rara vez cae justo en el 90 %; "como mucho" es lo contrario de lo que ocurre.';
+  fb.className='fb-reto visible '+(bien?'bien':'mal');
+}));
+
+/* Enter comprueba en los campos numéricos */
+document.querySelectorAll('.resp-num input').forEach(inp=>
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') inp.closest('.pregunta').querySelector('.btn-comprobar').click(); }));
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>dibujar());
+fijarK(90);
+montarReto();
+</script>
+</body>
+</html>
