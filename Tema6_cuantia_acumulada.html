@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>De la cuantía a la acumulada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --azul:#2274C4;
+    --coral:#E4572E;
+    --naranja:#F07818;
+    --ambar:#D98E04;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:680px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  #lienzo{width:100%; height:560px; display:block; touch-action:none; cursor:default; border-radius:8px; outline:none;}
+  #lienzo:focus-visible{outline:3px solid var(--naranja); outline-offset:2px;}
+
+  .ayuda{font-size:.85rem; color:var(--tinta-suave); margin-top:8px; text-align:center;}
+  .ayuda b{color:var(--naranja);}
+
+  .lecturas{display:grid; grid-template-columns:repeat(auto-fit, minmax(170px,1fr)); gap:10px; margin-top:14px;}
+  .lectura{background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:10px 14px;}
+  .lectura .nom{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--tinta-suave); font-weight:600;}
+  .lectura .val{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.5rem; font-variant-numeric:tabular-nums;}
+  .lectura.acum .val{color:var(--verde);}
+  .lectura.salto .val{color:var(--coral);}
+
+  .suma{
+    margin-top:12px; background:#F7FAFC; border:1px solid var(--borde);
+    border-radius:10px; padding:11px 16px; font-size:.95rem;
+    font-variant-numeric:tabular-nums; overflow-wrap:break-word;
+  }
+  .suma b{font-family:'Space Grotesk',sans-serif;}
+  .suma .v{color:var(--verde); font-weight:700;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #lienzo{height:460px;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>De la cuantía a la acumulada</h1>
+    <p class="sub">X = número de pedidos que recibe una tienda online en una hora. Arriba, su
+    <b>función de cuantía</b> P(X = x). Arrastra el <b style="color:var(--naranja)">cursor naranja</b>
+    de izquierda a derecha: abajo se irá construyendo la <b>función de distribución acumulada</b>
+    F(x) = P(X ≤ x). Cada vez que el cursor cruza una barra, F pega un salto <b>exactamente del
+    tamaño de esa barra</b>.</p>
+  </header>
+
+  <div class="panel">
+    <canvas id="lienzo" tabindex="0" aria-label="Función de cuantía arriba y función acumulada abajo, con cursor arrastrable"></canvas>
+    <div class="ayuda">Arrastra el <b>cursor</b> (o usa las flechas ← → con el gráfico seleccionado) · entre barra y barra F no se mueve: es una escalera</div>
+
+    <div class="lecturas">
+      <div class="lectura"><div class="nom">Posición del cursor</div><div class="val" id="lPos">—</div></div>
+      <div class="lectura salto"><div class="nom">Último salto sumado</div><div class="val" id="lSalto">—</div></div>
+      <div class="lectura acum"><div class="nom">F(x) = P(X ≤ x)</div><div class="val" id="lAcum">—</div></div>
+    </div>
+
+    <div class="suma" id="suma"></div>
+  </div>
+
+  <details class="nota">
+    <summary>La escalera de F(x): saltos, mesetas y puntos huecos</summary>
+    <div class="nota-cuerpo">
+      <p><b>F(x) = P(X ≤ x)</b> acumula la probabilidad de todos los valores menores o iguales que x.
+      Para una variable discreta es una <b>escalera</b>: en cada valor posible pega un <b>salto igual a su
+      cuantía</b> (compara la longitud de cada barra de arriba con la altura de su escalón: son idénticas),
+      y entre valores es <b>plana</b> — si entre 3 y 4 pedidos no hay valores posibles, nada nuevo se acumula.</p>
+      <p>El punto <b>relleno</b> a la izquierda de cada escalón y el <b>hueco</b> justo debajo señalan el
+      convenio: en x = 3, el valor 3 <i>ya cuenta</i> (F(3) incluye P(X = 3)); justo antes de llegar, aún no.
+      Por eso F es continua por la derecha.</p>
+      <p>Propiedades que puedes verificar arrastrando: F empieza en 0, <b>nunca baja</b> (solo sube o se
+      mantiene) y termina en <b>1</b> cuando el cursor deja atrás todos los valores. Y la cuantía se recupera
+      de la acumulada restando escalones consecutivos: P(X = x) = F(x) − F(x − 1).</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de variables aleatorias · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= la variable: 10 valores ================= */
+const P=[0.05,0.10,0.15,0.20,0.15,0.10,0.08,0.07,0.06,0.04];   /* suma 1 */
+const N=P.length;
+const ACUM=[];
+P.reduce((s,p,i)=>{ ACUM[i]=Math.round((s+p)*1000)/1000; return ACUM[i]; }, 0);
+
+/* ================= estado ================= */
+let cursor=-0.5;        /* posición continua en [-0.5, 9.5] */
+let arrastrando=false;
+
+function fmt(x, dec){
+  return x.toLocaleString('es-ES',{minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+function Fde(x){
+  const k=Math.floor(x);
+  if(k<0) return 0;
+  return ACUM[Math.min(k, N-1)];
+}
+
+/* ================= dibujo ================= */
+const lienzo=document.getElementById('lienzo');
+const ctx=lienzo.getContext('2d');
+let geom={};
+
+function preparaCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const r=lienzo.getBoundingClientRect();
+  lienzo.width=r.width*dpr; lienzo.height=r.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function dibujar(){
+  const {W,H}=preparaCanvas();
+  const mL=56, mR=20;
+  const px=x=>mL+(x+0.7)/(N-1+1.4)*(W-mL-mR);
+
+  /* dos zonas: cuantía arriba, acumulada abajo */
+  const hSup={top:26, bot:H*0.42};
+  const hInf={top:H*0.42+52, bot:H-40};
+  const pMax=Math.max(...P)*1.25;
+  const pyS=p=>hSup.bot-(p/pMax)*(hSup.bot-hSup.top);
+  const pyI=f=>hInf.bot-f/1.06*(hInf.bot-hInf.top);
+  geom={px, W, mL, mR};
+
+  ctx.clearRect(0,0,W,H);
+  const kCursor=Math.floor(cursor);   /* último valor ya acumulado */
+
+  /* ---------- panel superior: función de cuantía ---------- */
+  ctx.font='700 13px "Space Grotesk", sans-serif'; ctx.fillStyle='#1B2A41'; ctx.textAlign='left';
+  ctx.fillText('P(X = x) — función de cuantía', mL, hSup.top-8);
+  /* eje */
+  ctx.strokeStyle='#B9C7D6'; ctx.lineWidth=1.8;
+  ctx.beginPath(); ctx.moveTo(mL, hSup.top-4); ctx.lineTo(mL, hSup.bot); ctx.lineTo(W-mR, hSup.bot); ctx.stroke();
+  ctx.font='11px "IBM Plex Sans", sans-serif'; ctx.fillStyle='#5B6B80'; ctx.textAlign='right';
+  for(const v of [0.1,0.2]){
+    ctx.strokeStyle='#EDF1F6'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(mL, pyS(v)); ctx.lineTo(W-mR, pyS(v)); ctx.stroke();
+    ctx.fillText(fmt(v,1), mL-6, pyS(v)+4);
+  }
+  /* barras finas tipo piruleta, como la diapositiva */
+  for(let k=0;k<N;k++){
+    const X=px(k);
+    const cruzada=k<=kCursor;
+    const actual=k===kCursor;
+    const color = actual ? '#E4572E' : (cruzada ? '#0F766E' : '#9FB2C6');
+    ctx.strokeStyle=color; ctx.lineWidth=3.5; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(X, hSup.bot); ctx.lineTo(X, pyS(P[k])); ctx.stroke();
+    ctx.beginPath(); ctx.arc(X, pyS(P[k]), 6.5, 0, Math.PI*2);
+    ctx.fillStyle=color; ctx.fill();
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=1.8; ctx.stroke();
+    /* etiqueta de probabilidad */
+    ctx.fillStyle=cruzada?color:'#8FA3B8';
+    ctx.font=(actual?'700 ':'')+'11px "IBM Plex Sans", sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(fmt(P[k],2), X, pyS(P[k])-13);
+    /* etiqueta del eje x */
+    ctx.fillStyle='#5B6B80'; ctx.font='11px "IBM Plex Sans", sans-serif';
+    ctx.fillText('x='+k, X, hSup.bot+16);
+  }
+
+  /* ---------- panel inferior: acumulada ---------- */
+  ctx.font='700 13px "Space Grotesk", sans-serif'; ctx.fillStyle='#1B2A41'; ctx.textAlign='left';
+  ctx.fillText('F(x) = P(X ≤ x) — función de distribución acumulada', mL, hInf.top-10);
+  ctx.strokeStyle='#B9C7D6'; ctx.lineWidth=1.8;
+  ctx.beginPath(); ctx.moveTo(mL, hInf.top-4); ctx.lineTo(mL, hInf.bot); ctx.lineTo(W-mR, hInf.bot); ctx.stroke();
+  ctx.font='11px "IBM Plex Sans", sans-serif'; ctx.fillStyle='#5B6B80'; ctx.textAlign='right';
+  for(const v of [0.25,0.5,0.75,1]){
+    ctx.strokeStyle = v===1 ? '#E4C9A8' : '#EDF1F6'; ctx.lineWidth=1;
+    if(v===1) ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(mL, pyI(v)); ctx.lineTo(W-mR, pyI(v)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillText(fmt(v,2), mL-6, pyI(v)+4);
+  }
+  ctx.textAlign='center';
+  for(let k=0;k<N;k++){
+    ctx.fillStyle='#5B6B80';
+    ctx.fillText('x='+k, px(k), hInf.bot+16);
+  }
+
+  /* la escalera, revelada solo hasta el cursor */
+  const xFin=cursor;
+  ctx.lineWidth=3.2; ctx.lineCap='round';
+  /* tramo inicial a nivel 0 */
+  ctx.strokeStyle='#1B2A41';
+  ctx.beginPath();
+  ctx.moveTo(px(-0.7), pyI(0));
+  ctx.lineTo(px(Math.min(xFin, 0)), pyI(0));
+  ctx.stroke();
+  for(let k=0;k<N;k++){
+    if(xFin<k) break;
+    const Fk=ACUM[k], Fprev=k===0?0:ACUM[k-1];
+    const actual=k===kCursor;
+    /* salto vertical en x=k (el del cursor, en coral y más grueso) */
+    ctx.strokeStyle=actual?'#E4572E':'#1B2A41';
+    ctx.lineWidth=actual?4:3.2;
+    ctx.beginPath(); ctx.moveTo(px(k), pyI(Fprev)); ctx.lineTo(px(k), pyI(Fk)); ctx.stroke();
+    /* meseta hasta el siguiente valor o hasta el cursor */
+    const hasta=Math.min(xFin, k+1);
+    ctx.strokeStyle='#1B2A41'; ctx.lineWidth=3.2;
+    ctx.beginPath(); ctx.moveTo(px(k), pyI(Fk)); ctx.lineTo(px(hasta), pyI(Fk)); ctx.stroke();
+    /* convenio: punto relleno al inicio del escalón, hueco donde no llega */
+    ctx.beginPath(); ctx.arc(px(k), pyI(Fk), 5, 0, Math.PI*2);
+    ctx.fillStyle=actual?'#E4572E':'#1B2A41'; ctx.fill();
+    ctx.beginPath(); ctx.arc(px(k), pyI(Fprev), 5, 0, Math.PI*2);
+    ctx.fillStyle='#FFFFFF'; ctx.fill();
+    ctx.strokeStyle=actual?'#E4572E':'#1B2A41'; ctx.lineWidth=2; ctx.stroke();
+  }
+  /* nivel actual marcado con guía horizontal punteada hasta el eje */
+  const Fcur=Fde(cursor);
+  ctx.strokeStyle='#0F766E'; ctx.lineWidth=1.4; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(mL, pyI(Fcur)); ctx.lineTo(px(Math.max(cursor,-0.5)), pyI(Fcur)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#0F766E'; ctx.font='700 12px "Space Grotesk", sans-serif'; ctx.textAlign='left';
+  ctx.fillText(fmt(Fcur,2), mL+4, pyI(Fcur)-7);
+
+  /* ---------- cursor vertical que atraviesa ambos paneles ---------- */
+  const Xc=px(cursor);
+  ctx.strokeStyle='#F07818'; ctx.lineWidth=3; ctx.setLineDash([8,6]);
+  ctx.beginPath(); ctx.moveTo(Xc, hSup.top-4); ctx.lineTo(Xc, hInf.bot); ctx.stroke();
+  ctx.setLineDash([]);
+  /* asa */
+  ctx.beginPath(); ctx.arc(Xc, hSup.top+8, 9, 0, Math.PI*2);
+  ctx.fillStyle=arrastrando?'#D2650E':'#F07818'; ctx.fill();
+  ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=2.4; ctx.stroke();
+
+  actualizarPaneles();
+}
+
+/* ================= lecturas ================= */
+function actualizarPaneles(){
+  const k=Math.floor(cursor);
+  document.getElementById('lPos').textContent='x = '+fmt(cursor,1);
+  document.getElementById('lSalto').textContent = k>=0 ? '+ '+fmt(P[Math.min(k,N-1)],2)+'  (en x='+Math.min(k,N-1)+')' : 'aún ninguno';
+  document.getElementById('lAcum').textContent=fmt(Fde(cursor),2);
+
+  const s=document.getElementById('suma');
+  if(k<0){
+    s.innerHTML='<b>F('+fmt(cursor,1)+') = 0</b> — el cursor aún no ha cruzado ningún valor: no hay nada que acumular.';
+  } else {
+    const kk=Math.min(k,N-1);
+    const terminos=[], valores=[];
+    for(let i=0;i<=kk;i++){ terminos.push('p('+i+')'); valores.push(fmt(P[i],2)); }
+    s.innerHTML='<b>F('+fmt(cursor,1)+')</b> = '+terminos.join(' + ')+' = '+valores.join(' + ')+
+      ' = <span class="v">'+fmt(Fde(cursor),2)+'</span>'+
+      (kk===N-1?' — todos los valores acumulados: F llega a <span class="v">1</span> y ya no puede subir más.':'');
+  }
+}
+
+/* ================= interacción ================= */
+function coords(e){ const r=lienzo.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+function xDesdePixel(X){
+  const u=(X-geom.mL)/(geom.W-geom.mL-geom.mR)*(N-1+1.4)-0.7;
+  return Math.min(N-0.5, Math.max(-0.5, u));
+}
+lienzo.addEventListener('pointerdown',e=>{
+  arrastrando=true;
+  cursor=xDesdePixel(coords(e).x);
+  lienzo.setPointerCapture(e.pointerId);
+  lienzo.style.cursor='grabbing';
+  dibujar();
+  e.preventDefault();
+});
+lienzo.addEventListener('pointermove',e=>{
+  if(!arrastrando){
+    lienzo.style.cursor=Math.abs(coords(e).x-geom.px(cursor))<24?'grab':'pointer';
+    return;
+  }
+  cursor=xDesdePixel(coords(e).x);
+  dibujar();
+});
+function soltar(e){
+  if(arrastrando){ arrastrando=false; try{lienzo.releasePointerCapture(e.pointerId);}catch(_){} lienzo.style.cursor='default'; dibujar(); }
+}
+lienzo.addEventListener('pointerup',soltar);
+lienzo.addEventListener('pointercancel',soltar);
+lienzo.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){ cursor=Math.min(N-0.5, cursor+0.25); dibujar(); e.preventDefault(); }
+  if(e.key==='ArrowLeft'){ cursor=Math.max(-0.5, cursor-0.25); dibujar(); e.preventDefault(); }
+});
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>dibujar());
+dibujar();
+</script>
+</body>
+</html>
