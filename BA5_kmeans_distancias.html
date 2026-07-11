@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K-means: la métrica importa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --coral:#E4572E;
+    --azul:#2274C4;
+    --ambar:#D98E04;
+    --naranja:#F07818;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:680px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  /* selector de métrica */
+  .fila-metrica{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px;}
+  .fila-metrica .etiq{font-size:.9rem; color:var(--tinta-suave); font-weight:600;}
+  .segmentado{display:flex; border:2px solid var(--tinta); border-radius:999px; overflow:hidden;}
+  .segmentado button{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.95rem;
+    border:none; background:var(--blanco); color:var(--tinta);
+    padding:9px 22px; cursor:pointer; transition:background .15s, color .15s;
+  }
+  .segmentado button:focus-visible{outline:3px solid var(--naranja); outline-offset:-3px;}
+  .segmentado button.activo{background:var(--tinta); color:var(--blanco);}
+
+  #lienzo{width:100%; height:440px; display:block; border-radius:8px;}
+
+  .leyenda{
+    display:flex; gap:18px; flex-wrap:wrap; justify-content:center;
+    margin-top:8px; font-size:.85rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:7px;}
+  .pto{width:12px; height:12px; border-radius:50%; display:inline-block;}
+  .cruz{font-weight:900; font-size:1.05rem; line-height:1;}
+  .aro{width:13px; height:13px; border-radius:50%; border:2.5px dashed var(--naranja); display:inline-block;}
+
+  .fila-acciones{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:16px;}
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.95rem;
+    border:none; border-radius:999px; padding:11px 22px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:active:not([disabled]){transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .btn[disabled]{opacity:.5; cursor:default;}
+  .btn.coral{background:var(--coral); color:var(--blanco);}
+  .btn.coral:hover:not([disabled]){filter:brightness(1.07);}
+  .btn.tinta{background:var(--tinta); color:var(--blanco);}
+  .btn.tinta:hover:not([disabled]){filter:brightness(1.25);}
+  .btn.sec{background:var(--blanco); color:var(--tinta); border:1.5px solid var(--borde); font-weight:500;}
+  .btn.sec:hover{border-color:var(--verde);}
+  .check{display:inline-flex; align-items:center; gap:8px; font-size:.9rem; cursor:pointer; margin-left:auto;}
+  .check input{width:17px; height:17px; accent-color:var(--naranja); cursor:pointer;}
+
+  .lecturas{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:10px; margin-top:14px;}
+  .lectura{background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:9px 14px;}
+  .lectura .nom{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--tinta-suave); font-weight:600;}
+  .lectura .val{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.25rem; font-variant-numeric:tabular-nums;}
+  .lectura.dif .val{color:var(--naranja);}
+
+  .estado{
+    margin-top:12px; font-size:.92rem; min-height:24px;
+    font-family:'Space Grotesk',sans-serif; font-weight:600;
+  }
+  .estado.convergido{color:var(--ok);}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #lienzo{height:360px;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>K-means: la métrica importa</h1>
+    <p class="sub">Segmentamos 48 clientes según cómo valoran el <b>precio</b> y el <b>servicio</b> (de 0 a 10).
+    Ejecuta K-means paso a paso con <b>k = 3</b>… y luego cambia la distancia de
+    <b>euclídea</b> a <b>Manhattan</b>: los grupos <b>no salen iguales</b>. Las líneas discontinuas
+    alrededor de cada centro te enseñan por qué: son los puntos que están "a la misma distancia" del
+    centro — un círculo con la euclídea, un rombo con Manhattan.</p>
+  </header>
+
+  <div class="panel">
+    <div class="fila-metrica">
+      <span class="etiq">Distancia:</span>
+      <div class="segmentado" role="group" aria-label="Métrica de distancia">
+        <button id="btnL2" class="activo">Euclídea</button>
+        <button id="btnL1">Manhattan</button>
+      </div>
+      <span class="etiq" id="formulaMetrica">d = √(Δx² + Δy²)</span>
+    </div>
+
+    <canvas id="lienzo" aria-label="Mapa de clientes con los tres grupos de K-means y sus centros"></canvas>
+    <div class="leyenda">
+      <span><span class="pto" style="background:#0F766E"></span><span class="pto" style="background:#E4572E"></span><span class="pto" style="background:#2274C4"></span> Los 3 grupos</span>
+      <span><span class="cruz">✕</span> Centros</span>
+      <span><span style="border-bottom:2.5px dashed #5B6B80; width:22px; display:inline-block;"></span> "Misma distancia" al centro</span>
+      <span><span class="aro"></span> Cambiaría con la otra métrica</span>
+    </div>
+
+    <div class="fila-acciones">
+      <button class="btn coral" id="btnPaso">▶ 1 iteración</button>
+      <button class="btn tinta" id="btnTodo">⏩ Hasta converger</button>
+      <button class="btn sec" id="btnReiniciar">↺ Reiniciar</button>
+      <label class="check"><input type="checkbox" id="chkDif" checked> Marcar diferencias con la otra métrica</label>
+    </div>
+
+    <div class="estado" id="estado"></div>
+
+    <div class="lecturas">
+      <div class="lectura"><div class="nom">Iteraciones</div><div class="val" id="lIter">0</div></div>
+      <div class="lectura"><div class="nom">Coste (Σ distancias al centro)</div><div class="val" id="lCoste">—</div></div>
+      <div class="lectura dif"><div class="nom">Clientes que cambian de grupo entre métricas</div><div class="val" id="lDif">—</div></div>
+    </div>
+  </div>
+
+  <details class="nota">
+    <summary>Cómo funciona K-means (y por qué la métrica cambia los grupos)</summary>
+    <div class="nota-cuerpo">
+      <p><b>El algoritmo alterna dos pasos:</b> (1) <i>asignación</i> — cada punto se une al centro más
+      cercano; (2) <i>actualización</i> — cada centro se recoloca en el "medio" de sus puntos. Se repite
+      hasta que nadie cambia de grupo. El resultado depende de qué signifique <b>"cercano"</b>.</p>
+      <p><b>Euclídea vs Manhattan:</b> la euclídea mide en línea recta (√(Δx²+Δy²)); la Manhattan suma los
+      tramos horizontal y vertical (|Δx|+|Δy|), como quien camina por una cuadrícula de calles. Para la
+      euclídea, moverse en diagonal "sale barato" (Δx=1 y Δy=1 dan distancia 1,41); para Manhattan cuesta
+      la suma completa (distancia 2). Por eso los puntos situados <b>en diagonal</b> entre dos centros son
+      justo los que cambian de grupo al cambiar la métrica — fíjate en los aros naranjas.</p>
+      <p><b>Detalle del paso de actualización:</b> con la euclídea, el punto que minimiza la suma de
+      distancias es la <b>media</b> (el K-means clásico). Con Manhattan, es la <b>mediana</b> de cada
+      coordenada — la variante se llama K-medianas, y de regalo es más robusta frente a valores atípicos.
+      Esta demo usa la actualización correcta en cada caso.</p>
+      <p><b>Moraleja:</b> la métrica es una decisión de modelización, no un detalle técnico: con los mismos
+      datos y el mismo k, distinta métrica ⇒ distinta segmentación de clientes.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de segmentación · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= datos (valoraciones 0–10, diseñados con puentes en diagonal) ================= */
+const PUNTOS=[
+  /* nube A (abajo-izquierda) */
+  {x:1.6,y:2.2},{x:2.4,y:1.5},{x:2.9,y:2.8},{x:1.2,y:3.4},{x:2.1,y:3.9},
+  {x:3.3,y:1.9},{x:1.8,y:1.0},{x:3.0,y:3.6},{x:2.6,y:2.4},{x:1.0,y:2.0},
+  {x:3.6,y:2.9},{x:2.2,y:3.0},
+  /* nube B (arriba) */
+  {x:4.6,y:8.2},{x:5.4,y:8.9},{x:5.9,y:7.8},{x:4.9,y:7.3},{x:5.5,y:8.0},
+  {x:6.3,y:8.6},{x:4.3,y:8.8},{x:5.0,y:9.4},{x:6.0,y:9.1},{x:5.7,y:7.2},
+  {x:4.5,y:7.8},{x:6.5,y:7.9},
+  /* nube C (derecha) */
+  {x:8.4,y:3.4},{x:9.0,y:2.6},{x:8.0,y:2.2},{x:8.8,y:4.1},{x:9.4,y:3.2},
+  {x:8.2,y:3.0},{x:9.1,y:4.4},{x:8.6,y:1.8},{x:9.6,y:2.4},{x:8.0,y:4.0},
+  {x:9.3,y:1.6},{x:8.9,y:3.7},
+  /* puentes en diagonal (los que cambian con la métrica) */
+  {x:2.3,y:6.6},{x:3.0,y:6.0},{x:1.5,y:6.7},{x:5.2,y:4.5},
+  {x:4.5,y:5.1},{x:3.6,y:5.4},{x:0.6,y:7.3},{x:8.9,y:7.1},
+  {x:1.4,y:7.5},{x:0.7,y:8.1},{x:5.4,y:0.6},{x:5.4,y:1.5}
+];
+const K=3;
+const CENTROS_INI=[{x:3.0,y:4.8},{x:5.2,y:6.2},{x:7.2,y:4.6}];
+const COLORES=['#0F766E','#E4572E','#2274C4'];
+
+/* ================= métricas y algoritmo ================= */
+let metrica='L2';   // 'L2' euclídea | 'L1' Manhattan
+function dist(a,b,m){
+  const dx=a.x-b.x, dy=a.y-b.y;
+  return m==='L1' ? Math.abs(dx)+Math.abs(dy) : Math.sqrt(dx*dx+dy*dy);
+}
+function asignar(centros, m){
+  return PUNTOS.map(p=>{
+    let mejor=0, dmin=Infinity;
+    centros.forEach((c,j)=>{
+      const d=dist(p,c,m);
+      if(d<dmin){ dmin=d; mejor=j; }
+    });
+    return mejor;
+  });
+}
+function mediana(arr){
+  const a=[...arr].sort((x,y)=>x-y);
+  const k=a.length>>1;
+  return a.length%2 ? a[k] : (a[k-1]+a[k])/2;
+}
+function actualizar(asig, m){
+  const nuevos=[];
+  for(let j=0;j<K;j++){
+    const xs=[], ys=[];
+    PUNTOS.forEach((p,i)=>{ if(asig[i]===j){ xs.push(p.x); ys.push(p.y); } });
+    if(xs.length===0){ nuevos.push({...CENTROS_INI[j]}); continue; }
+    if(m==='L1'){
+      nuevos.push({x:mediana(xs), y:mediana(ys)});
+    } else {
+      nuevos.push({x:xs.reduce((a,b)=>a+b,0)/xs.length, y:ys.reduce((a,b)=>a+b,0)/ys.length});
+    }
+  }
+  return nuevos;
+}
+function coste(centros, asig, m){
+  let s=0;
+  PUNTOS.forEach((p,i)=>{ s+=dist(p, centros[asig[i]], m); });
+  return s;
+}
+function converger(m){
+  let centros=CENTROS_INI.map(c=>({...c}));
+  let asig=asignar(centros, m);
+  for(let it=0;it<40;it++){
+    centros=actualizar(asig, m);
+    const nueva=asignar(centros, m);
+    if(nueva.every((v,i)=>v===asig[i])){ asig=nueva; break; }
+    asig=nueva;
+  }
+  return {centros, asig};
+}
+
+/* correspondencia de etiquetas entre métricas (mejor permutación) */
+function diferencias(){
+  const rL2=converger('L2'), rL1=converger('L1');
+  const perms=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+  let mejor=null, mejorAc=-1;
+  for(const pm of perms){
+    let ac=0;
+    for(let i=0;i<PUNTOS.length;i++) if(pm[rL1.asig[i]]===rL2.asig[i]) ac++;
+    if(ac>mejorAc){ mejorAc=ac; mejor=pm; }
+  }
+  const dif=new Set();
+  for(let i=0;i<PUNTOS.length;i++) if(mejor[rL1.asig[i]]!==rL2.asig[i]) dif.add(i);
+  return dif;
+}
+const DIFERENTES=diferencias();
+
+/* ================= estado de la ejecución ================= */
+let centros=CENTROS_INI.map(c=>({...c}));
+let asig=null;            // null = aún sin asignar (puntos grises)
+let iter=0;
+let convergido=false;
+let animando=false;
+let autoEjecutando=false;
+
+/* ================= dibujo ================= */
+const lienzo=document.getElementById('lienzo');
+const ctx=lienzo.getContext('2d');
+
+function preparaCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const r=lienzo.getBoundingClientRect();
+  lienzo.width=r.width*dpr; lienzo.height=r.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function dibujar(){
+  const {W,H}=preparaCanvas();
+  const mL=46, mR=14, mT=12, mB=40;
+  /* área cuadrada: la geometría en pantalla coincide con la de las distancias */
+  const lado=Math.min(W-mL-mR, H-mT-mB);
+  const x0=mL+((W-mL-mR)-lado)/2;
+  const px=u=>x0+u/10*lado;
+  const py=v=>H-mB-v/10*lado;
+
+  ctx.clearRect(0,0,W,H);
+
+  /* regiones: centro más cercano según la métrica */
+  const NG=96, cw=lado/NG;
+  for(let i=0;i<NG;i++){
+    for(let j=0;j<NG;j++){
+      const p={x:(i+0.5)/NG*10, y:(j+0.5)/NG*10};
+      let mejor=0, dmin=Infinity;
+      centros.forEach((c,jj)=>{
+        const d=dist(p,c,metrica);
+        if(d<dmin){ dmin=d; mejor=jj; }
+      });
+      ctx.fillStyle=COLORES[mejor]+'18';
+      ctx.fillRect(px(p.x)-cw/2-0.5, py(p.y)-cw/2-0.5, cw+1, cw+1);
+    }
+  }
+
+  /* ejes */
+  ctx.font='11px "IBM Plex Sans", sans-serif'; ctx.fillStyle='#5B6B80'; ctx.textAlign='center';
+  for(let v=0;v<=10;v+=2){
+    ctx.fillText(v, px(v), H-mB+18);
+  }
+  ctx.fillText('valoración del precio (0–10)', x0+lado/2, H-6);
+  ctx.textAlign='right';
+  for(let v=0;v<=10;v+=2){
+    ctx.fillText(v, x0-7, py(v)+4);
+  }
+  ctx.save(); ctx.translate(x0-30,(py(0)+py(10))/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center';
+  ctx.fillText('valoración del servicio (0–10)', 0, 0); ctx.restore();
+  ctx.strokeStyle='#B9C7D6'; ctx.lineWidth=1.6;
+  ctx.strokeRect(x0, H-mB-lado, lado, lado);
+
+  /* contornos de iso-distancia: círculo (L2) o rombo (L1) */
+  const R=1.35;   // radio en unidades de datos
+  centros.forEach((c,j)=>{
+    ctx.strokeStyle=COLORES[j]; ctx.lineWidth=2; ctx.setLineDash([6,5]);
+    ctx.beginPath();
+    if(metrica==='L1'){
+      ctx.moveTo(px(c.x+R), py(c.y));
+      ctx.lineTo(px(c.x), py(c.y+R));
+      ctx.lineTo(px(c.x-R), py(c.y));
+      ctx.lineTo(px(c.x), py(c.y-R));
+      ctx.closePath();
+    } else {
+      ctx.arc(px(c.x), py(c.y), R/10*lado, 0, Math.PI*2);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  /* puntos */
+  PUNTOS.forEach((p,i)=>{
+    const X=px(p.x), Y=py(p.y);
+    ctx.beginPath(); ctx.arc(X, Y, 6.5, 0, Math.PI*2);
+    ctx.fillStyle = asig===null ? '#9AA8B8' : COLORES[asig[i]];
+    ctx.fill();
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=2; ctx.stroke();
+    if(convergido && DIFERENTES.has(i) && document.getElementById('chkDif').checked){
+      ctx.beginPath(); ctx.arc(X, Y, 11, 0, Math.PI*2);
+      ctx.strokeStyle='#F07818'; ctx.lineWidth=2.6; ctx.setLineDash([4,3]);
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+  });
+
+  /* centros (✕ grandes) */
+  centros.forEach((c,j)=>{
+    const X=px(c.x), Y=py(c.y), r=9;
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=7; ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(X-r,Y-r); ctx.lineTo(X+r,Y+r);
+    ctx.moveTo(X-r,Y+r); ctx.lineTo(X+r,Y-r);
+    ctx.stroke();
+    ctx.strokeStyle=COLORES[j]; ctx.lineWidth=4;
+    ctx.beginPath();
+    ctx.moveTo(X-r,Y-r); ctx.lineTo(X+r,Y+r);
+    ctx.moveTo(X-r,Y+r); ctx.lineTo(X+r,Y-r);
+    ctx.stroke();
+  });
+
+  actualizarLecturas();
+}
+
+/* ================= lecturas ================= */
+function fmt(x){ return (Math.round(x*10)/10).toLocaleString('es-ES',{minimumFractionDigits:1, maximumFractionDigits:1}); }
+function actualizarLecturas(){
+  document.getElementById('lIter').textContent=iter;
+  document.getElementById('lCoste').textContent = asig===null ? '—' : fmt(coste(centros, asig, metrica));
+  document.getElementById('lDif').textContent = convergido ? DIFERENTES.size+' de '+PUNTOS.length : '— (converge primero)';
+  const e=document.getElementById('estado');
+  if(convergido){
+    e.textContent='✓ Convergido: ya nadie cambia de grupo. Ahora cambia la métrica y compara.';
+    e.className='estado convergido';
+  } else if(asig===null){
+    e.textContent='Los puntos aún no tienen grupo. Pulsa "1 iteración" para asignarlos a su centro más cercano.';
+    e.className='estado';
+  } else {
+    e.textContent='Iterando: asignación → recálculo de centros ('+(metrica==='L1'?'mediana':'media')+' de cada grupo)…';
+    e.className='estado';
+  }
+}
+
+/* ================= ejecución ================= */
+function unaIteracion(callback){
+  if(convergido||animando) { if(callback) callback(false); return; }
+  animando=true;
+  /* paso 1: asignar */
+  const nuevaAsig=asignar(centros, metrica);
+  const sinCambios = asig!==null && nuevaAsig.every((v,i)=>v===asig[i]);
+  asig=nuevaAsig;
+  iter++;
+  dibujar();
+  if(sinCambios){
+    convergido=true; animando=false;
+    dibujar();
+    if(callback) callback(false);
+    return;
+  }
+  /* paso 2: mover centros con animación */
+  const destino=actualizar(asig, metrica);
+  const origen=centros.map(c=>({...c}));
+  if(reducirMovimiento){
+    centros=destino; animando=false; dibujar();
+    if(callback) callback(true);
+    return;
+  }
+  const pasos=16; let f=0;
+  (function anima(){
+    f++;
+    const t=f/pasos, e=1-Math.pow(1-t,3);
+    centros=origen.map((o,j)=>({x:o.x+(destino[j].x-o.x)*e, y:o.y+(destino[j].y-o.y)*e}));
+    dibujar();
+    if(f<pasos) requestAnimationFrame(anima);
+    else { animando=false; if(callback) callback(true); }
+  })();
+}
+
+document.getElementById('btnPaso').addEventListener('click',()=>{
+  if(convergido) reiniciar();   /* tras converger, un nuevo paso reinicia y arranca de cero */
+  unaIteracion();
+});
+
+document.getElementById('btnTodo').addEventListener('click',()=>{
+  if(autoEjecutando) return;
+  if(convergido) reiniciar();
+  autoEjecutando=true;
+  (function bucle(){
+    unaIteracion(siguio=>{
+      if(siguio && !convergido) setTimeout(bucle, reducirMovimiento?0:220);
+      else autoEjecutando=false;
+    });
+  })();
+});
+
+function reiniciar(){
+  centros=CENTROS_INI.map(c=>({...c}));
+  asig=null; iter=0; convergido=false; animando=false; autoEjecutando=false;
+  dibujar();
+}
+document.getElementById('btnReiniciar').addEventListener('click',reiniciar);
+
+/* ================= cambio de métrica ================= */
+function fijarMetrica(m){
+  if(animando||autoEjecutando) return;
+  metrica=m;
+  document.getElementById('btnL2').classList.toggle('activo', m==='L2');
+  document.getElementById('btnL1').classList.toggle('activo', m==='L1');
+  document.getElementById('formulaMetrica').textContent =
+    m==='L1' ? 'd = |Δx| + |Δy|' : 'd = √(Δx² + Δy²)';
+  /* reinicia y ejecuta automáticamente para ver el resultado con la nueva métrica */
+  centros=CENTROS_INI.map(c=>({...c}));
+  asig=null; iter=0; convergido=false;
+  dibujar();
+  document.getElementById('btnTodo').click();
+}
+document.getElementById('btnL2').addEventListener('click',()=>fijarMetrica('L2'));
+document.getElementById('btnL1').addEventListener('click',()=>fijarMetrica('L1'));
+
+document.getElementById('chkDif').addEventListener('change',()=>dibujar());
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>dibujar());
+dibujar();
+</script>
+</body>
+</html>
