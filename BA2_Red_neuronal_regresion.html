@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio de Business Analytics · Neurona lineal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --verde-suave:rgba(15,118,110,.15);
+    --ambar:#D98E04;
+    --ambar-suave:rgba(217,142,4,.15);
+    --coral:#E4572E;
+    --coral-suave:rgba(228,87,46,.14);
+    --azul:#0284C7;
+    --azul-suave:rgba(2,132,199,.12);
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --mal:#C0392B;
+    --mal-fondo:#FBEEEC;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:1120px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.65rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:760px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  .panel + .panel{margin-top:18px;}
+
+  .grid-principal{
+    display:grid;
+    grid-template-columns:minmax(0, 1.05fr) minmax(290px, .95fr);
+    gap:18px;
+    align-items:stretch;
+  }
+
+  .stack-principal{
+    display:block;
+  }
+
+  .seleccion-panel{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:14px;
+  }
+  .seleccion-panel .atajos,
+  .seleccion-panel .marcadores,
+  .seleccion-panel .veredicto,
+  .seleccion-panel .fila-retos{
+    grid-column:1 / -1;
+  }
+
+  h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:1.15rem; font-weight:700; margin:36px 0 4px;
+  }
+  h2 small{color:var(--tinta-suave); font-size:.92rem; display:block; font-weight:400;}
+
+  /* controles */
+  .controles{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .controles.seleccion-panel{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:14px;
+  }
+  .controles.seleccion-panel .atajos,
+  .controles.seleccion-panel .marcadores,
+  .controles.seleccion-panel .veredicto,
+  .controles.seleccion-panel .fila-retos{
+    grid-column:1 / -1;
+  }
+  .control-var{
+    background:#F7FAFC;
+    border:1px solid var(--borde);
+    border-radius:var(--radio);
+    padding:14px 16px;
+  }
+  .control-head{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:flex-start;
+    margin-bottom:9px;
+  }
+  .control-head .nom{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:1rem;
+  }
+  .control-head .sub{
+    display:block;
+    color:var(--tinta-suave);
+    font-size:.82rem;
+    margin-top:2px;
+  }
+  .valor-chip{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:1.35rem;
+    font-weight:700;
+    color:var(--tinta);
+    min-width:92px;
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+  .fila-slider{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  input[type=range]{
+    flex:1;
+    min-width:150px;
+    accent-color:var(--coral);
+    height:30px;
+    cursor:pointer;
+  }
+  input[type=range]:focus-visible{
+    outline:3px solid var(--coral);
+    outline-offset:2px;
+    border-radius:6px;
+  }
+  .mini{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    width:34px;
+    height:34px;
+    border-radius:999px;
+    border:1.5px solid var(--borde);
+    background:var(--blanco);
+    color:var(--tinta);
+    cursor:pointer;
+    line-height:1;
+  }
+  .mini:hover{border-color:var(--coral);}
+  .mini:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+
+  .atajos{display:flex; gap:6px; flex-wrap:wrap; margin-top:2px;}
+  .atajos button{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.84rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:5px 13px; cursor:pointer;
+  }
+  .atajos button:hover{border-color:var(--verde);}
+  .atajos button:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .atajos button.activo{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+
+  /* marcadores */
+  .marcadores{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  .marcador{
+    background:#F7FAFC; border:1px solid var(--borde); border-radius:var(--radio); padding:12px 16px;
+  }
+  .marcador .nom{
+    font-size:.75rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--tinta-suave); font-weight:600;
+  }
+  .marcador .val{
+    font-family:'Space Grotesk',sans-serif; font-size:1.8rem; font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .marcador.z .val{color:var(--verde);}
+  .marcador.y .val{color:var(--coral);}
+  .pista-r{height:9px; background:#E0E7EF; border-radius:999px; overflow:hidden; margin-top:6px;}
+  .relleno-r{height:100%; border-radius:999px; transition:width .2s;}
+  .marcador.z .relleno-r{background:var(--verde);}
+  .marcador.y .relleno-r{background:var(--coral);}
+
+  .veredicto{
+    margin-top:14px; border-radius:10px; padding:13px 17px; font-size:.96rem;
+    border-left:5px solid var(--ok);
+    background:var(--ok-fondo);
+  }
+  .veredicto b{font-family:'Space Grotesk',sans-serif;}
+  .veredicto.aviso{background:#FDF6E9; border-color:var(--ambar);}
+  .veredicto.mal{background:var(--mal-fondo); border-color:var(--mal);}
+
+  /* diagrama */
+  .panel-diagrama{
+    padding:22px 24px;
+  }
+  .diagrama-wrap{
+    width:100%;
+    overflow:hidden;
+  }
+  #neurona{
+    display:block;
+    width:100%;
+    height:auto;
+    aspect-ratio:860 / 360;
+  }
+  #neurona text{
+    font-family:'Space Grotesk', sans-serif;
+  }
+  .svg-label{font-size:18px; font-weight:700;}
+  .svg-small{font-size:13px; font-weight:500;}
+  .svg-val{font-size:16px; font-weight:700;}
+  .svg-formula{font-size:20px; font-weight:700;}
+  .svg-muted{fill:var(--tinta-suave);}
+  .svg-tinta{fill:var(--tinta);}
+  .svg-azul{fill:var(--azul);}
+  .svg-verde{fill:var(--verde);}
+  .svg-coral{fill:var(--coral);}
+  .linea-azul{stroke:var(--azul); stroke-width:4; fill:none; marker-end:url(#flechaAzul);}
+  .linea-coral{stroke:var(--coral); stroke-width:4; fill:none; marker-end:url(#flechaCoral);}
+  .linea-verde{stroke:var(--verde); stroke-width:4; fill:none; marker-end:url(#flechaVerde);}
+  .nodo-peso{fill:var(--coral-suave); stroke:var(--coral); stroke-width:3;}
+  .nodo-suma{fill:var(--verde-suave); stroke:var(--verde); stroke-width:3;}
+  .caja-act{fill:var(--azul-suave); stroke:var(--azul); stroke-width:4; rx:8;}
+  .caja-input{fill:#F7FAFC; stroke:var(--borde); stroke-width:1.5; rx:10;}
+
+  /* pasos */
+  .pasos{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .paso{
+    display:grid;
+    grid-template-columns:42px 1fr;
+    gap:12px;
+    align-items:start;
+    background:#F7FAFC;
+    border:1px solid var(--borde);
+    border-radius:var(--radio);
+    padding:12px 14px;
+  }
+  .num{
+    width:32px; height:32px; border-radius:999px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--tinta); color:var(--blanco);
+    font-family:'Space Grotesk', sans-serif; font-weight:700;
+  }
+  .paso h3{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.98rem;
+    margin-bottom:2px;
+  }
+  .paso .calc{
+    color:var(--tinta-suave);
+    font-size:.93rem;
+  }
+  .paso .res{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:1.22rem;
+    font-weight:700;
+    margin-top:4px;
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* tabla */
+  .tabla-wrap{overflow-x:auto;}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:.94rem;
+  }
+  th, td{
+    border:1px solid var(--borde);
+    padding:9px 10px;
+    text-align:right;
+    vertical-align:middle;
+  }
+  th{
+    background:#F0F4F8;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+  }
+  td:first-child, th:first-child{text-align:left;}
+  td.var{
+    font-weight:600;
+    color:var(--tinta);
+  }
+  tr.total td{
+    background:#F7FAFC;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+  }
+
+  /* retos */
+  .fila-retos{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px;}
+  .fila-retos .etiq{font-size:.85rem; color:var(--tinta-suave); font-weight:600;}
+  .chip{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.86rem;
+    border:1.5px solid var(--ambar); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:6px 14px; cursor:pointer;
+  }
+  .chip:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .chip.activo{background:var(--ambar); color:var(--blanco);}
+  .chip.logrado::after{content:' ✓'; font-weight:700;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:800px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:800px){
+    .grid-principal{grid-template-columns:1fr;}
+    .seleccion-panel,
+    .controles.seleccion-panel{grid-template-columns:1fr;}
+  }
+  @media (max-width:600px){
+    .marcadores{grid-template-columns:1fr;}
+    .valor-chip{font-size:1.15rem; min-width:80px;}
+    .fila-slider{gap:6px;}
+    .mini{width:30px; height:30px;}
+    .paso{grid-template-columns:36px 1fr;}
+    .num{width:28px; height:28px;}
+    .panel-diagrama{padding:16px 12px;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>Una neurona para predecir la nota</h1>
+    <p class="sub">
+      Mueve las dos variables de entrada y observa cómo una neurona lineal calcula la nota:
+      primero multiplica cada variable por su peso, después suma las contribuciones y finalmente
+      produce una salida. Los pesos están elegidos para que la predicción siempre esté entre <b>0</b> y <b>10</b>.
+    </p>
+  </header>
+
+  <div class="stack-principal">
+    <div class="panel controles seleccion-panel" aria-label="Controles de las variables de entrada">
+      <div class="control-var">
+        <div class="control-head">
+          <div>
+            <span class="nom">Horas de estudio</span>
+            <span class="sub">Rango: 0 a 20 horas</span>
+          </div>
+          <div class="valor-chip" id="txtHoras">10 h</div>
+        </div>
+        <div class="fila-slider">
+          <button class="mini" data-step="horas" data-dir="-1" aria-label="Bajar horas de estudio">−</button>
+          <input type="range" id="horas" min="0" max="20" step="0.5" value="10" aria-label="Horas de estudio">
+          <button class="mini" data-step="horas" data-dir="1" aria-label="Subir horas de estudio">+</button>
+        </div>
+      </div>
+
+      <div class="control-var">
+        <div class="control-head">
+          <div>
+            <span class="nom">Porcentaje de asistencia</span>
+            <span class="sub">Rango: 0% a 100%</span>
+          </div>
+          <div class="valor-chip" id="txtAsistencia">80%</div>
+        </div>
+        <div class="fila-slider">
+          <button class="mini" data-step="asistencia" data-dir="-1" aria-label="Bajar porcentaje de asistencia">−</button>
+          <input type="range" id="asistencia" min="0" max="100" step="1" value="80" aria-label="Porcentaje de asistencia">
+          <button class="mini" data-step="asistencia" data-dir="1" aria-label="Subir porcentaje de asistencia">+</button>
+        </div>
+      </div>
+
+      <div class="atajos" aria-label="Casos de ejemplo">
+        <button data-h="10" data-a="80" class="activo">Ana</button>
+        <button data-h="5" data-a="55">Berna</button>
+        <button data-h="16" data-a="90">Muy buen caso</button>
+        <button data-h="0" data-a="0">Mínimo</button>
+        <button data-h="20" data-a="100">Máximo</button>
+      </div>
+
+      <div class="marcadores">
+        <div class="marcador z">
+          <div class="nom">Entrada neta Z</div>
+          <div class="val" id="txtZ">—</div>
+          <div class="pista-r"><div class="relleno-r" id="barZ" style="width:0%"></div></div>
+        </div>
+        <div class="marcador y">
+          <div class="nom">Nota final Y</div>
+          <div class="val" id="txtY">—</div>
+          <div class="pista-r"><div class="relleno-r" id="barY" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="veredicto" id="mensajeEscala"></div>
+
+      <div class="fila-retos">
+        <span class="etiq">Retos:</span>
+        <button class="chip" data-reto="aprobado">Aprobado justo</button>
+        <button class="chip" data-reto="notable">Notable</button>
+        <button class="chip" data-reto="maximo">Nota máxima</button>
+      </div>
+    </div>
+
+    <div class="panel panel-diagrama">
+      <div class="diagrama-wrap">
+        <svg id="neurona" viewBox="0 0 860 360" role="img" aria-label="Diagrama de una neurona lineal con dos variables de entrada, pesos, suma y salida">
+          <defs>
+            <marker id="flechaAzul" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#0284C7"></path>
+            </marker>
+            <marker id="flechaCoral" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#E4572E"></path>
+            </marker>
+            <marker id="flechaVerde" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#0F766E"></path>
+            </marker>
+          </defs>
+
+          <text x="28" y="34" class="svg-label svg-azul">Variables</text>
+          <text x="274" y="34" class="svg-label svg-coral">Pesos</text>
+          <text x="508" y="34" class="svg-label svg-verde">Unión sumadora</text>
+
+          <rect x="28" y="70" width="180" height="70" class="caja-input"></rect>
+          <text x="118" y="96" text-anchor="middle" class="svg-small svg-muted">Horas de estudio</text>
+          <text x="118" y="122" text-anchor="middle" id="svgHoras" class="svg-val svg-azul">10 h</text>
+
+          <rect x="28" y="210" width="180" height="70" class="caja-input"></rect>
+          <text x="118" y="236" text-anchor="middle" class="svg-small svg-muted">Asistencia</text>
+          <text x="118" y="262" text-anchor="middle" id="svgAsistencia" class="svg-val svg-azul">80%</text>
+
+          <line x1="208" y1="105" x2="265" y2="105" class="linea-azul"></line>
+          <line x1="208" y1="245" x2="265" y2="245" class="linea-azul"></line>
+
+          <circle cx="310" cy="105" r="42" class="nodo-peso"></circle>
+          <text x="310" y="100" text-anchor="middle" class="svg-small svg-muted">w₁</text>
+          <text x="310" y="124" text-anchor="middle" class="svg-val svg-coral">0,35</text>
+
+          <circle cx="310" cy="245" r="42" class="nodo-peso"></circle>
+          <text x="310" y="240" text-anchor="middle" class="svg-small svg-muted">w₂</text>
+          <text x="310" y="264" text-anchor="middle" class="svg-val svg-coral">0,03</text>
+
+          <line x1="352" y1="105" x2="500" y2="164" class="linea-coral"></line>
+          <line x1="352" y1="245" x2="500" y2="196" class="linea-coral"></line>
+          <text x="410" y="116" text-anchor="middle" id="svgContribHoras" class="svg-small svg-coral">3,50</text>
+          <text x="410" y="245" text-anchor="middle" id="svgContribAsistencia" class="svg-small svg-coral">2,40</text>
+
+          <circle cx="550" cy="180" r="58" class="nodo-suma"></circle>
+          <text x="550" y="193" text-anchor="middle" class="svg-formula svg-verde">Σ</text>
+          <text x="550" y="255" text-anchor="middle" id="svgZ" class="svg-val svg-verde">Z = 5,90</text>
+
+          <line x1="608" y1="180" x2="656" y2="180" class="linea-verde"></line>
+
+          <rect x="662" y="147" width="86" height="66" class="caja-act"></rect>
+          <line x1="684" y1="202" x2="727" y2="158" stroke="#0284C7" stroke-width="5" stroke-linecap="round"></line>
+          <text x="705" y="235" text-anchor="middle" class="svg-small svg-azul">activación</text>
+          <text x="705" y="252" text-anchor="middle" class="svg-small svg-azul">lineal</text>
+
+          <line x1="748" y1="180" x2="812" y2="180" class="linea-azul"></line>
+          <text x="830" y="171" text-anchor="middle" class="svg-formula svg-azul">y</text>
+          <text x="830" y="200" text-anchor="middle" id="svgY" class="svg-val svg-azul">5,90</text>
+
+          <text x="430" y="326" text-anchor="middle" id="svgFormula" class="svg-formula svg-verde">
+            Z = 0 + 0,35·10 + 0,03·80 = 5,90
+          </text>
+          <text x="430" y="348" text-anchor="middle" class="svg-small svg-muted">
+            Como la activación es lineal y los pesos están acotados, y = Z.
+          </text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <h2>Operación paso a paso
+    <small>Cada cambio en las variables actualiza la multiplicación por pesos, la suma y la nota final.</small>
+  </h2>
+
+  <div class="grid-principal">
+    <div class="panel">
+      <div class="pasos">
+        <div class="paso">
+          <div class="num">1</div>
+          <div>
+            <h3>Variables de entrada</h3>
+            <div class="calc" id="paso1Calc">x₁ = 10 horas; x₂ = 80%</div>
+            <div class="res">El modelo recibe dos números.</div>
+          </div>
+        </div>
+
+        <div class="paso">
+          <div class="num">2</div>
+          <div>
+            <h3>Multiplicación por los pesos</h3>
+            <div class="calc" id="paso2Calc">0,35·10 = 3,50; 0,03·80 = 2,40</div>
+            <div class="res" id="paso2Res">Contribuciones: 3,50 y 2,40</div>
+          </div>
+        </div>
+
+        <div class="paso">
+          <div class="num">3</div>
+          <div>
+            <h3>Unión sumadora</h3>
+            <div class="calc" id="paso3Calc">Z = sesgo + contribución 1 + contribución 2</div>
+            <div class="res" id="paso3Res">Z = 0 + 3,50 + 2,40 = 5,90</div>
+          </div>
+        </div>
+
+        <div class="paso">
+          <div class="num">4</div>
+          <div>
+            <h3>Función de activación</h3>
+            <div class="calc" id="paso4Calc">f(Z) = Z, con escala garantizada entre 0 y 10</div>
+            <div class="res" id="paso4Res">y = 5,90</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="tabla-wrap">
+        <table aria-label="Tabla de cálculo de la neurona">
+          <thead>
+            <tr>
+              <th>Elemento</th>
+              <th>Valor</th>
+              <th>Peso</th>
+              <th>Contribución</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="var">Horas de estudio</td>
+              <td id="tabHoras">10</td>
+              <td>0,35</td>
+              <td id="tabCHoras">3,50</td>
+            </tr>
+            <tr>
+              <td class="var">Porcentaje de asistencia</td>
+              <td id="tabAsistencia">80</td>
+              <td>0,03</td>
+              <td id="tabCAsistencia">2,40</td>
+            </tr>
+            <tr>
+              <td class="var">Sesgo / intercepto</td>
+              <td>1</td>
+              <td>0,00</td>
+              <td>0,00</td>
+            </tr>
+            <tr class="total">
+              <td>Z</td>
+              <td colspan="2" id="tabFormulaZ">0 + 3,50 + 2,40</td>
+              <td id="tabZ">5,90</td>
+            </tr>
+            <tr class="total">
+              <td>Y</td>
+              <td colspan="2">y = f(Z) = Z</td>
+              <td id="tabY">5,90</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="veredicto aviso" style="margin-top:16px;">
+        <b>Garantía de escala.</b>
+        Con los rangos del laboratorio:
+        <br>
+        mínimo = 0,35·0 + 0,03·0 = 0
+        <br>
+        máximo = 0,35·20 + 0,03·100 = 10
+      </div>
+    </div>
+  </div>
+
+  <details class="nota">
+    <summary>¿Qué significan los pesos?</summary>
+    <div class="nota-cuerpo">
+      <p>
+        El peso de una variable indica cuánto cambia la predicción cuando esa variable aumenta una unidad,
+        manteniendo constante la otra. En este laboratorio, una hora adicional de estudio añade
+        <b>0,35 puntos</b> a la nota predicha. Un punto porcentual adicional de asistencia añade
+        <b>0,03 puntos</b>.
+      </p>
+      <p>
+        Los pesos se han elegido para que el modelo sea didáctico y esté acotado: si las horas de estudio
+        van de 0 a 20 y la asistencia va de 0 a 100, la suma nunca puede bajar de 0 ni superar 10.
+        Por eso aquí no hace falta truncar la nota: la escala está controlada por diseño.
+      </p>
+      <p>
+        La misma estructura sirve para explicar una regresión lineal o una neurona artificial muy simple:
+        entradas, pesos, suma y función de activación.
+      </p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de Business Analytics · modelo lineal de dos variables</footer>
+</div>
+
+<script>
+"use strict";
+
+const W_HORAS = 0.35;
+const W_ASISTENCIA = 0.03;
+const SESGO = 0;
+
+const $ = id => document.getElementById(id);
+
+const sliders = {
+  horas: $("horas"),
+  asistencia: $("asistencia")
+};
+
+function fmt(x, dec = 2){
+  return Number(x).toLocaleString("es-ES", {
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec
+  });
+}
+function fmtInput(x){
+  const n = Number(x);
+  return n.toLocaleString("es-ES", {
+    minimumFractionDigits: Number.isInteger(n) ? 0 : 1,
+    maximumFractionDigits: 1
+  });
+}
+function clamp(x, min, max){
+  return Math.min(max, Math.max(min, x));
+}
+
+function calcular(){
+  const horas = Number(sliders.horas.value);
+  const asistencia = Number(sliders.asistencia.value);
+
+  const contribHoras = W_HORAS * horas;
+  const contribAsistencia = W_ASISTENCIA * asistencia;
+  const z = SESGO + contribHoras + contribAsistencia;
+
+  /* Por diseño z ya pertenece a [0, 10]. Dejamos esta línea como protección técnica. */
+  const y = clamp(z, 0, 10);
+
+  return {horas, asistencia, contribHoras, contribAsistencia, z, y};
+}
+
+function actualizarAtajos(horas, asistencia){
+  document.querySelectorAll(".atajos button").forEach(btn => {
+    const h = Number(btn.dataset.h);
+    const a = Number(btn.dataset.a);
+    btn.classList.toggle("activo", h === horas && a === asistencia);
+  });
+}
+
+function actualizarRetos(y){
+  const retos = {
+    aprobado: y >= 5 && y <= 5.25,
+    notable: y >= 7 && y < 9,
+    maximo: Math.abs(y - 10) < 1e-9
+  };
+  document.querySelectorAll(".chip[data-reto]").forEach(chip => {
+    chip.classList.toggle("logrado", Boolean(retos[chip.dataset.reto]));
+  });
+}
+
+function actualizar(){
+  const d = calcular();
+
+  $("txtHoras").textContent = fmtInput(d.horas) + " h";
+  $("txtAsistencia").textContent = fmtInput(d.asistencia) + "%";
+  $("txtZ").textContent = fmt(d.z);
+  $("txtY").textContent = fmt(d.y);
+  $("barZ").style.width = (d.z * 10) + "%";
+  $("barY").style.width = (d.y * 10) + "%";
+
+  $("mensajeEscala").className = "veredicto";
+  $("mensajeEscala").innerHTML =
+    "<b>La nota está dentro de la escala.</b> Con estos pesos, Z siempre queda entre 0 y 10: " +
+    "por tanto, la salida final es y = Z = <b>" + fmt(d.y) + "</b>.";
+
+  $("svgHoras").textContent = fmtInput(d.horas) + " h";
+  $("svgAsistencia").textContent = fmtInput(d.asistencia) + "%";
+  $("svgContribHoras").textContent = fmt(d.contribHoras);
+  $("svgContribAsistencia").textContent = fmt(d.contribAsistencia);
+  $("svgZ").textContent = "Z = " + fmt(d.z);
+  $("svgY").textContent = fmt(d.y);
+  $("svgFormula").textContent =
+    "Z = 0 + 0,35·" + fmtInput(d.horas) + " + 0,03·" + fmtInput(d.asistencia) + " = " + fmt(d.z);
+
+  $("paso1Calc").textContent = "x₁ = " + fmtInput(d.horas) + " horas; x₂ = " + fmtInput(d.asistencia) + "%";
+  $("paso2Calc").textContent =
+    "0,35·" + fmtInput(d.horas) + " = " + fmt(d.contribHoras) +
+    "; 0,03·" + fmtInput(d.asistencia) + " = " + fmt(d.contribAsistencia);
+  $("paso2Res").textContent =
+    "Contribuciones: " + fmt(d.contribHoras) + " y " + fmt(d.contribAsistencia);
+  $("paso3Calc").textContent = "Z = sesgo + contribución de horas + contribución de asistencia";
+  $("paso3Res").textContent =
+    "Z = 0 + " + fmt(d.contribHoras) + " + " + fmt(d.contribAsistencia) + " = " + fmt(d.z);
+  $("paso4Calc").textContent = "f(Z) = Z; el rango ya está garantizado por los pesos.";
+  $("paso4Res").textContent = "y = " + fmt(d.y);
+
+  $("tabHoras").textContent = fmtInput(d.horas);
+  $("tabAsistencia").textContent = fmtInput(d.asistencia);
+  $("tabCHoras").textContent = fmt(d.contribHoras);
+  $("tabCAsistencia").textContent = fmt(d.contribAsistencia);
+  $("tabFormulaZ").textContent = "0 + " + fmt(d.contribHoras) + " + " + fmt(d.contribAsistencia);
+  $("tabZ").textContent = fmt(d.z);
+  $("tabY").textContent = fmt(d.y);
+
+  actualizarAtajos(d.horas, d.asistencia);
+  actualizarRetos(d.y);
+}
+
+Object.values(sliders).forEach(slider => slider.addEventListener("input", actualizar));
+
+document.querySelectorAll("[data-step]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const id = btn.dataset.step;
+    const dir = Number(btn.dataset.dir);
+    const slider = sliders[id];
+    const step = Number(slider.step || 1);
+    const min = Number(slider.min);
+    const max = Number(slider.max);
+    const nuevo = clamp(Number(slider.value) + dir * step, min, max);
+    slider.value = String(nuevo);
+    actualizar();
+  });
+});
+
+document.querySelectorAll(".atajos button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    sliders.horas.value = btn.dataset.h;
+    sliders.asistencia.value = btn.dataset.a;
+    actualizar();
+  });
+});
+
+document.querySelectorAll(".chip[data-reto]").forEach(chip => {
+  chip.addEventListener("click", () => {
+    chip.classList.toggle("activo");
+  });
+});
+
+actualizar();
+</script>
+</body>
+</html>
