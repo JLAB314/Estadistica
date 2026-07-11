@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Las dos curvas del error</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --azul:#2274C4;        /* error de entrenamiento, como la diapositiva */
+    --amarillo:#E0A80C;    /* error de test, como la diapositiva */
+    --naranja:#F07818;     /* línea del óptimo, como la diapositiva */
+    --coral:#E4572E;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --mal:#C0392B;
+    --mal-fondo:#FBEEEC;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:680px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  #scatter{width:100%; height:320px; display:block; border-radius:8px;}
+  .leyenda{
+    display:flex; gap:20px; flex-wrap:wrap; justify-content:center;
+    margin-top:6px; font-size:.85rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:7px;}
+  .pto{width:12px; height:12px; border-radius:50%; display:inline-block;}
+  .m-linea{width:24px; height:0; border-top:3px solid var(--tinta); display:inline-block;}
+  .l-azul{width:24px; height:0; border-top:4px solid var(--azul); display:inline-block; border-radius:2px;}
+  .l-amarillo{width:24px; height:0; border-top:4px solid var(--amarillo); display:inline-block; border-radius:2px;}
+
+  /* deslizador de grado */
+  .fila-grado{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:16px;}
+  .valor-grado{
+    font-family:'Space Grotesk', sans-serif; font-size:1.5rem; font-weight:700;
+    color:var(--tinta); min-width:130px;
+  }
+  .valor-grado small{display:block; font-size:.75rem; color:var(--tinta-suave); font-weight:500; margin-top:-4px;}
+  input[type=range]{flex:1; min-width:180px; accent-color:var(--coral); height:30px; cursor:pointer;}
+  input[type=range]:focus-visible{outline:3px solid var(--coral); outline-offset:2px; border-radius:6px;}
+  .atajos{display:flex; gap:6px; flex-wrap:wrap;}
+  .atajos button{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.84rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:5px 13px; cursor:pointer;
+  }
+  .atajos button:hover{border-color:var(--coral);}
+  .atajos button:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .atajos button.activo{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+
+  /* marcadores de error */
+  .marcadores{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px;}
+  .marcador{
+    background:#F7FAFC; border:1px solid var(--borde); border-radius:var(--radio); padding:12px 16px;
+  }
+  .marcador .nom{font-size:.75rem; letter-spacing:.05em; text-transform:uppercase; color:var(--tinta-suave); font-weight:600;}
+  .marcador .val{
+    font-family:'Space Grotesk',sans-serif; font-size:1.8rem; font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .marcador.train .val{color:var(--azul);}
+  .marcador.test .val{color:var(--amarillo);}
+  .marcador .oculto-msg{font-size:.88rem; color:var(--tinta-suave); font-style:italic; margin-top:4px;}
+
+  .fila-acciones{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:16px;}
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.98rem;
+    border:none; border-radius:999px; padding:12px 26px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:active:not([disabled]){transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .btn[disabled]{opacity:.5; cursor:default;}
+  .btn.coral{background:var(--coral); color:var(--blanco);}
+  .btn.coral:hover:not([disabled]){filter:brightness(1.07);}
+  .btn.sec{background:var(--blanco); color:var(--tinta); border:1.5px solid var(--borde); font-weight:500;}
+  .btn.sec:hover{border-color:var(--verde);}
+
+  .veredicto{
+    margin-top:14px; border-radius:10px; padding:12px 16px; font-size:.94rem;
+    display:none; border-left:5px solid;
+  }
+  .veredicto.visible{display:block;}
+  .veredicto.infra{background:#EBF2FB; border-color:var(--azul);}
+  .veredicto.buen{background:var(--ok-fondo); border-color:var(--ok);}
+  .veredicto.sobre{background:#FDF1E6; border-color:var(--naranja);}
+  .veredicto b{font-family:'Space Grotesk',sans-serif;}
+
+  /* gráfica del error */
+  h2{font-family:'Space Grotesk', sans-serif; font-size:1.15rem; font-weight:700; margin:36px 0 4px;}
+  h2 small{color:var(--tinta-suave); font-size:.92rem; display:block; font-weight:400;}
+  #curvaError{width:100%; height:300px; display:block;}
+  .nota-curva{font-size:.85rem; color:var(--tinta-suave); text-align:center; margin-top:6px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){
+    #scatter{height:260px;}
+    .marcadores{grid-template-columns:1fr;}
+    .valor-grado{font-size:1.25rem;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>Las dos curvas del error</h1>
+    <p class="sub">Ajusta un polinomio a los datos de entrenamiento eligiendo su grado y pulsa
+    <b>"Ver datos de test"</b>. Cada vez que evalúas un grado, se añade un punto al gráfico de abajo:
+    el error de <b style="color:var(--azul)">entrenamiento</b> en azul y el de
+    <b style="color:var(--amarillo)">test</b> en amarillo. Prueba varios grados y la figura clásica
+    quedará construida por ti.</p>
+  </header>
+
+  <div class="panel">
+    <canvas id="scatter" aria-label="Diagrama de dispersión con los datos de entrenamiento y la curva del modelo"></canvas>
+    <div class="leyenda">
+      <span><span class="pto" style="background:#0F766E"></span> Entrenamiento</span>
+      <span id="legTest" style="display:none"><span class="pto" style="background:#E4572E"></span> Test</span>
+      <span><span class="m-linea"></span> Tu modelo</span>
+    </div>
+
+    <div class="fila-grado">
+      <div class="valor-grado">Grado <span id="txtGrado">1</span><small id="txtGradoSub">recta</small></div>
+      <input type="range" id="sliderG" min="1" max="15" step="1" value="1" aria-label="Grado del polinomio">
+      <div class="atajos" id="atajos">
+        <button data-g="1" class="activo">1</button>
+        <button data-g="2">2</button>
+        <button data-g="5">5</button>
+        <button data-g="10">10</button>
+        <button data-g="15">15</button>
+      </div>
+    </div>
+
+    <div class="marcadores">
+      <div class="marcador train">
+        <div class="nom">Error en entrenamiento (RMSE)</div>
+        <div class="val" id="errTrain">—</div>
+      </div>
+      <div class="marcador test">
+        <div class="nom">Error en test (RMSE)</div>
+        <div class="val" id="errTest">?</div>
+        <div class="oculto-msg" id="msgOculto">Oculto hasta que evalúes este grado.</div>
+      </div>
+    </div>
+
+    <div class="fila-acciones">
+      <button class="btn coral" id="btnEvaluar">👁 Ver datos de test</button>
+      <button class="btn sec" id="btnRegenerar">↻ Regenerar datos</button>
+    </div>
+
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+
+  <h2>Error según la complejidad del modelo
+    <small>Se construye con tus evaluaciones. Cuando hayas probado varios grados, reconocerás la figura: la azul siempre baja, la amarilla hace una U — y donde la U toca fondo está el punto óptimo.</small></h2>
+  <div class="panel">
+    <canvas id="curvaError" aria-label="Gráfica del error de entrenamiento y test según el grado del polinomio"></canvas>
+    <div class="nota-curva">A partir del óptimo, el modelo aprende las particularidades y el ruido de ese conjunto concreto, que no son características de la población → overfitting</div>
+  </div>
+
+  <footer>Demo interactiva de modelización · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= datos: consumo vs velocidad, relación cuadrática ================= */
+const XMIN=20, XMAX=120;
+const N_TRAIN=16, N_TEST=14;
+let train={x:[],y:[]}, test={x:[],y:[]};
+const RUIDO=0.55;
+
+function gauss(){
+  let u=0,v=0;
+  while(u===0)u=Math.random();
+  while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function verdad(x){ return 0.0016*(x-55)*(x-55) + 4.5; }
+
+function generar(){
+  function muestra(n){
+    const xs=[], ys=[];
+    for(let i=0;i<n;i++){
+      const x=Math.round(XMIN+(XMAX-XMIN)*( (i+0.5)/n + (Math.random()-0.5)*0.6/n*3 ));
+      xs.push(Math.min(XMAX,Math.max(XMIN,x)));
+      ys.push(Math.round((verdad(xs[i])+gauss()*RUIDO)*100)/100);
+    }
+    return {x:xs, y:ys};
+  }
+  /* muestra didáctica: grado 1 claramente infra, grado 2 bueno, con errores similares train/test en grado 1 */
+  for(let intento=0;intento<80;intento++){
+    train=muestra(N_TRAIN);
+    test=muestra(N_TEST);
+    const c1=ajustar(1), c2=ajustar(2);
+    const e1tr=rmse(train,c1), e1te=rmse(test,c1);
+    const e2tr=rmse(train,c2), e2te=rmse(test,c2);
+    if(e2te<0.75 && e2tr<0.7 && e1tr>1.0 && Math.abs(e1te-e1tr)<0.35) break;
+  }
+}
+
+/* ================= ajuste polinómico ================= */
+function normX(x){ return (x-70)/50; }
+function ajustar(g){
+  const n=train.x.length, m=g+1;
+  const ATA=Array.from({length:m},()=>new Float64Array(m));
+  const ATy=new Float64Array(m);
+  for(let i=0;i<n;i++){
+    const u=normX(train.x[i]);
+    const pot=new Float64Array(m);
+    pot[0]=1;
+    for(let j=1;j<m;j++) pot[j]=pot[j-1]*u;
+    for(let j=0;j<m;j++){
+      ATy[j]+=pot[j]*train.y[i];
+      for(let k=0;k<m;k++) ATA[j][k]+=pot[j]*pot[k];
+    }
+  }
+  for(let j=0;j<m;j++) ATA[j][j]+=1e-10;
+  const M=ATA.map((f,i)=>[...f, ATy[i]]);
+  for(let col=0;col<m;col++){
+    let piv=col;
+    for(let r=col+1;r<m;r++) if(Math.abs(M[r][col])>Math.abs(M[piv][col])) piv=r;
+    [M[col],M[piv]]=[M[piv],M[col]];
+    const d=M[col][col];
+    for(let r=col+1;r<m;r++){
+      const f=M[r][col]/d;
+      for(let c=col;c<=m;c++) M[r][c]-=f*M[col][c];
+    }
+  }
+  const coef=new Float64Array(m);
+  for(let r=m-1;r>=0;r--){
+    let s=M[r][m];
+    for(let c=r+1;c<m;c++) s-=M[r][c]*coef[c];
+    coef[r]=s/M[r][r];
+  }
+  return coef;
+}
+function predecir(coef, x){
+  const u=normX(x);
+  let y=0, p=1;
+  for(let j=0;j<coef.length;j++){ y+=coef[j]*p; p*=u; }
+  return y;
+}
+function rmse(datos, coef){
+  let sse=0;
+  for(let i=0;i<datos.x.length;i++){
+    const e=datos.y[i]-predecir(coef, datos.x[i]);
+    sse+=e*e;
+  }
+  return Math.sqrt(sse/datos.x.length);
+}
+
+/* ================= estado ================= */
+let grado=1;
+let coefActual=null;
+let testVisible=false;
+let evaluaciones=new Map();   // grado -> {tr, te}
+
+function fmt(x){
+  if(x>99) return '> 99';
+  return (Math.round(x*100)/100).toLocaleString('es-ES',{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+/* ================= scatter ================= */
+const sc=document.getElementById('scatter');
+const sctx=sc.getContext('2d');
+
+function preparaCanvas(cv,cx){
+  const dpr=window.devicePixelRatio||1;
+  const r=cv.getBoundingClientRect();
+  cv.width=r.width*dpr; cv.height=r.height*dpr;
+  cx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function dibujarScatter(){
+  const {W,H}=preparaCanvas(sc,sctx);
+  const mL=44, mR=18, mT=14, mB=36;
+  const ymin=3.5, ymax=13;
+  const px=x=>mL+(x-XMIN)/(XMAX-XMIN)*(W-mL-mR);
+  const py=y=>H-mB-(y-ymin)/(ymax-ymin)*(H-mT-mB);
+
+  sctx.clearRect(0,0,W,H);
+  sctx.font='11px "IBM Plex Sans", sans-serif'; sctx.fillStyle='#5B6B80';
+  sctx.textAlign='center';
+  for(let x=20;x<=120;x+=20){
+    sctx.strokeStyle='#EDF1F6'; sctx.lineWidth=1;
+    sctx.beginPath(); sctx.moveTo(px(x),mT); sctx.lineTo(px(x),H-mB); sctx.stroke();
+    sctx.fillText(x, px(x), H-mB+18);
+  }
+  sctx.textAlign='right';
+  for(let y=4;y<=12;y+=2){
+    sctx.strokeStyle='#EDF1F6';
+    sctx.beginPath(); sctx.moveTo(mL,py(y)); sctx.lineTo(W-mR,py(y)); sctx.stroke();
+    sctx.fillStyle='#5B6B80'; sctx.fillText(y, mL-7, py(y)+4);
+  }
+  sctx.strokeStyle='#B9C7D6'; sctx.lineWidth=1.6;
+  sctx.beginPath(); sctx.moveTo(mL,mT); sctx.lineTo(mL,H-mB); sctx.lineTo(W-mR,H-mB); sctx.stroke();
+  sctx.textAlign='center'; sctx.fillStyle='#5B6B80';
+  sctx.fillText('velocidad (km/h)', (mL+W-mR)/2, H-6);
+  sctx.save(); sctx.translate(12,(mT+H-mB)/2); sctx.rotate(-Math.PI/2);
+  sctx.fillText('consumo (l/100 km)', 0, 0); sctx.restore();
+
+  /* curva del modelo */
+  sctx.save();
+  sctx.beginPath(); sctx.rect(mL,mT,W-mL-mR,H-mT-mB); sctx.clip();
+  sctx.strokeStyle='#1B2A41'; sctx.lineWidth=2.6;
+  sctx.beginPath();
+  for(let i=0;i<=320;i++){
+    const x=XMIN+(XMAX-XMIN)*i/320;
+    const Y=py(predecir(coefActual, x));
+    i===0?sctx.moveTo(px(x),Y):sctx.lineTo(px(x),Y);
+  }
+  sctx.stroke();
+  sctx.restore();
+
+  if(testVisible){
+    for(let i=0;i<test.x.length;i++){
+      sctx.beginPath(); sctx.arc(px(test.x[i]), py(test.y[i]), 6, 0, Math.PI*2);
+      sctx.fillStyle='#E4572E'; sctx.fill();
+      sctx.strokeStyle='#FFFFFF'; sctx.lineWidth=2; sctx.stroke();
+    }
+  }
+  for(let i=0;i<train.x.length;i++){
+    sctx.beginPath(); sctx.arc(px(train.x[i]), py(train.y[i]), 6, 0, Math.PI*2);
+    sctx.fillStyle='#0F766E'; sctx.fill();
+    sctx.strokeStyle='#FFFFFF'; sctx.lineWidth=2; sctx.stroke();
+  }
+}
+
+/* ================= gráfica del error (se construye evaluando) ================= */
+const ce=document.getElementById('curvaError');
+const cctx=ce.getContext('2d');
+
+function dibujarCurvaError(){
+  const {W,H}=preparaCanvas(ce,cctx);
+  const mL=50, mR=18, mT=16, mB=36;
+  const px=g=>mL+(g-1)/14*(W-mL-mR);
+
+  /* escala vertical: hasta 2× el error de infraajuste típico; lo que se sale, con flecha */
+  let ymax=2;
+  for(const {tr,te} of evaluaciones.values()){
+    if(tr<8 && tr*1.15>ymax) ymax=tr*1.15;
+    if(te<8 && te*1.15>ymax) ymax=te*1.15;
+  }
+  const py=e=>H-mB-Math.min(e,ymax)/ymax*(H-mT-mB);
+
+  cctx.clearRect(0,0,W,H);
+  cctx.font='11px "IBM Plex Sans", sans-serif';
+  cctx.textAlign='right';
+  const pasoY=ymax>3?1:0.5;
+  for(let e=0;e<=ymax;e+=pasoY){
+    cctx.strokeStyle='#EDF1F6'; cctx.lineWidth=1;
+    cctx.beginPath(); cctx.moveTo(mL,py(e)); cctx.lineTo(W-mR,py(e)); cctx.stroke();
+    cctx.fillStyle='#5B6B80';
+    cctx.fillText(e.toLocaleString('es-ES'), mL-7, py(e)+4);
+  }
+  cctx.textAlign='center';
+  for(let g=1;g<=15;g++){
+    cctx.fillStyle='#5B6B80';
+    cctx.fillText(g, px(g), H-mB+18);
+  }
+  cctx.strokeStyle='#B9C7D6'; cctx.lineWidth=1.6;
+  cctx.beginPath(); cctx.moveTo(mL,mT); cctx.lineTo(mL,H-mB); cctx.lineTo(W-mR,H-mB); cctx.stroke();
+  cctx.fillStyle='#5B6B80';
+  cctx.fillText('Complejidad del modelo (grado del polinomio)', (mL+W-mR)/2, H-4);
+  cctx.save(); cctx.translate(13,(mT+H-mB)/2); cctx.rotate(-Math.PI/2);
+  cctx.fillText('Error (RMSE)', 0, 0); cctx.restore();
+
+  if(evaluaciones.size===0){
+    cctx.fillStyle='#8FA3B8'; cctx.font='13px "IBM Plex Sans", sans-serif';
+    cctx.fillText('Evalúa algunos grados y aquí se irá dibujando la figura…', (mL+W-mR)/2, (mT+H-mB)/2);
+    return;
+  }
+
+  const grados=[...evaluaciones.keys()].sort((a,b)=>a-b);
+
+  /* línea naranja discontinua en el óptimo (mejor test evaluado), como la diapositiva */
+  if(grados.length>=3){
+    let mejor=grados[0];
+    for(const g of grados) if(evaluaciones.get(g).te<evaluaciones.get(mejor).te) mejor=g;
+    const X=px(mejor);
+    cctx.strokeStyle='#F07818'; cctx.lineWidth=2.6; cctx.setLineDash([8,6]);
+    cctx.beginPath(); cctx.moveTo(X,mT); cctx.lineTo(X,H-mB); cctx.stroke();
+    cctx.setLineDash([]);
+    cctx.fillStyle='#F07818'; cctx.font='700 12px "Space Grotesk", sans-serif';
+    cctx.fillText('óptimo (por ahora)', X, mT+2>14?mT+2:14);
+  }
+
+  function serie(campo, color){
+    cctx.strokeStyle=color; cctx.lineWidth=3.5; cctx.lineJoin='round'; cctx.lineCap='round';
+    cctx.beginPath();
+    grados.forEach((g,i)=>{
+      const Y=py(evaluaciones.get(g)[campo]);
+      i===0?cctx.moveTo(px(g),Y):cctx.lineTo(px(g),Y);
+    });
+    if(grados.length>1) cctx.stroke();
+    for(const g of grados){
+      const v=evaluaciones.get(g)[campo];
+      cctx.beginPath(); cctx.arc(px(g), py(v), 5.5, 0, Math.PI*2);
+      cctx.fillStyle=color; cctx.fill();
+      cctx.strokeStyle='#FFFFFF'; cctx.lineWidth=1.8; cctx.stroke();
+      if(v>ymax*1.001){
+        cctx.fillStyle=color; cctx.font='700 11px "Space Grotesk", sans-serif';
+        cctx.fillText('↑ '+(v>99?'>99':fmt(v)), px(g), py(ymax)-8);
+      }
+    }
+  }
+  serie('tr', '#2274C4');
+  serie('te', '#E0A80C');
+
+  /* leyenda como la diapositiva */
+  cctx.textAlign='left'; cctx.font='700 12px "Space Grotesk", sans-serif';
+  cctx.fillStyle='#2274C4'; cctx.fillText('● Datos de entrenamiento', W-mR-320, mT+14);
+  cctx.fillStyle='#E0A80C'; cctx.fillText('● Datos de test', W-mR-150, mT+14);
+}
+
+/* ================= flujo ================= */
+const NOMBRES_GRADO={1:'recta',2:'parábola',3:'cúbica'};
+function fijarGrado(g){
+  grado=g;
+  document.getElementById('sliderG').value=g;
+  document.getElementById('txtGrado').textContent=g;
+  document.getElementById('txtGradoSub').textContent=NOMBRES_GRADO[g]||'polinomio de grado '+g;
+  document.querySelectorAll('#atajos button').forEach(b=>
+    b.classList.toggle('activo', +b.dataset.g===g));
+  coefActual=ajustar(g);
+  document.getElementById('errTrain').textContent=fmt(rmse(train, coefActual));
+  /* el test vuelve a ocultarse: cada grado exige su evaluación */
+  testVisible=false;
+  document.getElementById('errTest').textContent='?';
+  document.getElementById('msgOculto').style.display='';
+  document.getElementById('legTest').style.display='none';
+  document.getElementById('btnEvaluar').disabled=false;
+  document.getElementById('veredicto').className='veredicto';
+  dibujarScatter();
+}
+
+document.getElementById('sliderG').addEventListener('input',e=>fijarGrado(+e.target.value));
+document.querySelectorAll('#atajos button').forEach(b=>
+  b.addEventListener('click',()=>fijarGrado(+b.dataset.g)));
+
+document.getElementById('btnEvaluar').addEventListener('click',()=>{
+  testVisible=true;
+  const tr=rmse(train, coefActual), te=rmse(test, coefActual);
+  evaluaciones.set(grado, {tr, te});
+  document.getElementById('errTest').textContent=fmt(te);
+  document.getElementById('msgOculto').style.display='none';
+  document.getElementById('legTest').style.display='inline-flex';
+  document.getElementById('btnEvaluar').disabled=true;
+  veredicto(tr, te);
+  dibujarScatter();
+  dibujarCurvaError();
+});
+
+function veredicto(tr, te){
+  const v=document.getElementById('veredicto');
+  if(te>tr*1.6 && tr<0.6){
+    v.className='veredicto visible sobre';
+    v.innerHTML='<b>Overfitting:</b> error mínimo en entrenamiento ('+fmt(tr)+') pero mucho mayor en test ('+
+      fmt(te)+'). El modelo memorizó las particularidades y el ruido de este conjunto concreto.';
+  } else if(tr>1.0){
+    v.className='veredicto visible infra';
+    v.innerHTML='<b>Infraajuste:</b> el error es alto en entrenamiento ('+fmt(tr)+') y en test ('+fmt(te)+
+      ') por igual. Al modelo le falta flexibilidad para seguir la forma de U.';
+  } else {
+    v.className='veredicto visible buen';
+    v.innerHTML='<b>✓ Buen ajuste:</b> errores bajos y parecidos (train '+fmt(tr)+' · test '+fmt(te)+
+      '). El modelo capta el patrón sin memorizar el ruido.';
+  }
+}
+
+document.getElementById('btnRegenerar').addEventListener('click',()=>{
+  generar();
+  evaluaciones=new Map();
+  fijarGrado(grado);
+  dibujarCurvaError();
+});
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>{ dibujarScatter(); dibujarCurvaError(); });
+generar();
+fijarGrado(1);
+dibujarCurvaError();
+</script>
+</body>
+</html>
