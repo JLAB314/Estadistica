@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Construye tu binomial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --azul:#2274C4;
+    --coral:#E4572E;
+    --naranja:#F07818;
+    --ambar:#D98E04;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --mal:#C0392B;
+    --mal-fondo:#FBEEEC;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:680px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  /* deslizadores n y p */
+  .deslizadores{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .desliz{background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:12px 16px;}
+  .desliz .cab{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px;}
+  .desliz .nom{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.95rem;}
+  .desliz .val{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.2rem; color:var(--verde); font-variant-numeric:tabular-nums;}
+  .desliz input[type=range]{width:100%; accent-color:var(--verde); height:28px; cursor:pointer;}
+  .desliz input[type=range]:focus-visible{outline:3px solid var(--coral); outline-offset:2px; border-radius:6px;}
+  .desliz .pistas{display:flex; justify-content:space-between; font-size:.75rem; color:var(--tinta-suave);}
+
+  /* entrada de x */
+  .entrada{
+    display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+    margin-top:16px; background:#F7FAFC; border:1px solid var(--borde);
+    border-radius:10px; padding:14px 16px;
+  }
+  .entrada label{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.98rem;}
+  .entrada input[type=number]{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.3rem;
+    width:90px; padding:8px 12px; border:2px solid var(--borde); border-radius:10px;
+    color:var(--tinta); text-align:center;
+  }
+  .entrada input[type=number]:focus-visible{outline:3px solid var(--naranja); outline-offset:1px; border-color:var(--naranja);}
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.98rem;
+    border:none; border-radius:999px; padding:12px 26px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .btn.coral{background:var(--coral); color:var(--blanco);}
+  .btn.coral:hover{filter:brightness(1.07);}
+  .btn.sec{background:var(--blanco); color:var(--tinta); border:1.5px solid var(--borde); font-weight:500; font-size:.88rem; padding:9px 18px;}
+  .btn.sec:hover{border-color:var(--verde);}
+  .progreso{margin-left:auto; font-size:.9rem; color:var(--tinta-suave); font-variant-numeric:tabular-nums;}
+  .progreso b{color:var(--tinta); font-family:'Space Grotesk',sans-serif;}
+
+  /* cálculo desplegado */
+  .calculo{
+    margin-top:12px; border-radius:10px; padding:12px 16px; font-size:.97rem;
+    display:none; border-left:5px solid var(--verde); background:#F2F9F7;
+    font-variant-numeric:tabular-nums; overflow-x:auto;
+  }
+  .calculo.visible{display:block;}
+  .calculo.aviso{border-color:var(--ambar); background:#FDF6E9;}
+  .calculo b{font-family:'Space Grotesk',sans-serif;}
+  .calculo .res{color:var(--verde); font-weight:700;}
+
+  #grafico{width:100%; height:340px; display:block; margin-top:6px;}
+
+  .completada{
+    margin-top:12px; border-radius:10px; padding:12px 16px; font-size:.95rem;
+    display:none; border-left:5px solid var(--ok); background:var(--ok-fondo);
+  }
+  .completada.visible{display:block;}
+  .completada b{font-family:'Space Grotesk',sans-serif;}
+
+  h2{font-family:'Space Grotesk', sans-serif; font-size:1.12rem; font-weight:700; margin:34px 0 4px;}
+  h2 small{color:var(--tinta-suave); font-size:.92rem; display:block; font-weight:400;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){
+    .deslizadores{grid-template-columns:1fr;}
+    #grafico{height:280px;}
+    .progreso{margin-left:0;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>Construye tu binomial</h1>
+    <p class="sub">X ~ B(n, p): número de éxitos en n intentos independientes, cada uno con probabilidad
+    de éxito p. Elige <b>n</b> y <b>p</b>, y luego ve pidiendo valores de <b>x</b> uno a uno: con cada
+    uno se calcula P(X = x) con la fórmula y se <b>dibuja su barra</b>. Cuando los hayas pedido todos,
+    tendrás la función de cuantía completa — y la suma de todas las barras te dirá si está bien hecha.</p>
+  </header>
+
+  <div class="panel">
+    <div class="deslizadores">
+      <div class="desliz">
+        <div class="cab"><span class="nom">n — número de intentos</span><span class="val" id="vN">10</span></div>
+        <input type="range" id="sN" min="1" max="20" step="1" value="10" aria-label="Número de intentos n">
+        <div class="pistas"><span>1</span><span>20</span></div>
+      </div>
+      <div class="desliz">
+        <div class="cab"><span class="nom">p — probabilidad de éxito</span><span class="val" id="vP">0,30</span></div>
+        <input type="range" id="sP" min="0.05" max="0.95" step="0.05" value="0.3" aria-label="Probabilidad de éxito p">
+        <div class="pistas"><span>0,05</span><span>0,95</span></div>
+      </div>
+    </div>
+
+    <div class="entrada">
+      <label for="inputX">x =</label>
+      <input type="number" id="inputX" min="0" max="10" step="1" value="0" aria-label="Valor de x a calcular">
+      <button class="btn coral" id="btnDibujar">Calcular y dibujar P(X = x)</button>
+      <button class="btn sec" id="btnBorrar">↺ Borrar dibujo</button>
+      <span class="progreso" id="progreso"></span>
+    </div>
+
+    <div class="calculo" id="calculo"></div>
+
+    <canvas id="grafico" aria-label="Función de cuantía de la binomial construida barra a barra"></canvas>
+
+    <div class="completada" id="completada"></div>
+  </div>
+
+  <details class="nota">
+    <summary>La fórmula de la binomial, pieza a pieza</summary>
+    <div class="nota-cuerpo">
+      <p><b>P(X = x) = C(n, x) · pˣ · (1 − p)ⁿ⁻ˣ</b>. Cada factor cuenta una parte de la historia:
+      <b>pˣ</b> es la probabilidad de que x intentos concretos salgan éxito; <b>(1 − p)ⁿ⁻ˣ</b>, la de que
+      los n − x restantes salgan fracaso; y <b>C(n, x)</b> — el número combinatorio — cuenta de cuántas
+      maneras pueden repartirse esos x éxitos entre los n intentos (porque el orden no importa).</p>
+      <p><b>Comprobaciones que puedes hacer con el dibujo:</b> la suma de todas las barras es exactamente 1
+      (algún valor tiene que salir); la barra más alta está cerca de la media n·p; con p = 0,5 la figura es
+      simétrica, con p pequeña se carga a la izquierda y con p grande a la derecha; y P(X = x) con
+      probabilidad p es la imagen especular de P(X = n − x) con probabilidad 1 − p.</p>
+      <p>Si cambias n o p, la variable ya es otra: el dibujo se reinicia solo.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de modelos de probabilidad · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= binomial ================= */
+function comb(n,x){
+  if(x<0||x>n) return 0;
+  x=Math.min(x,n-x);
+  let c=1;
+  for(let i=0;i<x;i++) c=c*(n-i)/(i+1);
+  return Math.round(c);
+}
+function pmf(n,p,x){ return comb(n,x)*Math.pow(p,x)*Math.pow(1-p,n-x); }
+
+/* ================= estado ================= */
+let n=10, p=0.3;
+let dibujadas=new Set();
+let ultima=-1;
+let animacion=null;   // {x, f} barra animándose
+
+function fmt(v, dec){
+  return v.toLocaleString('es-ES',{minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+function fmtP(v){
+  if(v>=0.0005 || v===0) return fmt(v,3);
+  return v.toLocaleString('es-ES',{maximumSignificantDigits:2});   /* muy pequeñas: notación compacta */
+}
+
+/* ================= gráfico ================= */
+const cv=document.getElementById('grafico');
+const ctx=cv.getContext('2d');
+
+function preparaCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const r=cv.getBoundingClientRect();
+  cv.width=r.width*dpr; cv.height=r.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function dibujar(){
+  const {W,H}=preparaCanvas();
+  const mL=56, mR=18, mT=34, mB=44;
+  const px=x=>mL+(x+0.7)/(n+1.4)*(W-mL-mR);
+  let pMax=0;
+  for(let x=0;x<=n;x++) pMax=Math.max(pMax, pmf(n,p,x));
+  const py=v=>H-mB-(v/(pMax*1.18))*(H-mT-mB);
+
+  ctx.clearRect(0,0,W,H);
+  ctx.font='700 13px "Space Grotesk", sans-serif'; ctx.fillStyle='#1B2A41'; ctx.textAlign='left';
+  ctx.fillText('P(X = x) — función de cuantía de B('+n+' ; '+fmt(p,2)+')', mL, 18);
+
+  /* ejes y rejilla */
+  ctx.strokeStyle='#B9C7D6'; ctx.lineWidth=1.8;
+  ctx.beginPath(); ctx.moveTo(mL, mT-6); ctx.lineTo(mL, H-mB); ctx.lineTo(W-mR, H-mB); ctx.stroke();
+  ctx.font='11px "IBM Plex Sans", sans-serif'; ctx.fillStyle='#5B6B80'; ctx.textAlign='right';
+  const pasoY=pMax>0.4?0.2:(pMax>0.15?0.1:0.05);
+  for(let v=pasoY; v<=pMax*1.18; v+=pasoY){
+    ctx.strokeStyle='#EDF1F6'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(mL, py(v)); ctx.lineTo(W-mR, py(v)); ctx.stroke();
+    ctx.fillStyle='#5B6B80';
+    ctx.fillText(fmt(v,2), mL-6, py(v)+4);
+  }
+  ctx.textAlign='center';
+  for(let x=0;x<=n;x++){
+    ctx.fillStyle='#5B6B80';
+    ctx.fillText(x, px(x), H-mB+16);
+  }
+  ctx.fillText('x — número de éxitos', (mL+W-mR)/2, H-6);
+
+  /* huecos pendientes: marca fantasma en el eje */
+  for(let x=0;x<=n;x++){
+    if(dibujadas.has(x)) continue;
+    ctx.strokeStyle='#C9D6E3'; ctx.lineWidth=2; ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.moveTo(px(x), H-mB); ctx.lineTo(px(x), H-mB-10); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* barras dibujadas (piruleta fina) */
+  const etiquetas = n<=12;
+  for(const x of dibujadas){
+    const v=pmf(n,p,x);
+    const f = (animacion && animacion.x===x) ? animacion.f : 1;
+    const esUltima = x===ultima;
+    const color=esUltima?'#E4572E':'#2274C4';
+    const Y=py(v*f);
+    ctx.strokeStyle=color; ctx.lineWidth=3.5; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(px(x), H-mB); ctx.lineTo(px(x), Y); ctx.stroke();
+    ctx.beginPath(); ctx.arc(px(x), Y, 6.5, 0, Math.PI*2);
+    ctx.fillStyle=color; ctx.fill();
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=1.8; ctx.stroke();
+    if(f===1 && (etiquetas || esUltima)){
+      ctx.fillStyle=color;
+      ctx.font=(esUltima?'700 ':'')+'11px "IBM Plex Sans", sans-serif';
+      ctx.fillText(fmtP(v), px(x), Y-13);
+    }
+  }
+
+  /* media n·p cuando la figura está completa */
+  if(dibujadas.size===n+1 && !animacion){
+    const media=n*p;
+    ctx.strokeStyle='#D98E04'; ctx.lineWidth=2; ctx.setLineDash([6,5]);
+    ctx.beginPath(); ctx.moveTo(px(media), mT-2); ctx.lineTo(px(media), H-mB); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#D98E04'; ctx.font='700 12px "Space Grotesk", sans-serif';
+    ctx.fillText('media = n·p = '+fmt(media,1), px(media), mT-8);
+  }
+}
+
+/* ================= paneles ================= */
+function actualizarProgreso(){
+  document.getElementById('progreso').innerHTML=
+    'dibujadas <b>'+dibujadas.size+'</b> de <b>'+(n+1)+'</b> barras (x = 0 … '+n+')';
+  const comp=document.getElementById('completada');
+  if(dibujadas.size===n+1){
+    let suma=0;
+    for(let x=0;x<=n;x++) suma+=pmf(n,p,x);
+    comp.className='completada visible';
+    comp.innerHTML='<b>✓ Función de cuantía completa.</b> Suma de todas las barras: <b>'+
+      fmt(suma,4).replace(/,?0+$/,'')+'</b> — la probabilidad total es 1, como debe ser. '+
+      'Fíjate: la barra más alta queda pegada a la media n·p = '+fmt(n*p,1)+
+      (Math.abs(p-0.5)<1e-9?' y la figura es perfectamente simétrica (p = 0,5).':
+       p<0.5?' y la figura se carga hacia la izquierda (p < 0,5).':
+       ' y la figura se carga hacia la derecha (p > 0,5).');
+  } else {
+    comp.className='completada';
+  }
+}
+
+function mostrarCalculo(x){
+  const c=document.getElementById('calculo');
+  const C=comb(n,x), px_=Math.pow(p,x), qx=Math.pow(1-p,n-x), v=pmf(n,p,x);
+  c.className='calculo visible';
+  c.innerHTML='<b>P(X = '+x+')</b> = C('+n+', '+x+') · '+fmt(p,2)+'<sup>'+x+'</sup> · '+
+    fmt(1-p,2)+'<sup>'+(n-x)+'</sup> = '+
+    C.toLocaleString('es-ES')+' · '+fmtP(px_)+' · '+fmtP(qx)+
+    ' = <span class="res">'+fmtP(v)+'</span>';
+}
+
+/* ================= acciones ================= */
+function dibujarX(){
+  const input=document.getElementById('inputX');
+  const x=Math.round(+input.value);
+  const c=document.getElementById('calculo');
+  if(isNaN(x) || x<0 || x>n){
+    c.className='calculo visible aviso';
+    c.innerHTML='<b>Ojo:</b> x debe ser un número entero entre 0 y n = '+n+
+      ' (no puede haber '+(x<0?'menos de 0':'más de '+n)+' éxitos en '+n+' intentos).';
+    return;
+  }
+  if(dibujadas.has(x)){
+    c.className='calculo visible aviso';
+    c.innerHTML='<b>P(X = '+x+') ya está dibujada</b> (en coral la tienes marcada). Prueba con otro valor: te faltan '+
+      (n+1-dibujadas.size)+'.';
+    ultima=x;
+    dibujar();
+    return;
+  }
+  dibujadas.add(x);
+  ultima=x;
+  mostrarCalculo(x);
+  /* animación de crecida de la barra */
+  if(reducirMovimiento){
+    animacion=null;
+    dibujar(); actualizarProgreso();
+  } else {
+    const t0=performance.now();
+    (function crece(t){
+      const f=Math.min(1,(t-t0)/350);
+      animacion={x, f:1-Math.pow(1-f,3)};
+      dibujar();
+      if(f<1) requestAnimationFrame(crece);
+      else { animacion=null; dibujar(); actualizarProgreso(); }
+    })(t0);
+    actualizarProgreso();
+  }
+  /* sugerir el siguiente valor no dibujado */
+  for(let s=0;s<=n;s++){
+    if(!dibujadas.has(s)){ input.value=s; break; }
+  }
+  input.focus();
+}
+document.getElementById('btnDibujar').addEventListener('click',dibujarX);
+document.getElementById('inputX').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ dibujarX(); e.preventDefault(); }
+});
+
+function reiniciarDibujo(mensaje){
+  dibujadas=new Set(); ultima=-1; animacion=null;
+  const c=document.getElementById('calculo');
+  if(mensaje){
+    c.className='calculo visible aviso';
+    c.innerHTML=mensaje;
+  } else c.className='calculo';
+  document.getElementById('inputX').value=0;
+  document.getElementById('inputX').max=n;
+  dibujar(); actualizarProgreso();
+}
+document.getElementById('btnBorrar').addEventListener('click',()=>reiniciarDibujo());
+
+document.getElementById('sN').addEventListener('input',e=>{
+  n=+e.target.value;
+  document.getElementById('vN').textContent=n;
+  reiniciarDibujo('<b>Nueva variable:</b> ahora X ~ B('+n+' ; '+fmt(p,2)+'). El dibujo se reinicia — vuelve a pedir los valores de x (de 0 a '+n+').');
+});
+document.getElementById('sP').addEventListener('input',e=>{
+  p=+e.target.value;
+  document.getElementById('vP').textContent=fmt(p,2);
+  reiniciarDibujo('<b>Nueva variable:</b> ahora X ~ B('+n+' ; '+fmt(p,2)+'). El dibujo se reinicia — vuelve a pedir los valores de x (de 0 a '+n+').');
+});
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>dibujar());
+dibujar();
+actualizarProgreso();
+</script>
+</body>
+</html>
