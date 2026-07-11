@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El universo que encoge - probabilidad condicionada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --verde-suave:rgba(15,118,110,.15);
+    --azul:#2F6FED;
+    --azul-suave:rgba(47,111,237,.12);
+    --ambar:#D98E04;
+    --coral:#E4572E;
+    --coral-suave:rgba(228,87,46,.12);
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:980px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:760px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  .indicadores{display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:16px;}
+  .indic{
+    background:#F7FAFC; border:1px solid var(--borde); border-radius:var(--radio);
+    padding:14px 16px; transition:box-shadow .2s, transform .2s;
+    min-height:124px;
+  }
+  .indic.destello{box-shadow:0 0 0 3px var(--verde-suave);}
+  .indic .nom{
+    font-size:.74rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--tinta-suave); font-weight:700;
+  }
+  .indic .val{
+    font-family:'Space Grotesk', sans-serif; font-size:1.9rem; font-weight:700;
+    font-variant-numeric:tabular-nums; line-height:1.1; margin-top:4px;
+  }
+  .indic .etq{font-size:.86rem; font-weight:600; margin-top:5px; color:var(--tinta-suave);}
+  .indic.pa .val{color:var(--coral);}
+  .indic.pb .val{color:var(--azul);}
+  .indic.pab .val{color:var(--verde);}
+  .indic.cond .val{color:var(--ambar);}
+  .indic.univ .val{color:var(--tinta);}
+  .indic.cond.activa{box-shadow:0 0 0 3px rgba(217,142,4,.24); transform:translateY(-1px);}
+
+  .comparador{
+    display:grid; grid-template-columns:1fr auto 1fr 1fr; align-items:center; gap:12px;
+    background:#F7FAFC; border:1px solid var(--borde); border-radius:var(--radio);
+    padding:14px 18px; margin-bottom:16px;
+  }
+  .comp-bloque .nom{
+    font-size:.75rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--tinta-suave); font-weight:700;
+  }
+  .comp-bloque .val{
+    font-family:'Space Grotesk', sans-serif; font-size:1.85rem; line-height:1.1;
+    font-weight:700; font-variant-numeric:tabular-nums;
+  }
+  .comp-bloque.pa .val{color:var(--coral);}
+  .comp-bloque.cond .val{color:var(--ambar);}
+  .flecha-comp{
+    font-family:'Space Grotesk', sans-serif; color:var(--tinta-suave); font-size:1.6rem; font-weight:700;
+    text-align:center;
+  }
+  .diagnostico{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; padding:10px 14px;
+    border-radius:999px; text-align:center; color:var(--tinta);
+    background:#EEF2F6; border:1px solid var(--borde);
+  }
+  .diagnostico.indep{background:var(--ok-fondo); color:var(--ok); border-color:#BEE3CA;}
+  .diagnostico.sube{background:#FDF6E9; color:#9A6200; border-color:#F1D59A;}
+  .diagnostico.baja{background:#FFF0EC; color:#B53D1C; border-color:#F0B6A6;}
+
+  #lienzo{
+    width:100%; height:470px; display:block; touch-action:none; cursor:default;
+    outline:none; border-radius:8px; background:#FFFFFF;
+  }
+  #lienzo:focus-visible{box-shadow:0 0 0 3px var(--coral);}
+
+  .leyenda{
+    display:flex; gap:20px; flex-wrap:wrap; justify-content:center;
+    margin-top:10px; font-size:.85rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:7px;}
+  .muestra{width:14px; height:14px; border-radius:50%; display:inline-block; border:2px solid transparent;}
+  .m-a{background:var(--coral);}
+  .m-b{background:#FFFFFF; border-color:var(--azul);}
+  .m-ab{background:var(--coral); border-color:var(--azul);}
+  .m-no-b{background:#C8D2DD; opacity:.45;}
+
+  .ayuda{font-size:.86rem; color:var(--tinta-suave); margin-top:10px; text-align:center;}
+  .ayuda b{color:var(--coral);}
+
+  .fila-controles{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px;}
+  .fila-controles .etiq{font-size:.85rem; color:var(--tinta-suave); font-weight:600; margin-right:2px;}
+  .chip{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.86rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:7px 15px; cursor:pointer;
+    transition:background .15s, border-color .15s, transform .12s;
+  }
+  .chip:hover:not([disabled]){border-color:var(--verde); transform:translateY(-1px);}
+  .chip:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .chip.activo{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+  .chip.principal{background:var(--verde); color:var(--blanco); border-color:var(--verde);}
+  .chip.principal.activo{background:var(--ambar); border-color:var(--ambar);}
+  .chip.reset{background:var(--verde); color:var(--blanco); border-color:var(--verde);}
+  .chip.reset:hover{filter:brightness(1.1);}
+  .sep-v{width:1px; height:22px; background:var(--borde); margin:0 4px;}
+
+  .preset-info{
+    display:none; margin-top:12px; background:#F4F7FA; border-left:4px solid var(--verde);
+    padding:10px 14px; border-radius:0 8px 8px 0; font-size:.93rem;
+  }
+  .preset-info.visible{display:block;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:820px;}
+  .nota-cuerpo p{margin-top:8px;}
+  .formula{
+    font-family:'Space Grotesk', sans-serif; background:#F7FAFC; border:1px solid var(--borde);
+    border-radius:8px; padding:8px 10px; margin-top:10px; display:inline-block;
+  }
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:860px){
+    .indicadores{grid-template-columns:1fr 1fr;}
+    .indicadores .indic:last-child{grid-column:1 / -1;}
+    .comparador{grid-template-columns:1fr; text-align:center;}
+    .flecha-comp{transform:rotate(90deg);}
+    #lienzo{height:520px;}
+  }
+  @media (max-width:600px){
+    .indicadores{grid-template-columns:1fr;}
+    .indic .val,.comp-bloque .val{font-size:1.6rem;}
+    #lienzo{height:540px;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de probabilidad</div>
+    <h1>El universo que encoge</h1>
+    <p class="sub">Imagina 200 clientes con dos atributos: <b>A</b> = compra el producto premium y
+    <b>B</b> = ha usado la app esta semana. Primero miramos el universo completo. Después pulsamos
+    <b>“sabemos que B ocurrió”</b>: los clientes que no cumplen B se desvanecen y las probabilidades se
+    recalculan solo sobre el universo superviviente.</p>
+  </header>
+
+  <div class="panel">
+    <div class="indicadores">
+      <div class="indic pa" id="indPA">
+        <div class="nom">Probabilidad inicial</div>
+        <div class="val" id="valPA">—</div>
+        <div class="etq">P(A): premium en todos los clientes</div>
+      </div>
+      <div class="indic pb" id="indPB">
+        <div class="nom">Universo superviviente</div>
+        <div class="val" id="valPB">—</div>
+        <div class="etq">P(B): clientes que usaron la app</div>
+      </div>
+      <div class="indic pab" id="indPAB">
+        <div class="nom">Intersección</div>
+        <div class="val" id="valPAB">—</div>
+        <div class="etq">P(A∩B): premium y app</div>
+      </div>
+      <div class="indic cond" id="indCond">
+        <div class="nom">Probabilidad condicionada</div>
+        <div class="val" id="valCond">—</div>
+        <div class="etq">P(A|B) = P(A∩B) / P(B)</div>
+      </div>
+      <div class="indic univ" id="indUniv">
+        <div class="nom">Denominador visible</div>
+        <div class="val" id="valUniv">200</div>
+        <div class="etq" id="etqUniv">Universo completo</div>
+      </div>
+    </div>
+
+    <div class="comparador">
+      <div class="comp-bloque pa">
+        <div class="nom">Antes de saber B</div>
+        <div class="val" id="compPA">—</div>
+      </div>
+      <div class="flecha-comp">→</div>
+      <div class="comp-bloque cond">
+        <div class="nom">Después de saber B</div>
+        <div class="val" id="compCond">—</div>
+      </div>
+      <div class="diagnostico" id="diagnostico">—</div>
+    </div>
+
+    <canvas id="lienzo" tabindex="0" aria-label="Universo de 200 clientes con atributos A y B para visualizar probabilidad condicionada"></canvas>
+
+    <div class="leyenda">
+      <span><span class="muestra m-a"></span> A: compra premium</span>
+      <span><span class="muestra m-b"></span> B: usó la app</span>
+      <span><span class="muestra m-ab"></span> A∩B</span>
+      <span><span class="muestra m-no-b"></span> No pertenece a B cuando condicionamos</span>
+    </div>
+
+    <div class="ayuda">Pulsa <b>“sabemos que B ocurrió”</b> para ver cómo el denominador deja de ser 200 y pasa a ser solo el número de clientes con B.</div>
+
+    <div class="fila-controles">
+      <button class="chip principal" id="btnCondicionar">Sabemos que B ocurrió</button>
+      <button class="chip reset" id="btnResetVista">↺ Ver universo completo</button>
+      <span class="sep-v"></span>
+      <span class="etiq">Escenarios:</span>
+      <button class="chip preset activo" data-preset="asociacion">B aumenta A</button>
+      <button class="chip preset" data-preset="independencia">Independencia</button>
+      <button class="chip preset" data-preset="negativa">B reduce A</button>
+      <button class="chip preset" data-preset="raro">B es raro</button>
+    </div>
+    <div class="preset-info visible" id="presetInfo"></div>
+  </div>
+
+  <details class="nota">
+    <summary>La idea clave: condicionar es cambiar de universo</summary>
+    <div class="nota-cuerpo">
+      <p><b>P(A)</b> mira cuántos clientes tienen A dentro del universo completo. Aquí el denominador es 200.</p>
+      <p><b>P(A|B)</b> mira cuántos clientes tienen A, pero solo dentro de los clientes que también cumplen B.
+      Por eso el denominador ya no es 200, sino el tamaño del subconjunto B.</p>
+      <div class="formula">P(A|B) = P(A∩B) / P(B)</div>
+      <p>Si <b>P(A|B)</b> es parecido a <b>P(A)</b>, saber B apenas cambia nada: A y B se comportan como independientes.
+      Si sube o baja mucho, B aporta información sobre A.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de probabilidad condicionada · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+
+const reducirMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const N = 200;
+let clientes = [];
+let condicionado = false;
+let animT = 0;
+let animando = false;
+
+const lienzo = document.getElementById('lienzo');
+const ctx = lienzo.getContext('2d');
+
+const ESCENARIOS = {
+  asociacion: {
+    aSolo: 30, bSolo: 36, ambos: 54,
+    info:'<b>B aumenta A:</b> entre quienes usaron la app, la proporción de clientes premium es claramente mayor que en el universo completo. Saber B sí cambia la probabilidad de A.'
+  },
+  independencia: {
+    aSolo: 48, bSolo: 48, ambos: 32,
+    info:'<b>Independencia:</b> la proporción de A dentro de B es prácticamente la misma que en el universo completo. Saber B no aporta información relevante sobre A.'
+  },
+  negativa: {
+    aSolo: 60, bSolo: 70, ambos: 10,
+    info:'<b>B reduce A:</b> entre quienes usaron la app, la proporción de clientes premium es menor que en el universo completo. Saber B cambia la probabilidad, pero hacia abajo.'
+  },
+  raro: {
+    aSolo: 62, bSolo: 16, ambos: 12,
+    info:'<b>B es raro:</b> el subconjunto B es pequeño. La probabilidad condicionada se calcula sobre pocos clientes, y el cambio de denominador se ve especialmente claro.'
+  }
+};
+
+function fmtPct(x){
+  return (Math.round(x*1000)/10).toLocaleString('es-ES', {minimumFractionDigits:1, maximumFractionDigits:1}) + '%';
+}
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+function crearClientes(esc){
+  const arr = [];
+  let id = 0;
+  function add(cuantos, A, B){
+    for(let i=0;i<cuantos;i++) arr.push({id:id++, A:A, B:B, x:0, y:0, r:6});
+  }
+  const ninguno = N - esc.aSolo - esc.bSolo - esc.ambos;
+  add(esc.ambos, true, true);
+  add(esc.aSolo, true, false);
+  add(esc.bSolo, false, true);
+  add(ninguno, false, false);
+
+  /* Barajado determinista para que las categorías no queden en bloques. */
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(((Math.sin(i*93.17)+1)/2) * (i+1));
+    const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  clientes = arr;
+}
+
+function estadisticas(){
+  const nA = clientes.filter(c=>c.A).length;
+  const nB = clientes.filter(c=>c.B).length;
+  const nAB = clientes.filter(c=>c.A && c.B).length;
+  const pA = nA / N;
+  const pB = nB / N;
+  const pAB = nAB / N;
+  const pAgB = nB ? nAB / nB : 0;
+  return {nA:nA, nB:nB, nAB:nAB, pA:pA, pB:pB, pAB:pAB, pAgB:pAgB};
+}
+
+function preparaCanvas(){
+  const dpr = window.devicePixelRatio || 1;
+  const r = lienzo.getBoundingClientRect();
+  lienzo.width = r.width * dpr;
+  lienzo.height = r.height * dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function calcularLayout(W,H){
+  const margen = 30;
+  const top = 66;
+  const bottom = 52;
+  const gridW = W - margen*2;
+  const gridH = H - top - bottom;
+  const cols = 20;
+  const gap = Math.min(7, gridW / cols * 0.18);
+  const cell = Math.min((gridW - gap*(cols-1)) / cols, 16);
+  const rows = Math.ceil(N / cols);
+  const totalW = cols*cell + (cols-1)*gap;
+  const totalH = rows*cell + (rows-1)*gap;
+  const startX = margen + (gridW-totalW)/2;
+  const startY = top + Math.max(0,(gridH-totalH)/2);
+
+  const bClientes = clientes.filter(c=>c.B);
+  const colsB = Math.max(4, Math.ceil(Math.sqrt(bClientes.length * 1.35)));
+  const rowsB = Math.ceil(bClientes.length / colsB);
+  const cellB = Math.min(19, (gridW*0.72 - gap*(colsB-1)) / colsB, (gridH*0.88 - gap*(rowsB-1)) / rowsB);
+  const totalBW = colsB*cellB + (colsB-1)*gap;
+  const totalBH = rowsB*cellB + (rowsB-1)*gap;
+  const startBX = margen + (gridW-totalBW)/2;
+  const startBY = top + Math.max(0,(gridH-totalBH)/2);
+
+  let bi = 0;
+  clientes.forEach((c,i)=>{
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x0 = startX + col*(cell+gap) + cell/2;
+    const y0 = startY + row*(cell+gap) + cell/2;
+
+    let x1 = x0;
+    let y1 = y0;
+    let r1 = cell/2;
+    if(c.B){
+      const colB = bi % colsB;
+      const rowB = Math.floor(bi / colsB);
+      x1 = startBX + colB*(cellB+gap) + cellB/2;
+      y1 = startBY + rowB*(cellB+gap) + cellB/2;
+      r1 = cellB/2;
+      bi++;
+    }
+
+    const t = animT;
+    c.x = x0 + (x1-x0)*t;
+    c.y = y0 + (y1-y0)*t;
+    c.r = (cell/2) + (r1-cell/2)*t;
+  });
+
+  return {margen:margen, top:top, bottom:bottom, gridW:gridW, gridH:gridH};
+}
+
+function dibujarCliente(c){
+  const fuera = animT > 0 && !c.B;
+  const alpha = fuera ? clamp(1 - animT*0.86, 0.12, 1) : 1;
+  const r = c.r || 6;
+
+  ctx.beginPath();
+  ctx.arc(c.x, c.y, r, 0, Math.PI*2);
+  if(c.A){
+    ctx.fillStyle = 'rgba(228,87,46,' + alpha + ')';
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+  }
+  ctx.fill();
+
+  if(c.B){
+    ctx.strokeStyle = 'rgba(47,111,237,' + alpha + ')';
+    ctx.lineWidth = 2.4;
+  } else {
+    ctx.strokeStyle = 'rgba(190,202,214,' + (alpha*.90) + ')';
+    ctx.lineWidth = 1.1;
+  }
+  ctx.stroke();
+
+  if(c.A && c.B){
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, Math.max(2.1, r*.33), 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,' + (alpha*.9) + ')';
+    ctx.fill();
+  }
+}
+
+function actualizarIndicadores(){
+  const s = estadisticas();
+  document.getElementById('valPA').textContent = fmtPct(s.pA);
+  document.getElementById('valPB').textContent = fmtPct(s.pB);
+  document.getElementById('valPAB').textContent = fmtPct(s.pAB);
+  document.getElementById('valCond').textContent = fmtPct(s.pAgB);
+  document.getElementById('compPA').textContent = fmtPct(s.pA);
+  document.getElementById('compCond').textContent = fmtPct(s.pAgB);
+
+  const diag = document.getElementById('diagnostico');
+  const dif = s.pAgB - s.pA;
+  diag.className = 'diagnostico';
+  if(Math.abs(dif) < 0.025){
+    diag.textContent = 'B no cambia apenas A';
+    diag.classList.add('indep');
+  } else if(dif > 0){
+    diag.textContent = 'B aumenta P(A)';
+    diag.classList.add('sube');
+  } else {
+    diag.textContent = 'B reduce P(A)';
+    diag.classList.add('baja');
+  }
+
+  const yaCondicionado = animT > .5 || condicionado;
+  document.getElementById('valUniv').textContent = yaCondicionado ? String(s.nB) : String(N);
+  document.getElementById('etqUniv').textContent = yaCondicionado ? 'Denominador: solo clientes con B' : 'Denominador: universo completo';
+  document.getElementById('indCond').classList.toggle('activa', yaCondicionado);
+  document.getElementById('btnCondicionar').classList.toggle('activo', yaCondicionado);
+  document.getElementById('btnCondicionar').textContent = yaCondicionado ? 'B ya está condicionado' : 'Sabemos que B ocurrió';
+}
+
+function dibujar(){
+  actualizarIndicadores();
+  const {W,H} = preparaCanvas();
+  const layout = calcularLayout(W,H);
+  const s = estadisticas();
+  const yaCondicionado = animT > .5 || condicionado;
+
+  ctx.clearRect(0,0,W,H);
+
+  ctx.font = '700 14px "Space Grotesk", sans-serif';
+  ctx.fillStyle = '#1B2A41';
+  ctx.textAlign = 'left';
+  if(yaCondicionado){
+    ctx.fillText('Nuevo universo: solo clientes con B', layout.margen, 24);
+    ctx.font = '12px "IBM Plex Sans", sans-serif';
+    ctx.fillStyle = '#5B6B80';
+    ctx.fillText('Los clientes sin B se desvanecen: ya no cuentan en el denominador.', layout.margen, 43);
+  } else {
+    ctx.fillText('Universo completo: 200 clientes', layout.margen, 24);
+    ctx.font = '12px "IBM Plex Sans", sans-serif';
+    ctx.fillStyle = '#5B6B80';
+    ctx.fillText('A se calcula sobre todos. B todavía no ha reducido el universo.', layout.margen, 43);
+  }
+
+  ctx.strokeStyle = yaCondicionado ? 'rgba(47,111,237,.75)' : 'rgba(185,199,214,.78)';
+  ctx.lineWidth = yaCondicionado ? 2.2 : 1.4;
+  ctx.setLineDash(yaCondicionado ? [7,5] : []);
+  ctx.strokeRect(layout.margen, layout.top-18, layout.gridW, layout.gridH+36);
+  ctx.setLineDash([]);
+
+  clientes.forEach(dibujarCliente);
+
+  const formula = yaCondicionado
+    ? 'P(A|B) = |A∩B| / |B| = ' + s.nAB + ' / ' + s.nB + ' = ' + fmtPct(s.pAgB)
+    : 'P(A) = |A| / 200 = ' + s.nA + ' / 200 = ' + fmtPct(s.pA);
+  ctx.font = '700 14px "Space Grotesk", sans-serif';
+  ctx.fillStyle = yaCondicionado ? '#D98E04' : '#E4572E';
+  ctx.textAlign = 'center';
+  ctx.fillText(formula, W/2, H-18);
+}
+
+function destello(id){
+  const el = document.getElementById(id);
+  el.classList.add('destello');
+  setTimeout(()=>el.classList.remove('destello'), reducirMovimiento ? 0 : 550);
+}
+
+function animarA(valorFinal){
+  const inicio = animT;
+  const fin = valorFinal ? 1 : 0;
+  if(reducirMovimiento){
+    animT = fin;
+    condicionado = valorFinal;
+    animando = false;
+    dibujar();
+    return;
+  }
+  animando = true;
+  let paso = 0;
+  const pasos = 22;
+  function frame(){
+    paso++;
+    const t = paso / pasos;
+    const e = 1 - Math.pow(1-t, 3);
+    animT = inicio + (fin-inicio)*e;
+    if(paso >= pasos){
+      animT = fin;
+      condicionado = valorFinal;
+      animando = false;
+      destello('indUniv');
+      destello('indCond');
+      dibujar();
+      return;
+    }
+    dibujar();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function cargarEscenario(nombre){
+  const esc = ESCENARIOS[nombre];
+  crearClientes(esc);
+  condicionado = false;
+  animT = 0;
+  animando = false;
+  document.querySelectorAll('.chip.preset').forEach(b=>{
+    b.classList.toggle('activo', b.dataset.preset === nombre);
+  });
+  const info = document.getElementById('presetInfo');
+  info.innerHTML = esc.info;
+  info.classList.add('visible');
+  dibujar();
+  destello('indPA');
+  destello('indPB');
+  destello('indPAB');
+  destello('indCond');
+}
+
+document.getElementById('btnCondicionar').addEventListener('click',()=>{
+  if(!condicionado && !animando) animarA(true);
+});
+document.getElementById('btnResetVista').addEventListener('click',()=>{
+  if((condicionado || animT > 0) && !animando) animarA(false);
+});
+document.querySelectorAll('.chip.preset').forEach(b=>{
+  b.addEventListener('click',()=>cargarEscenario(b.dataset.preset));
+});
+window.addEventListener('resize',()=>dibujar());
+
+cargarEscenario('asociacion');
+</script>
+</body>
+</html>
