@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio de Business Analytics &middot; Neurona de clasificaci&oacute;n</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --verde-suave:rgba(15,118,110,.15);
+    --ambar:#D98E04;
+    --ambar-suave:rgba(217,142,4,.15);
+    --coral:#E4572E;
+    --coral-suave:rgba(228,87,46,.14);
+    --azul:#0284C7;
+    --azul-suave:rgba(2,132,199,.12);
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --mal:#C0392B;
+    --mal-fondo:#FBEEEC;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:1120px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.65rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:800px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+  .panel + .panel{margin-top:18px;}
+
+  .stack-principal{display:block;}
+  .grid-principal{
+    display:grid;
+    grid-template-columns:minmax(0, 1.05fr) minmax(290px, .95fr);
+    gap:18px;
+    align-items:stretch;
+  }
+
+  h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:1.15rem; font-weight:700; margin:36px 0 4px;
+  }
+  h2 small{color:var(--tinta-suave); font-size:.92rem; display:block; font-weight:400;}
+
+  /* controls */
+  .controles{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:14px;
+  }
+  .controles .atajos,
+  .controles .marcadores,
+  .controles .comparador,
+  .controles .veredicto,
+  .controles .fila-retos{
+    grid-column:1 / -1;
+  }
+  .control-var{
+    background:#F7FAFC;
+    border:1px solid var(--borde);
+    border-radius:var(--radio);
+    padding:14px 16px;
+  }
+  .control-head{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:flex-start;
+    margin-bottom:9px;
+  }
+  .control-head .nom{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:1rem;
+  }
+  .control-head .sub{
+    display:block;
+    color:var(--tinta-suave);
+    font-size:.82rem;
+    margin-top:2px;
+  }
+  .valor-chip{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:1.3rem;
+    font-weight:700;
+    color:var(--tinta);
+    min-width:88px;
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+  .fila-slider{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  input[type=range]{
+    flex:1;
+    min-width:120px;
+    accent-color:var(--coral);
+    height:30px;
+    cursor:pointer;
+  }
+  input[type=range]:focus-visible{
+    outline:3px solid var(--coral);
+    outline-offset:2px;
+    border-radius:6px;
+  }
+  .mini{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    width:34px;
+    height:34px;
+    border-radius:999px;
+    border:1.5px solid var(--borde);
+    background:var(--blanco);
+    color:var(--tinta);
+    cursor:pointer;
+    line-height:1;
+  }
+  .mini:hover{border-color:var(--coral);}
+  .mini:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+
+  .atajos{display:flex; gap:6px; flex-wrap:wrap; margin-top:2px;}
+  .atajos button{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.84rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:5px 13px; cursor:pointer;
+  }
+  .atajos button:hover{border-color:var(--verde);}
+  .atajos button:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .atajos button.activo{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+
+  /* score cards */
+  .marcadores{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:14px;
+  }
+  .marcador{
+    background:#F7FAFC; border:1px solid var(--borde); border-radius:var(--radio); padding:12px 16px;
+  }
+  .marcador .nom{
+    font-size:.75rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--tinta-suave); font-weight:600;
+  }
+  .marcador .val{
+    font-family:'Space Grotesk',sans-serif; font-size:1.68rem; font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .marcador.z .val{color:var(--verde);}
+  .marcador.p .val{color:var(--azul);}
+  .marcador.c .val{color:var(--ambar);}
+  .marcador.decision.aprobado .val{color:var(--ok);}
+  .marcador.decision.suspenso .val{color:var(--mal);}
+  .pista-r{height:9px; background:#E0E7EF; border-radius:999px; overflow:hidden; margin-top:6px;}
+  .relleno-r{height:100%; border-radius:999px; transition:width .2s;}
+  .marcador.z .relleno-r{background:var(--verde);}
+  .marcador.p .relleno-r{background:var(--azul);}
+  .marcador.c .relleno-r{background:var(--ambar);}
+  .marcador.decision.aprobado{background:var(--ok-fondo); border-color:rgba(27,127,75,.28);}
+  .marcador.decision.suspenso{background:var(--mal-fondo); border-color:rgba(192,57,43,.28);}
+
+  /* comparison bar */
+  .comparador{
+    background:#F7FAFC;
+    border:1px solid var(--borde);
+    border-radius:var(--radio);
+    padding:14px 16px 18px;
+  }
+  .comparador-head{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .comparador-head b{font-family:'Space Grotesk', sans-serif;}
+  .comparador-head span{color:var(--tinta-suave); font-size:.92rem;}
+  .barra-prob{
+    position:relative;
+    height:34px;
+    border-radius:999px;
+    background:#E0E7EF;
+    overflow:visible;
+    border:1px solid var(--borde);
+  }
+  .barra-prob .relleno-prob{
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:0%;
+    border-radius:999px;
+    background:var(--azul-suave);
+    border-right:3px solid var(--azul);
+  }
+  .marca{
+    position:absolute;
+    top:-9px;
+    width:2px;
+    height:50px;
+    transform:translateX(-1px);
+  }
+  .marca.prob{background:var(--azul);}
+  .marca.corte{background:var(--ambar);}
+  .marca::after{
+    position:absolute;
+    top:-21px;
+    left:50%;
+    transform:translateX(-50%);
+    white-space:nowrap;
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem;
+    font-weight:700;
+    color:var(--tinta);
+    background:var(--blanco);
+    border:1px solid var(--borde);
+    border-radius:999px;
+    padding:2px 7px;
+  }
+  .marca.prob::after{content:'p'; color:var(--azul);}
+  .marca.corte::after{content:'corte'; color:var(--ambar);}
+  .ejes-prob{display:flex; justify-content:space-between; color:var(--tinta-suave); font-size:.82rem; margin-top:8px;}
+
+  .veredicto{
+    margin-top:14px; border-radius:10px; padding:13px 17px; font-size:.96rem;
+    border-left:5px solid var(--ok);
+    background:var(--ok-fondo);
+  }
+  .veredicto b{font-family:'Space Grotesk',sans-serif;}
+  .veredicto.aviso{background:#FDF6E9; border-color:var(--ambar);}
+  .veredicto.mal{background:var(--mal-fondo); border-color:var(--mal);}
+
+  /* diagram */
+  .panel-diagrama{padding:22px 24px;}
+  .diagrama-wrap{width:100%; overflow:hidden;}
+  #neurona{
+    display:block;
+    width:100%;
+    height:auto;
+    aspect-ratio:1160 / 460;
+  }
+  #neurona text{font-family:'Space Grotesk', sans-serif;}
+  .svg-label{font-size:18px; font-weight:700;}
+  .svg-small{font-size:13px; font-weight:500;}
+  .svg-val{font-size:16px; font-weight:700;}
+  .svg-formula{font-size:20px; font-weight:700;}
+  .svg-muted{fill:var(--tinta-suave);}
+  .svg-tinta{fill:var(--tinta);}
+  .svg-azul{fill:var(--azul);}
+  .svg-verde{fill:var(--verde);}
+  .svg-coral{fill:var(--coral);}
+  .svg-ambar{fill:var(--ambar);}
+  .svg-ok{fill:var(--ok);}
+  .svg-mal{fill:var(--mal);}
+  .linea-azul{stroke:var(--azul); stroke-width:4; fill:none; marker-end:url(#flechaAzul);}
+  .linea-coral{stroke:var(--coral); stroke-width:4; fill:none; marker-end:url(#flechaCoral);}
+  .linea-verde{stroke:var(--verde); stroke-width:4; fill:none; marker-end:url(#flechaVerde);}
+  .linea-ambar{stroke:var(--ambar); stroke-width:4; fill:none; marker-end:url(#flechaAmbar);}
+  .nodo-peso{fill:var(--coral-suave); stroke:var(--coral); stroke-width:3;}
+  .nodo-suma{fill:var(--verde-suave); stroke:var(--verde); stroke-width:3;}
+  .caja-act{fill:var(--azul-suave); stroke:var(--azul); stroke-width:4; rx:8;}
+  .caja-corte{fill:var(--ambar-suave); stroke:var(--ambar); stroke-width:3; rx:8;}
+  .caja-input{fill:#F7FAFC; stroke:var(--borde); stroke-width:1.5; rx:10;}
+  .caja-decision{fill:#F7FAFC; stroke:var(--borde); stroke-width:2; rx:12;}
+  .caja-decision.aprobado{fill:var(--ok-fondo); stroke:var(--ok);}
+  .caja-decision.suspenso{fill:var(--mal-fondo); stroke:var(--mal);}
+
+  /* steps */
+  .pasos{display:grid; grid-template-columns:1fr; gap:10px;}
+  .paso{
+    display:grid;
+    grid-template-columns:42px 1fr;
+    gap:12px;
+    align-items:start;
+    background:#F7FAFC;
+    border:1px solid var(--borde);
+    border-radius:var(--radio);
+    padding:12px 14px;
+  }
+  .num{
+    width:32px; height:32px; border-radius:999px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--tinta); color:var(--blanco);
+    font-family:'Space Grotesk', sans-serif; font-weight:700;
+  }
+  .paso h3{font-family:'Space Grotesk', sans-serif; font-size:.98rem; margin-bottom:2px;}
+  .paso .calc{color:var(--tinta-suave); font-size:.93rem;}
+  .paso .res{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:1.18rem;
+    font-weight:700;
+    margin-top:4px;
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* table */
+  .tabla-wrap{overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; font-size:.94rem;}
+  th, td{
+    border:1px solid var(--borde);
+    padding:9px 10px;
+    text-align:right;
+    vertical-align:middle;
+  }
+  th{background:#F0F4F8; font-family:'Space Grotesk', sans-serif; font-weight:700;}
+  td:first-child, th:first-child{text-align:left;}
+  td.var{font-weight:600; color:var(--tinta);}
+  tr.total td{background:#F7FAFC; font-family:'Space Grotesk', sans-serif; font-weight:700;}
+
+  /* challenges */
+  .fila-retos{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px;}
+  .fila-retos .etiq{font-size:.85rem; color:var(--tinta-suave); font-weight:600;}
+  .chip{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.86rem;
+    border:1.5px solid var(--ambar); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:6px 14px; cursor:pointer;
+  }
+  .chip:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .chip.activo{background:var(--ambar); color:var(--blanco);}
+  .chip.logrado::after{content:' \2713'; font-weight:700;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'\25B8'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:860px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:900px){
+    .controles{grid-template-columns:1fr;}
+    .marcadores{grid-template-columns:1fr 1fr;}
+    .grid-principal{grid-template-columns:1fr;}
+  }
+  @media (max-width:600px){
+    .marcadores{grid-template-columns:1fr;}
+    .valor-chip{font-size:1.15rem; min-width:80px;}
+    .fila-slider{gap:6px;}
+    .mini{width:30px; height:30px;}
+    .paso{grid-template-columns:36px 1fr;}
+    .num{width:28px; height:28px;}
+    .panel-diagrama{padding:16px 12px;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>Una red neuronal para clasificar aprobado o suspenso</h1>
+    <p class="sub">
+      Mueve las dos variables de entrada y el valor de corte. La neurona calcula una entrada neta,
+      la transforma en una <b>probabilidad de aprobado</b> con una funci&oacute;n sigmoide y despu&eacute;s
+      compara esa probabilidad con el corte elegido para clasificar al alumno.
+    </p>
+  </header>
+
+  <div class="stack-principal">
+    <div class="panel controles" aria-label="Controles de las variables de entrada y del valor de corte">
+      <div class="control-var">
+        <div class="control-head">
+          <div>
+            <span class="nom">Horas de estudio</span>
+            <span class="sub">Rango: 0 a 20 horas</span>
+          </div>
+          <div class="valor-chip" id="txtHoras">10 h</div>
+        </div>
+        <div class="fila-slider">
+          <button class="mini" data-step="horas" data-dir="-1" aria-label="Bajar horas de estudio">&minus;</button>
+          <input type="range" id="horas" min="0" max="20" step="0.5" value="10" aria-label="Horas de estudio">
+          <button class="mini" data-step="horas" data-dir="1" aria-label="Subir horas de estudio">+</button>
+        </div>
+      </div>
+
+      <div class="control-var">
+        <div class="control-head">
+          <div>
+            <span class="nom">Porcentaje de asistencia</span>
+            <span class="sub">Rango: 0% a 100%</span>
+          </div>
+          <div class="valor-chip" id="txtAsistencia">75%</div>
+        </div>
+        <div class="fila-slider">
+          <button class="mini" data-step="asistencia" data-dir="-1" aria-label="Bajar porcentaje de asistencia">&minus;</button>
+          <input type="range" id="asistencia" min="0" max="100" step="1" value="75" aria-label="Porcentaje de asistencia">
+          <button class="mini" data-step="asistencia" data-dir="1" aria-label="Subir porcentaje de asistencia">+</button>
+        </div>
+      </div>
+
+      <div class="control-var">
+        <div class="control-head">
+          <div>
+            <span class="nom">Valor de corte</span>
+            <span class="sub">Probabilidad m&iacute;nima para aprobar</span>
+          </div>
+          <div class="valor-chip" id="txtCorte">50%</div>
+        </div>
+        <div class="fila-slider">
+          <button class="mini" data-step="corte" data-dir="-1" aria-label="Bajar valor de corte">&minus;</button>
+          <input type="range" id="corte" min="0.05" max="0.95" step="0.01" value="0.50" aria-label="Valor de corte para clasificar aprobado">
+          <button class="mini" data-step="corte" data-dir="1" aria-label="Subir valor de corte">+</button>
+        </div>
+      </div>
+
+      <div class="atajos" aria-label="Casos de ejemplo">
+        <button data-h="10" data-a="75" data-c="0.50" class="activo">Caso justo</button>
+        <button data-h="5" data-a="55" data-c="0.50">Berna</button>
+        <button data-h="13" data-a="82" data-c="0.50">Ana</button>
+        <button data-h="16" data-a="90" data-c="0.70">Corte exigente</button>
+        <button data-h="3" data-a="40" data-c="0.30">Corte flexible</button>
+      </div>
+
+      <div class="marcadores">
+        <div class="marcador z">
+          <div class="nom">Entrada neta Z</div>
+          <div class="val" id="txtZ">&mdash;</div>
+          <div class="pista-r"><div class="relleno-r" id="barZ" style="width:0%"></div></div>
+        </div>
+        <div class="marcador p">
+          <div class="nom">Probabilidad p</div>
+          <div class="val" id="txtP">&mdash;</div>
+          <div class="pista-r"><div class="relleno-r" id="barP" style="width:0%"></div></div>
+        </div>
+        <div class="marcador c">
+          <div class="nom">Corte c</div>
+          <div class="val" id="txtC">&mdash;</div>
+          <div class="pista-r"><div class="relleno-r" id="barC" style="width:0%"></div></div>
+        </div>
+        <div class="marcador decision" id="cardDecision">
+          <div class="nom">Clasificaci&oacute;n</div>
+          <div class="val" id="txtDecision">&mdash;</div>
+          <div class="pista-r"><div class="relleno-r" id="barDecision" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="comparador">
+        <div class="comparador-head">
+          <b>Comparaci&oacute;n entre probabilidad y corte</b>
+          <span id="txtComparacion">p = 50,0%; corte = 50,0%</span>
+        </div>
+        <div class="barra-prob" aria-label="Barra de probabilidad y valor de corte">
+          <div class="relleno-prob" id="fillProb"></div>
+          <div class="marca prob" id="markProb"></div>
+          <div class="marca corte" id="markCorte"></div>
+        </div>
+        <div class="ejes-prob"><span>0%</span><span>50%</span><span>100%</span></div>
+      </div>
+
+      <div class="veredicto" id="mensajeClasificacion"></div>
+
+      <div class="fila-retos">
+        <span class="etiq">Retos:</span>
+        <button class="chip" data-reto="justo">Aprobado por poco</button>
+        <button class="chip" data-reto="cambia">Cambia la decisi&oacute;n solo con el corte</button>
+        <button class="chip" data-reto="exigente">Suspenso con probabilidad alta</button>
+      </div>
+    </div>
+
+    <div class="panel panel-diagrama">
+      <div class="diagrama-wrap">
+        <svg id="neurona" viewBox="0 0 1160 460" role="img" aria-label="Diagrama de una neurona de clasificacion con dos entradas, pesos, sigmoide, corte y decision final">
+          <defs>
+            <marker id="flechaAzul" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#0284C7"></path>
+            </marker>
+            <marker id="flechaCoral" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#E4572E"></path>
+            </marker>
+            <marker id="flechaVerde" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#0F766E"></path>
+            </marker>
+            <marker id="flechaAmbar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#D98E04"></path>
+            </marker>
+          </defs>
+
+          <text x="28" y="34" class="svg-label svg-azul">Variables</text>
+          <text x="274" y="34" class="svg-label svg-coral">Pesos</text>
+          <text x="480" y="34" class="svg-label svg-verde">Suma</text>
+          <text x="650" y="34" class="svg-label svg-azul">Activaci&oacute;n</text>
+          <text x="885" y="34" class="svg-label svg-ambar">Corte</text>
+          <text x="1045" y="34" class="svg-label svg-tinta">Decisi&oacute;n</text>
+
+          <rect x="28" y="78" width="180" height="70" class="caja-input"></rect>
+          <text x="118" y="104" text-anchor="middle" class="svg-small svg-muted">Horas de estudio</text>
+          <text x="118" y="130" text-anchor="middle" id="svgHoras" class="svg-val svg-azul">10 h</text>
+
+          <rect x="28" y="218" width="180" height="70" class="caja-input"></rect>
+          <text x="118" y="244" text-anchor="middle" class="svg-small svg-muted">Asistencia</text>
+          <text x="118" y="270" text-anchor="middle" id="svgAsistencia" class="svg-val svg-azul">75%</text>
+
+          <line x1="208" y1="113" x2="265" y2="113" class="linea-azul"></line>
+          <line x1="208" y1="253" x2="265" y2="253" class="linea-azul"></line>
+
+          <circle cx="310" cy="113" r="42" class="nodo-peso"></circle>
+          <text x="310" y="108" text-anchor="middle" class="svg-small svg-muted">w1</text>
+          <text x="310" y="132" text-anchor="middle" class="svg-val svg-coral">0,25</text>
+
+          <circle cx="310" cy="253" r="42" class="nodo-peso"></circle>
+          <text x="310" y="248" text-anchor="middle" class="svg-small svg-muted">w2</text>
+          <text x="310" y="272" text-anchor="middle" class="svg-val svg-coral">0,04</text>
+
+          <rect x="288" y="332" width="90" height="54" class="caja-input"></rect>
+          <text x="333" y="354" text-anchor="middle" class="svg-small svg-muted">sesgo</text>
+          <text x="333" y="376" text-anchor="middle" class="svg-val svg-coral">-5,50</text>
+
+          <line x1="352" y1="113" x2="470" y2="173" class="linea-coral"></line>
+          <line x1="352" y1="253" x2="470" y2="207" class="linea-coral"></line>
+          <line x1="378" y1="359" x2="470" y2="229" class="linea-coral"></line>
+          <text x="408" y="124" text-anchor="middle" id="svgContribHoras" class="svg-small svg-coral">2,50</text>
+          <text x="408" y="253" text-anchor="middle" id="svgContribAsistencia" class="svg-small svg-coral">3,00</text>
+
+          <circle cx="520" cy="190" r="58" class="nodo-suma"></circle>
+          <text x="520" y="202" text-anchor="middle" class="svg-formula svg-verde">&Sigma;</text>
+          <text x="520" y="265" text-anchor="middle" id="svgZ" class="svg-val svg-verde">Z = 0,00</text>
+
+          <line x1="578" y1="190" x2="636" y2="190" class="linea-verde"></line>
+
+          <rect x="642" y="157" width="100" height="66" class="caja-act"></rect>
+          <line x1="655" y1="212" x2="731" y2="212" stroke="#7FB7DD" stroke-width="1.5"></line>
+          <line x1="655" y1="212" x2="655" y2="166" stroke="#7FB7DD" stroke-width="1.5"></line>
+          <path d="M658 204 C668 204, 674 203, 679 198 C684 193, 687 186, 690 180 C693 174, 697 169, 703 166 C709 163, 716 162, 726 162" stroke="#0284C7" stroke-width="5" fill="none" stroke-linecap="round"></path>
+          <text x="692" y="246" text-anchor="middle" class="svg-small svg-azul">sigmoide</text>
+          <text x="692" y="263" text-anchor="middle" class="svg-small svg-azul">p = f(Z)</text>
+
+          <line x1="742" y1="190" x2="785" y2="190" class="linea-azul"></line>
+          <circle cx="815" cy="190" r="38" fill="var(--azul-suave)" stroke="#0284C7" stroke-width="3"></circle>
+          <text x="815" y="184" text-anchor="middle" class="svg-small svg-muted">p</text>
+          <text x="815" y="207" text-anchor="middle" id="svgP" class="svg-val svg-azul">50,0%</text>
+
+          <line x1="853" y1="190" x2="888" y2="190" class="linea-azul"></line>
+          <rect x="894" y="149" width="106" height="82" class="caja-corte"></rect>
+          <text x="947" y="176" text-anchor="middle" class="svg-small svg-muted">compara</text>
+          <text x="947" y="201" text-anchor="middle" id="svgCompare" class="svg-val svg-ambar">p &gt;= c</text>
+          <text x="947" y="220" text-anchor="middle" class="svg-small svg-muted">?</text>
+
+          <rect x="855" y="318" width="140" height="58" class="caja-input"></rect>
+          <text x="925" y="342" text-anchor="middle" class="svg-small svg-muted">valor de corte</text>
+          <text x="925" y="365" text-anchor="middle" id="svgCorte" class="svg-val svg-ambar">50,0%</text>
+          <line x1="925" y1="318" x2="940" y2="234" class="linea-ambar"></line>
+
+          <line x1="1000" y1="190" x2="1032" y2="190" class="linea-ambar"></line>
+          <rect x="1038" y="155" width="110" height="70" id="svgDecisionBox" class="caja-decision"></rect>
+          <text x="1093" y="184" text-anchor="middle" class="svg-small svg-muted">y</text>
+          <text x="1093" y="207" text-anchor="middle" id="svgDecision" class="svg-val">?</text>
+
+          <text x="540" y="414" text-anchor="middle" id="svgFormula" class="svg-formula svg-verde">
+            Z = -5,50 + 0,25*10 + 0,04*75 = 0,00
+          </text>
+          <text x="540" y="438" text-anchor="middle" id="svgResumen" class="svg-small svg-muted">
+            Sigmoide: p = 50,0%. Si p &gt;= corte, clasifica como aprobado.
+          </text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <h2>Operaci&oacute;n paso a paso
+    <small>Cada cambio actualiza la suma ponderada, la probabilidad, el valor de corte y la decisi&oacute;n final.</small>
+  </h2>
+
+  <div class="grid-principal">
+    <div class="panel">
+      <div class="pasos">
+        <div class="paso">
+          <div class="num">1</div>
+          <div>
+            <h3>Variables de entrada</h3>
+            <div class="calc" id="paso1Calc">x1 = 10 horas; x2 = 75%</div>
+            <div class="res">El modelo recibe dos variables observables.</div>
+          </div>
+        </div>
+
+        <div class="paso">
+          <div class="num">2</div>
+          <div>
+            <h3>Multiplicaci&oacute;n por los pesos</h3>
+            <div class="calc" id="paso2Calc">0,25*10 = 2,50; 0,04*75 = 3,00</div>
+            <div class="res" id="paso2Res">Contribuciones: 2,50 y 3,00</div>
+          </div>
+        </div>
+
+        <div class="paso">
+          <div class="num">3</div>
+          <div>
+            <h3>Entrada neta</h3>
+            <div class="calc" id="paso3Calc">Z = sesgo + contribuci&oacute;n 1 + contribuci&oacute;n 2</div>
+            <div class="res" id="paso3Res">Z = -5,50 + 2,50 + 3,00 = 0,00</div>
+          </div>
+        </div>
+
+        <div class="paso">
+          <div class="num">4</div>
+          <div>
+            <h3>Funci&oacute;n de activaci&oacute;n</h3>
+            <div class="calc" id="paso4Calc">p = 1 / (1 + exp(-Z))</div>
+            <div class="res" id="paso4Res">p(aprobado) = 50,0%</div>
+          </div>
+        </div>
+
+        <div class="paso">
+          <div class="num">5</div>
+          <div>
+            <h3>Clasificaci&oacute;n con valor de corte</h3>
+            <div class="calc" id="paso5Calc">Si p &gt;= corte, entonces aprobado; si no, suspenso.</div>
+            <div class="res" id="paso5Res">50,0% &gt;= 50,0%: aprobado</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="tabla-wrap">
+        <table aria-label="Tabla de calculo de la neurona de clasificacion">
+          <thead>
+            <tr>
+              <th>Elemento</th>
+              <th>Valor</th>
+              <th>Peso</th>
+              <th>Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="var">Horas de estudio</td>
+              <td id="tabHoras">10</td>
+              <td>0,25</td>
+              <td id="tabCHoras">2,50</td>
+            </tr>
+            <tr>
+              <td class="var">Porcentaje de asistencia</td>
+              <td id="tabAsistencia">75</td>
+              <td>0,04</td>
+              <td id="tabCAsistencia">3,00</td>
+            </tr>
+            <tr>
+              <td class="var">Sesgo / intercepto</td>
+              <td>1</td>
+              <td>-5,50</td>
+              <td>-5,50</td>
+            </tr>
+            <tr class="total">
+              <td>Z</td>
+              <td colspan="2" id="tabFormulaZ">-5,50 + 2,50 + 3,00</td>
+              <td id="tabZ">0,00</td>
+            </tr>
+            <tr class="total">
+              <td>Probabilidad</td>
+              <td colspan="2">p = sigmoide(Z)</td>
+              <td id="tabP">50,0%</td>
+            </tr>
+            <tr class="total">
+              <td>Corte</td>
+              <td colspan="2">c</td>
+              <td id="tabCorte">50,0%</td>
+            </tr>
+            <tr class="total">
+              <td>Clase final</td>
+              <td colspan="2" id="tabRegla">p &gt;= c</td>
+              <td id="tabDecision">Aprobado</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="veredicto aviso" style="margin-top:16px;">
+        <b>Idea clave.</b>
+        La funci&oacute;n sigmoide siempre devuelve una probabilidad entre 0 y 1. El valor de corte no cambia esa
+        probabilidad: solo cambia la frontera a partir de la cual el modelo dice <b>aprobado</b>.
+      </div>
+    </div>
+  </div>
+
+  <details class="nota">
+    <summary>&iquest;Por qu&eacute; aparece ahora una funci&oacute;n sigmoide?</summary>
+    <div class="nota-cuerpo">
+      <p>
+        En la versi&oacute;n de regresi&oacute;n, la salida era una nota num&eacute;rica. En clasificaci&oacute;n binaria queremos
+        una probabilidad: por eso transformamos la entrada neta <b>Z</b> con una funci&oacute;n sigmoide.
+        El resultado se interpreta como <b>p(aprobado)</b>.
+      </p>
+      <p>
+        El modelo usado aqu&iacute; es: <b>Z = -5,50 + 0,25 &middot; horas + 0,04 &middot; asistencia</b>. El sesgo negativo evita
+        que todos los casos sean clasificados como aprobados por defecto. Las horas y la asistencia van sumando
+        evidencia a favor del aprobado.
+      </p>
+      <p>
+        Cambiar el corte sirve para hacer el clasificador m&aacute;s flexible o m&aacute;s exigente. Con corte 0,50 basta
+        con que la probabilidad estimada sea al menos del 50%. Con corte 0,70 el modelo solo aprueba casos en
+        los que est&aacute; m&aacute;s seguro.
+      </p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de Business Analytics &middot; clasificaci&oacute;n binaria con una neurona</footer>
+</div>
+
+<script>
+"use strict";
+
+const W_HORAS = 0.25;
+const W_ASISTENCIA = 0.04;
+const SESGO = -5.50;
+const Z_MIN = SESGO;
+const Z_MAX = SESGO + W_HORAS * 20 + W_ASISTENCIA * 100;
+const EPS = 1e-9;
+
+const $ = id => document.getElementById(id);
+const sliders = {
+  horas: $("horas"),
+  asistencia: $("asistencia"),
+  corte: $("corte")
+};
+
+function fmt(x, dec = 2){
+  return Number(x).toLocaleString("es-ES", {
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec
+  });
+}
+function fmtInput(x){
+  const n = Number(x);
+  return n.toLocaleString("es-ES", {
+    minimumFractionDigits: Number.isInteger(n) ? 0 : 1,
+    maximumFractionDigits: 1
+  });
+}
+function fmtPct(x, dec = 1){
+  return (Number(x) * 100).toLocaleString("es-ES", {
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec
+  }) + "%";
+}
+function clamp(x, min, max){
+  return Math.min(max, Math.max(min, x));
+}
+function sigmoid(z){
+  return 1 / (1 + Math.exp(-z));
+}
+
+function calcular(){
+  const horas = Number(sliders.horas.value);
+  const asistencia = Number(sliders.asistencia.value);
+  const corte = Number(sliders.corte.value);
+  const contribHoras = W_HORAS * horas;
+  const contribAsistencia = W_ASISTENCIA * asistencia;
+  const z = SESGO + contribHoras + contribAsistencia;
+  const p = sigmoid(z);
+  const aprobado = p + EPS >= corte;
+  return {horas, asistencia, corte, contribHoras, contribAsistencia, z, p, aprobado};
+}
+
+function actualizarAtajos(horas, asistencia, corte){
+  document.querySelectorAll(".atajos button").forEach(btn => {
+    const h = Number(btn.dataset.h);
+    const a = Number(btn.dataset.a);
+    const c = Number(btn.dataset.c);
+    btn.classList.toggle("activo", h === horas && a === asistencia && Math.abs(c - corte) < 1e-9);
+  });
+}
+
+function actualizarRetos(d){
+  const distancia = d.p - d.corte;
+  const retos = {
+    justo: d.aprobado && distancia >= 0 && distancia <= 0.03,
+    cambia: d.p > 0.42 && d.p < 0.58,
+    exigente: !d.aprobado && d.p >= 0.60
+  };
+  document.querySelectorAll(".chip[data-reto]").forEach(chip => {
+    chip.classList.toggle("logrado", Boolean(retos[chip.dataset.reto]));
+  });
+}
+
+function actualizarDiagrama(d){
+  const decisionTexto = d.aprobado ? "Aprobado" : "Suspenso";
+  const decision = decisionTexto;
+  const clase = d.aprobado ? "aprobado" : "suspenso";
+
+  $("svgHoras").textContent = fmtInput(d.horas) + " h";
+  $("svgAsistencia").textContent = fmtInput(d.asistencia) + "%";
+  $("svgContribHoras").textContent = fmt(d.contribHoras);
+  $("svgContribAsistencia").textContent = fmt(d.contribAsistencia);
+  $("svgZ").textContent = "Z = " + fmt(d.z);
+  $("svgP").textContent = fmtPct(d.p);
+  $("svgCorte").textContent = fmtPct(d.corte);
+  $("svgCompare").textContent = "p " + (d.aprobado ? ">= c" : "< c");
+  $("svgDecision").textContent = decision;
+  $("svgDecision").setAttribute("class", "svg-val " + (d.aprobado ? "svg-ok" : "svg-mal"));
+  $("svgDecisionBox").setAttribute("class", "caja-decision " + clase);
+  $("svgFormula").textContent =
+    "Z = -5,50 + 0,25*" + fmtInput(d.horas) + " + 0,04*" + fmtInput(d.asistencia) + " = " + fmt(d.z);
+  $("svgResumen").textContent =
+    "Sigmoide: p = " + fmtPct(d.p) + ". Corte = " + fmtPct(d.corte) + ". Resultado: " + decisionTexto + ".";
+}
+
+function actualizar(){
+  const d = calcular();
+  const decisionTexto = d.aprobado ? "Aprobado" : "Suspenso";
+  const clase = d.aprobado ? "aprobado" : "suspenso";
+  const zPos = clamp((d.z - Z_MIN) / (Z_MAX - Z_MIN), 0, 1);
+  const comparacion = d.aprobado ? ">=" : "<";
+
+  $("txtHoras").textContent = fmtInput(d.horas) + " h";
+  $("txtAsistencia").textContent = fmtInput(d.asistencia) + "%";
+  $("txtCorte").textContent = fmtPct(d.corte, 0);
+  $("txtZ").textContent = fmt(d.z);
+  $("txtP").textContent = fmtPct(d.p);
+  $("txtC").textContent = fmtPct(d.corte);
+  $("txtDecision").textContent = decisionTexto;
+  $("barZ").style.width = (zPos * 100) + "%";
+  $("barP").style.width = (d.p * 100) + "%";
+  $("barC").style.width = (d.corte * 100) + "%";
+  $("cardDecision").className = "marcador decision " + clase;
+  $("barDecision").style.width = d.aprobado ? "100%" : "0%";
+
+  $("txtComparacion").textContent =
+    "p = " + fmtPct(d.p) + "; corte = " + fmtPct(d.corte) + "; p " + comparacion + " corte";
+  $("fillProb").style.width = (d.p * 100) + "%";
+  $("markProb").style.left = (d.p * 100) + "%";
+  $("markCorte").style.left = (d.corte * 100) + "%";
+
+  $("mensajeClasificacion").className = "veredicto " + (d.aprobado ? "" : "mal");
+  $("mensajeClasificacion").innerHTML =
+    "<b>Resultado: " + decisionTexto + ".</b> " +
+    "La probabilidad estimada de aprobado es <b>" + fmtPct(d.p) + "</b> y el corte elegido es <b>" + fmtPct(d.corte) + "</b>. " +
+    "Como p " + comparacion + " corte, el clasificador devuelve <b>" + decisionTexto.toLowerCase() + "</b>.";
+
+  actualizarDiagrama(d);
+
+  $("paso1Calc").textContent = "x1 = " + fmtInput(d.horas) + " horas; x2 = " + fmtInput(d.asistencia) + "%";
+  $("paso2Calc").textContent =
+    "0,25*" + fmtInput(d.horas) + " = " + fmt(d.contribHoras) +
+    "; 0,04*" + fmtInput(d.asistencia) + " = " + fmt(d.contribAsistencia);
+  $("paso2Res").textContent =
+    "Contribuciones: " + fmt(d.contribHoras) + " y " + fmt(d.contribAsistencia);
+  $("paso3Calc").textContent = "Z = sesgo + contribucion de horas + contribucion de asistencia";
+  $("paso3Res").textContent =
+    "Z = -5,50 + " + fmt(d.contribHoras) + " + " + fmt(d.contribAsistencia) + " = " + fmt(d.z);
+  $("paso4Calc").textContent = "p = 1 / (1 + exp(-" + fmt(d.z) + "))";
+  $("paso4Res").textContent = "p(aprobado) = " + fmtPct(d.p);
+  $("paso5Calc").textContent = "Regla: aprobado si p >= corte; suspenso si p < corte.";
+  $("paso5Res").textContent = fmtPct(d.p) + " " + comparacion + " " + fmtPct(d.corte) + ": " + decisionTexto.toLowerCase();
+
+  $("tabHoras").textContent = fmtInput(d.horas);
+  $("tabAsistencia").textContent = fmtInput(d.asistencia);
+  $("tabCHoras").textContent = fmt(d.contribHoras);
+  $("tabCAsistencia").textContent = fmt(d.contribAsistencia);
+  $("tabFormulaZ").textContent = "-5,50 + " + fmt(d.contribHoras) + " + " + fmt(d.contribAsistencia);
+  $("tabZ").textContent = fmt(d.z);
+  $("tabP").textContent = fmtPct(d.p);
+  $("tabCorte").textContent = fmtPct(d.corte);
+  $("tabRegla").textContent = "p " + comparacion + " c";
+  $("tabDecision").textContent = decisionTexto;
+
+  actualizarAtajos(d.horas, d.asistencia, d.corte);
+  actualizarRetos(d);
+}
+
+Object.values(sliders).forEach(slider => slider.addEventListener("input", actualizar));
+
+document.querySelectorAll("[data-step]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const id = btn.dataset.step;
+    const dir = Number(btn.dataset.dir);
+    const slider = sliders[id];
+    const step = Number(slider.step || 1);
+    const min = Number(slider.min);
+    const max = Number(slider.max);
+    const nuevo = clamp(Number(slider.value) + dir * step, min, max);
+    slider.value = String(nuevo);
+    actualizar();
+  });
+});
+
+document.querySelectorAll(".atajos button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    sliders.horas.value = btn.dataset.h;
+    sliders.asistencia.value = btn.dataset.a;
+    sliders.corte.value = btn.dataset.c;
+    actualizar();
+  });
+});
+
+document.querySelectorAll(".chip[data-reto]").forEach(chip => {
+  chip.addEventListener("click", () => {
+    chip.classList.toggle("activo");
+  });
+});
+
+actualizar();
+</script>
+</body>
+</html>
