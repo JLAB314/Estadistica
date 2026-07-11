@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distribución binomial — función de cuantía y acumulada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --verde-suave:rgba(15,118,110,.15);
+    --ambar:#D98E04;
+    --coral:#E4572E;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:720px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  .indicadores{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;}
+  .indic{
+    background:#F7FAFC; border:1px solid var(--borde); border-radius:var(--radio);
+    padding:14px 18px; transition:box-shadow .2s;
+  }
+  .indic.destello{box-shadow:0 0 0 3px var(--verde-suave);}
+  .indic .nom{
+    font-size:.78rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--tinta-suave); font-weight:600;
+  }
+  .indic .val{
+    font-family:'Space Grotesk', sans-serif; font-size:2rem; font-weight:700;
+    font-variant-numeric:tabular-nums; line-height:1.1; margin-top:2px;
+  }
+  .indic .etq{font-size:.92rem; font-weight:600; margin-top:2px; color:var(--tinta-suave);}
+  .indic.media .val{color:var(--coral);}
+  .indic.varianza .val{color:var(--ambar);}
+
+  .controles-param{
+    display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;
+  }
+  .param{
+    background:#F7FAFC; border:1px solid var(--borde); border-radius:var(--radio);
+    padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .param .texto{min-width:0;}
+  .param .nom{
+    font-size:.78rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--tinta-suave); font-weight:700;
+  }
+  .param .valor{
+    font-family:'Space Grotesk', sans-serif; font-size:2rem; font-weight:700;
+    font-variant-numeric:tabular-nums; color:var(--tinta); line-height:1.1;
+  }
+  .param .ayuda-param{font-size:.86rem; color:var(--tinta-suave); margin-top:3px;}
+  .flechas{display:flex; flex-direction:column; gap:7px;}
+  .flecha{
+    width:42px; height:34px; border-radius:999px; border:1.5px solid var(--borde);
+    background:var(--blanco); color:var(--tinta); cursor:pointer;
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:1rem;
+    transition:background .15s, border-color .15s, transform .12s;
+  }
+  .flecha:hover:not([disabled]){border-color:var(--verde); background:#ecf6ff; transform:translateY(-1px);}
+  .flecha:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .flecha[disabled]{opacity:.35; cursor:default;}
+
+  #lienzo{width:100%; height:520px; display:block; touch-action:none; cursor:default; outline:none; border-radius:8px;}
+  #lienzo:focus-visible{box-shadow:0 0 0 3px var(--coral);}
+
+  .leyenda{
+    display:flex; gap:22px; flex-wrap:wrap; justify-content:center;
+    margin-top:8px; font-size:.85rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:7px;}
+  .m-cuantia{width:24px; height:14px; background:var(--verde-suave); border:2px solid var(--verde); display:inline-block;}
+  .m-acum{width:24px; height:0; border-top:3px solid var(--ambar); display:inline-block;}
+  .m-esperanza{width:3px; height:14px; background:var(--coral); display:inline-block;}
+
+  .ayuda{font-size:.85rem; color:var(--tinta-suave); margin-top:10px; text-align:center;}
+  .ayuda b{color:var(--coral);}
+
+  .fila-controles{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px;}
+  .fila-controles .etiq{font-size:.85rem; color:var(--tinta-suave); font-weight:600; margin-right:2px;}
+  .chip{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.86rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:6px 14px; cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  .chip:hover:not([disabled]){border-color:var(--verde);}
+  .chip:focus-visible{outline:3px solid var(--coral); outline-offset:2px;}
+  .chip.activo{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+  .chip.reset{background:var(--verde); color:var(--blanco); border-color:var(--verde);}
+  .chip.reset:hover{filter:brightness(1.1);}
+  .sep-v{width:1px; height:22px; background:var(--borde); margin:0 4px;}
+
+  .preset-info{
+    display:none; margin-top:12px; background:#F4F7FA; border-left:4px solid var(--verde);
+    padding:10px 14px; border-radius:0 8px 8px 0; font-size:.93rem;
+  }
+  .preset-info.visible{display:block;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:780px;}
+  .nota-cuerpo p{margin-top:8px;}
+  .formula{
+    font-family:'Space Grotesk', sans-serif; background:#F7FAFC; border:1px solid var(--borde);
+    border-radius:8px; padding:8px 10px; margin-top:10px; display:inline-block;
+  }
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){
+    #lienzo{height:480px;}
+    .indicadores,.controles-param{grid-template-columns:1fr;}
+    .indic .val,.param .valor{font-size:1.6rem;}
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de probabilidad</div>
+    <h1>Distribución binomial</h1>
+    <p class="sub">Explora una variable aleatoria <b>X ~ Bin(n, p)</b>. Sube o baja el número de ensayos <b>n</b> y la probabilidad de éxito <b>p</b>. Abajo verás la <b>función de cuantía</b> y la <b>función de cuantía acumulada</b>, junto con el valor esperado y la varianza.</p>
+  </header>
+
+  <div class="panel">
+    <div class="controles-param">
+      <div class="param">
+        <div class="texto">
+          <div class="nom">Número de ensayos</div>
+          <div class="valor" id="valorN">10</div>
+          <div class="ayuda-param">n: de 1 a 60</div>
+        </div>
+        <div class="flechas" aria-label="Controles para n">
+          <button class="flecha" id="subeN" aria-label="Aumentar n">▲</button>
+          <button class="flecha" id="bajaN" aria-label="Disminuir n">▼</button>
+        </div>
+      </div>
+      <div class="param">
+        <div class="texto">
+          <div class="nom">Probabilidad de éxito</div>
+          <div class="valor" id="valorP">0,50</div>
+          <div class="ayuda-param">p: de 0,01 a 0,99</div>
+        </div>
+        <div class="flechas" aria-label="Controles para p">
+          <button class="flecha" id="subeP" aria-label="Aumentar p">▲</button>
+          <button class="flecha" id="bajaP" aria-label="Disminuir p">▼</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="indicadores">
+      <div class="indic media" id="indMedia">
+        <div class="nom">Valor esperado</div>
+        <div class="val" id="valMedia">5,00</div>
+        <div class="etq">E(X) = n · p</div>
+      </div>
+      <div class="indic varianza" id="indVarianza">
+        <div class="nom">Varianza</div>
+        <div class="val" id="valVarianza">2,50</div>
+        <div class="etq">Var(X) = n · p · (1 − p)</div>
+      </div>
+    </div>
+
+    <canvas id="lienzo" tabindex="0" aria-label="Gráficos de función de cuantía y función acumulada de una distribución binomial"></canvas>
+    <div class="leyenda">
+      <span><span class="m-cuantia"></span> Función de cuantía P(X = k)</span>
+      <span><span class="m-acum"></span> Acumulada P(X ≤ k)</span>
+      <span><span class="m-esperanza"></span> Valor esperado</span>
+    </div>
+    <div class="ayuda">Usa las flechas para cambiar <b>n</b> y <b>p</b>. También puedes usar el teclado: <b>↑/↓</b> cambia n; <b>→/←</b> cambia p.</div>
+
+    <div class="fila-controles">
+      <button class="chip reset" id="btnReset">↺ Volver al ejemplo inicial</button>
+      <span class="sep-v"></span>
+      <span class="etiq">Ejemplos:</span>
+      <button class="chip preset" data-preset="moneda">Moneda equilibrada</button>
+      <button class="chip preset" data-preset="raro">Éxito raro</button>
+      <button class="chip preset" data-preset="frecuente">Éxito frecuente</button>
+      <button class="chip preset" data-preset="muchos">Muchos ensayos</button>
+    </div>
+    <div class="preset-info" id="presetInfo"></div>
+  </div>
+
+  <details class="nota">
+    <summary>¿Qué representa cada gráfico?</summary>
+    <div class="nota-cuerpo">
+      <p><b>Función de cuantía:</b> cada barra indica la probabilidad exacta de obtener k éxitos en n ensayos independientes con probabilidad de éxito p.</p>
+      <p><b>Función de cuantía acumulada:</b> para cada k, muestra la probabilidad de obtener k éxitos o menos. Por eso siempre crece desde 0 hasta 1.</p>
+      <p>En una binomial, el valor esperado y la varianza se calculan así:</p>
+      <div class="formula">E(X) = n · p &nbsp;&nbsp; | &nbsp;&nbsp; Var(X) = n · p · (1 − p)</div>
+      <p>Cuando p = 0,5 la distribución es simétrica. Cuando p se acerca a 0 o a 1, la masa se concentra en un extremo y la distribución se vuelve asimétrica.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de probabilidad · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+
+const reducirMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let n = 10;
+let p = 0.50;
+const MIN_N = 1, MAX_N = 60;
+const MIN_P = 0.01, MAX_P = 0.99, PASO_P = 0.01;
+
+const lienzo = document.getElementById('lienzo');
+const ctx = lienzo.getContext('2d');
+
+const PRESETS = {
+  moneda: {n:10, p:0.50, info:'<b>Moneda equilibrada:</b> p = 0,5 produce una distribución simétrica. Los valores centrales son los más probables.'},
+  raro: {n:20, p:0.15, info:'<b>Éxito raro:</b> la mayor parte de la probabilidad queda cerca de 0. La cola se extiende hacia la derecha.'},
+  frecuente: {n:20, p:0.85, info:'<b>Éxito frecuente:</b> la mayor parte de la probabilidad queda cerca de n. La cola se extiende hacia la izquierda.'},
+  muchos: {n:50, p:0.40, info:'<b>Muchos ensayos:</b> al aumentar n, la distribución se concentra alrededor de n·p y empieza a parecerse visualmente a una campana.'}
+};
+
+function fmt(x, dec=2){
+  return x.toLocaleString('es-ES', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+function binomialPMF(n, p){
+  const probs = new Array(n + 1).fill(0);
+  if(p <= 0){ probs[0] = 1; return probs; }
+  if(p >= 1){ probs[n] = 1; return probs; }
+
+  /* Probabilidad inicial y recurrencia estable:
+     P(k+1) = P(k) * ((n-k)/(k+1)) * (p/(1-p)) */
+  probs[0] = Math.pow(1 - p, n);
+  const ratio = p / (1 - p);
+  for(let k=0; k<n; k++){
+    probs[k+1] = probs[k] * ((n-k)/(k+1)) * ratio;
+  }
+
+  /* Corrección suave por redondeo para que sumen 1 */
+  const s = probs.reduce((a,b)=>a+b, 0);
+  return probs.map(x => x / s);
+}
+
+function datosBinomial(){
+  const pmf = binomialPMF(n, p);
+  const cdf = [];
+  let acum = 0;
+  for(let k=0; k<=n; k++){
+    acum += pmf[k];
+    cdf.push(Math.min(1, acum));
+  }
+  return {pmf, cdf};
+}
+
+function preparaCanvas(){
+  const dpr = window.devicePixelRatio || 1;
+  const r = lienzo.getBoundingClientRect();
+  lienzo.width = r.width * dpr;
+  lienzo.height = r.height * dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function actualizarIndicadores(){
+  const media = n * p;
+  const varianza = n * p * (1 - p);
+  document.getElementById('valorN').textContent = n.toString();
+  document.getElementById('valorP').textContent = fmt(p, 2);
+  document.getElementById('valMedia').textContent = fmt(media, 2);
+  document.getElementById('valVarianza').textContent = fmt(varianza, 2);
+  document.getElementById('subeN').disabled = n >= MAX_N;
+  document.getElementById('bajaN').disabled = n <= MIN_N;
+  document.getElementById('subeP').disabled = p >= MAX_P;
+  document.getElementById('bajaP').disabled = p <= MIN_P;
+}
+
+function destello(id){
+  const el = document.getElementById(id);
+  el.classList.add('destello');
+  setTimeout(()=>el.classList.remove('destello'), reducirMovimiento ? 0 : 500);
+}
+
+function panelRect(W,H, arriba){
+  const margenIzq = 50, margenDer = 22;
+  const altoPanel = (H - 70) / 2;
+  if(arriba) return {x:margenIzq, y:26, w:W-margenIzq-margenDer, h:altoPanel-14};
+  return {x:margenIzq, y:26+altoPanel+28, w:W-margenIzq-margenDer, h:altoPanel-14};
+}
+
+function dibujaEjes(rect, titulo, yMax, ticksY, formatoY){
+  const {x,y,w,h} = rect;
+  ctx.strokeStyle = '#B9C7D6';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(x, y); ctx.lineTo(x, y+h); ctx.lineTo(x+w, y+h); ctx.stroke();
+
+  ctx.font = '700 13px "Space Grotesk", sans-serif';
+  ctx.fillStyle = '#1B2A41';
+  ctx.textAlign = 'left';
+  ctx.fillText(titulo, x, y-10);
+
+  ctx.font = '11px "IBM Plex Sans", sans-serif';
+  ctx.fillStyle = '#5B6B80';
+  ctx.textAlign = 'right';
+  for(let i=0; i<=ticksY; i++){
+    const v = yMax * i / ticksY;
+    const Y = y + h - (v/yMax)*h;
+    ctx.strokeStyle = '#EDF1F6';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, Y); ctx.lineTo(x+w, Y); ctx.stroke();
+    ctx.fillStyle = '#5B6B80';
+    ctx.fillText(formatoY(v), x-7, Y+4);
+  }
+
+  const step = n <= 20 ? 1 : (n <= 40 ? 2 : 5);
+  ctx.textAlign = 'center';
+  for(let k=0; k<=n; k+=step){
+    const X = x + (n===0 ? 0 : k/n) * w;
+    ctx.strokeStyle = '#EDF1F6';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X, y); ctx.lineTo(X, y+h); ctx.stroke();
+    ctx.fillStyle = '#5B6B80';
+    ctx.fillText(k.toString(), X, y+h+16);
+  }
+  if(n % step !== 0){
+    const X = x+w;
+    ctx.fillText(n.toString(), X, y+h+16);
+  }
+
+  ctx.font = '700 11px "Space Grotesk", sans-serif';
+  ctx.fillStyle = '#5B6B80';
+  ctx.textAlign = 'right';
+  ctx.fillText('k', x+w, y+h+34);
+}
+
+function dibujar(){
+  actualizarIndicadores();
+  const {W,H} = preparaCanvas();
+  const {pmf, cdf} = datosBinomial();
+  ctx.clearRect(0,0,W,H);
+
+  const rectP = panelRect(W,H,true);
+  const rectF = panelRect(W,H,false);
+  const maxP = Math.max(...pmf);
+  const yMaxP = Math.max(0.10, maxP * 1.18);
+
+  dibujaEjes(rectP, 'Función de cuantía  P(X = k)', yMaxP, 4, v => fmt(v,2));
+  dibujaEjes(rectF, 'Función de cuantía acumulada  P(X ≤ k)', 1, 4, v => fmt(v,2));
+
+  const media = n * p;
+
+  function X(rect,k){ return rect.x + (n===0 ? 0 : k/n) * rect.w; }
+  function Yp(v){ return rectP.y + rectP.h - (v/yMaxP) * rectP.h; }
+  function Yf(v){ return rectF.y + rectF.h - v * rectF.h; }
+
+  /* PMF como líneas verticales finas (no rectángulos) */
+  const radioPunto = Math.max(4.5, Math.min(8, rectP.w / (n + 1) * 0.16));
+  for(let k=0; k<=n; k++){
+    const x = X(rectP,k);
+    const y = Yp(pmf[k]);
+    const base = rectP.y + rectP.h;
+
+    ctx.strokeStyle = '#0F766E';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x, base);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+    ctx.fillStyle = '#1976C9';
+    ctx.beginPath();
+    ctx.arc(x, y, radioPunto, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  /* curva acumulada: escalones */
+  ctx.strokeStyle = '#D98E04';
+  ctx.lineWidth = 2.8;
+  ctx.beginPath();
+  for(let k=0; k<=n; k++){
+    const x1 = X(rectF,k);
+    const x2 = k < n ? X(rectF,k+1) : X(rectF,k);
+    const y = Yf(cdf[k]);
+    if(k===0) ctx.moveTo(x1, y);
+    else ctx.lineTo(x1, y);
+    ctx.lineTo(x2, y);
+  }
+  ctx.stroke();
+
+  /* puntos acumulados */
+  for(let k=0; k<=n; k++){
+    ctx.beginPath();
+    ctx.arc(X(rectF,k), Yf(cdf[k]), 3.2, 0, Math.PI*2);
+    ctx.fillStyle = '#D98E04';
+    ctx.fill();
+  }
+
+  /* línea de esperanza en ambos gráficos */
+  function lineaEsperanza(rect){
+    const mx = X(rect, media);
+    ctx.strokeStyle = '#E4572E';
+    ctx.lineWidth = 2.2;
+    ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(mx, rect.y); ctx.lineTo(mx, rect.y+rect.h); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#E4572E';
+    ctx.font = '700 12px "Space Grotesk", sans-serif';
+    ctx.textAlign = mx > rect.x + rect.w*0.75 ? 'right' : 'left';
+    ctx.fillText('E(X)', mx + (mx > rect.x + rect.w*0.75 ? -5 : 5), rect.y+14);
+  }
+  lineaEsperanza(rectP);
+  lineaEsperanza(rectF);
+
+  /* etiqueta de concentración */
+  let modo = 0;
+  for(let k=1; k<=n; k++) if(pmf[k] > pmf[modo]) modo = k;
+  ctx.font = '12px "IBM Plex Sans", sans-serif';
+  ctx.fillStyle = '#5B6B80';
+  ctx.textAlign = 'left';
+  ctx.fillText('Valor más probable: k = ' + modo + '  ·  P(X = k) = ' + fmt(pmf[modo],3), rectP.x, rectP.y + rectP.h + 34);
+}
+
+function setN(nuevo){
+  n = clamp(Math.round(nuevo), MIN_N, MAX_N);
+  document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+  dibujar(); destello('indMedia'); destello('indVarianza');
+}
+function setP(nuevo){
+  p = clamp(Math.round(nuevo*100)/100, MIN_P, MAX_P);
+  document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+  dibujar(); destello('indMedia'); destello('indVarianza');
+}
+function setNP(nuevoN, nuevoP){
+  n = clamp(Math.round(nuevoN), MIN_N, MAX_N);
+  p = clamp(Math.round(nuevoP*100)/100, MIN_P, MAX_P);
+  dibujar(); destello('indMedia'); destello('indVarianza');
+}
+
+function animaHacia(nF, pF){
+  if(reducirMovimiento){ setNP(nF,pF); return; }
+  const nI=n, pI=p, pasos=18; let k=0;
+  (function paso(){
+    k++;
+    const t=k/pasos, e=1-Math.pow(1-t,3);
+    n = clamp(Math.round(nI + (nF-nI)*e), MIN_N, MAX_N);
+    p = clamp(Math.round((pI + (pF-pI)*e)*100)/100, MIN_P, MAX_P);
+    dibujar();
+    if(k < pasos) requestAnimationFrame(paso);
+    else { destello('indMedia'); destello('indVarianza'); }
+  })();
+}
+
+/* Controles */
+document.getElementById('subeN').addEventListener('click',()=>setN(n+1));
+document.getElementById('bajaN').addEventListener('click',()=>setN(n-1));
+document.getElementById('subeP').addEventListener('click',()=>setP(p+PASO_P));
+document.getElementById('bajaP').addEventListener('click',()=>setP(p-PASO_P));
+
+document.getElementById('btnReset').addEventListener('click',()=>{
+  document.getElementById('presetInfo').classList.remove('visible');
+  document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+  animaHacia(10,0.50);
+});
+
+document.querySelectorAll('.chip.preset').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const pr = PRESETS[b.dataset.preset];
+    document.querySelectorAll('.chip.preset').forEach(x=>x.classList.remove('activo'));
+    b.classList.add('activo');
+    const info = document.getElementById('presetInfo');
+    info.innerHTML = pr.info;
+    info.classList.add('visible');
+    animaHacia(pr.n, pr.p);
+  });
+});
+
+window.addEventListener('keydown', e=>{
+  if(e.key === 'ArrowUp'){ setN(n+1); e.preventDefault(); }
+  if(e.key === 'ArrowDown'){ setN(n-1); e.preventDefault(); }
+  if(e.key === 'ArrowRight'){ setP(p+PASO_P); e.preventDefault(); }
+  if(e.key === 'ArrowLeft'){ setP(p-PASO_P); e.preventDefault(); }
+});
+
+window.addEventListener('resize',()=>dibujar());
+dibujar();
+</script>
+</body>
+</html>
