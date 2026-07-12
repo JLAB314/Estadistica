@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>¿Diferencia real o azar? — ANOVA de una vía</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --azul:#2274C4;
+    --coral:#E4572E;
+    --naranja:#F07818;
+    --ambar:#D98E04;
+    --morado:#7C5CBF;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --mal:#C0392B;
+    --mal-fondo:#FBEEEC;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:700px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  .layout{display:grid; grid-template-columns:1.15fr 0.85fr; gap:18px;}
+  @media (max-width:800px){ .layout{grid-template-columns:1fr;} }
+
+  #grafico{width:100%; height:420px; display:block; touch-action:none; cursor:default; border-radius:8px;}
+
+  .leyenda{
+    display:flex; gap:14px; flex-wrap:wrap; justify-content:center;
+    margin-top:8px; font-size:.82rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:6px;}
+  .l-media{width:22px; height:0; border-top:3px solid var(--tinta); display:inline-block;}
+  .l-global{width:22px; height:0; border-top:2.5px dashed var(--tinta-suave); display:inline-block;}
+  .l-btw{width:16px; height:0; border-top:4px solid var(--coral); display:inline-block;}
+  .l-wth{width:16px; height:0; border-top:2px solid var(--azul); display:inline-block;}
+
+  /* deslizadores */
+  .deslizadores{margin-top:14px; display:flex; flex-direction:column; gap:12px;}
+  .desliz{background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:11px 15px;}
+  .desliz .cab{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px;}
+  .desliz .nom{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.9rem;}
+  .desliz .val{font-family:'Space Grotesk',sans-serif; font-weight:700; color:var(--naranja); font-variant-numeric:tabular-nums;}
+  .desliz input[type=range]{width:100%; accent-color:var(--naranja); height:26px; cursor:pointer;}
+  .desliz input[type=range]:focus-visible{outline:3px solid var(--coral); outline-offset:2px; border-radius:6px;}
+  .desliz .pistas{display:flex; justify-content:space-between; font-size:.73rem; color:var(--tinta-suave);}
+
+  .fila-controles{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px;}
+  .grupo-selector{display:flex; align-items:center; gap:8px;}
+  .grupo-selector .etiq{font-size:.85rem; color:var(--tinta-suave); font-weight:600;}
+  .segmentado{display:flex; border:2px solid var(--tinta); border-radius:999px; overflow:hidden;}
+  .segmentado button{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.88rem;
+    border:none; background:var(--blanco); color:var(--tinta);
+    padding:7px 15px; cursor:pointer;
+  }
+  .segmentado button:focus-visible{outline:3px solid var(--naranja); outline-offset:-3px;}
+  .segmentado button.activo{background:var(--tinta); color:var(--blanco);}
+  .escenarios{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;}
+  .escenarios button{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.82rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:6px 13px; cursor:pointer;
+  }
+  .escenarios button:hover{border-color:var(--naranja);}
+  .escenarios button:focus-visible{outline:3px solid var(--naranja); outline-offset:2px;}
+
+  /* barra de descomposición */
+  .descomp{margin-top:4px;}
+  .descomp .tit{font-size:.78rem; letter-spacing:.04em; text-transform:uppercase; color:var(--tinta-suave); font-weight:600; margin-bottom:6px;}
+  .barra-ss{display:flex; height:34px; border-radius:8px; overflow:hidden; border:1px solid var(--borde);}
+  .barra-ss .btw{background:var(--coral); display:flex; align-items:center; justify-content:center; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.82rem; transition:width .2s;}
+  .barra-ss .wth{background:var(--azul); display:flex; align-items:center; justify-content:center; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.82rem; transition:width .2s;}
+  .barra-ss .et{overflow:hidden; white-space:nowrap;}
+  .descomp .pie{font-size:.8rem; color:var(--tinta-suave); margin-top:5px; font-variant-numeric:tabular-nums;}
+
+  /* tabla ANOVA */
+  h2{font-family:'Space Grotesk', sans-serif; font-size:1rem; font-weight:700; margin-bottom:6px;}
+  table.anova{width:100%; border-collapse:collapse; font-size:.86rem; font-variant-numeric:tabular-nums;}
+  table.anova th, table.anova td{padding:6px 8px; text-align:right; border-bottom:1px solid var(--borde);}
+  table.anova th:first-child, table.anova td:first-child{text-align:left;}
+  table.anova thead th{font-family:'Space Grotesk',sans-serif; font-size:.72rem; text-transform:uppercase; letter-spacing:.03em; color:var(--tinta-suave);}
+  table.anova .fila-btw td:first-child{color:var(--coral); font-weight:600;}
+  table.anova .fila-wth td:first-child{color:var(--azul); font-weight:600;}
+  table.anova .fila-tot td{font-weight:600; border-top:2px solid var(--borde);}
+
+  /* F y balanza */
+  .fbox{margin-top:16px; background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:14px 16px; text-align:center;}
+  .fbox .fform{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1rem; font-variant-numeric:tabular-nums;}
+  .fbox .fform .btw{color:var(--coral);}
+  .fbox .fform .wth{color:var(--azul);}
+  .fbox .fval{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:2.6rem; line-height:1.1; margin-top:4px;}
+  #ejeF{width:100%; height:66px; display:block; margin-top:6px;}
+  .fbox .critico{font-size:.82rem; color:var(--tinta-suave); font-variant-numeric:tabular-nums;}
+
+  .veredicto{
+    margin-top:14px; border-radius:10px; padding:12px 15px; font-size:.94rem; border-left:5px solid;
+  }
+  .veredicto.rechaza{background:var(--ok-fondo); border-color:var(--ok);}
+  .veredicto.no{background:var(--mal-fondo); border-color:var(--mal);}
+  .veredicto b{font-family:'Space Grotesk',sans-serif;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #grafico{height:340px;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>¿Diferencia real o azar?</h1>
+    <p class="sub">Tiempo de resolución de incidencias (minutos) según el <b>turno</b> que las atiende.
+    Las medias de los turnos se ven distintas… ¿pero lo suficiente para no ser casualidad? La ANOVA lo
+    decide comparando <b style="color:var(--coral)">la variación ENTRE grupos</b> con
+    <b style="color:var(--azul)">la variación DENTRO de cada grupo</b>. Mueve los deslizadores y observa
+    la balanza F: lo que importa no es cuánto difieren las medias, sino cuánto difieren <i>frente al ruido</i>.</p>
+  </header>
+
+  <div class="layout">
+    <div class="panel">
+      <canvas id="grafico" aria-label="Nubes de puntos por turno con medias, media global y variaciones entre y dentro"></canvas>
+      <div class="leyenda">
+        <span><span class="l-media"></span> media del grupo</span>
+        <span><span class="l-global"></span> media global</span>
+        <span style="color:var(--coral)"><span class="l-btw"></span> entre grupos</span>
+        <span style="color:var(--azul)"><span class="l-wth"></span> dentro del grupo</span>
+      </div>
+
+      <div class="deslizadores">
+        <div class="desliz">
+          <div class="cab"><span class="nom">Separación entre las medias de los turnos</span><span class="val" id="vSep">1,0</span></div>
+          <input type="range" id="sSep" min="0" max="2.5" step="0.05" value="1" aria-label="Separación entre medias">
+          <div class="pistas"><span>medias iguales</span><span>muy separadas</span></div>
+        </div>
+        <div class="desliz">
+          <div class="cab"><span class="nom">Dispersión dentro de cada turno (ruido)</span><span class="val" id="vDisp">1,0</span></div>
+          <input type="range" id="sDisp" min="0.3" max="3" step="0.05" value="1" aria-label="Dispersión dentro de los grupos">
+          <div class="pistas"><span>nubes apretadas</span><span>nubes esparcidas</span></div>
+        </div>
+      </div>
+
+      <div class="fila-controles">
+        <div class="grupo-selector">
+          <span class="etiq">Nº de turnos:</span>
+          <div class="segmentado" role="group" aria-label="Número de grupos">
+            <button data-g="2">2</button>
+            <button data-g="3" class="activo">3</button>
+            <button data-g="4">4</button>
+          </div>
+        </div>
+      </div>
+      <div class="escenarios">
+        <button data-esc="claro">Clarísimamente distintos</button>
+        <button data-esc="ruido">Iguales pero ruidosos</button>
+        <button data-esc="ambiguo">El caso ambiguo</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Descomposición de la variación</h2>
+      <div class="descomp">
+        <div class="tit">SS total = SS entre + SS dentro</div>
+        <div class="barra-ss">
+          <div class="btw" id="barBtw"><span class="et" id="etBtw"></span></div>
+          <div class="wth" id="barWth"><span class="et" id="etWth"></span></div>
+        </div>
+        <div class="pie" id="pieDescomp"></div>
+      </div>
+
+      <h2 style="margin-top:18px">Tabla ANOVA</h2>
+      <table class="anova">
+        <thead><tr><th>Fuente</th><th>SS</th><th>gl</th><th>MS</th></tr></thead>
+        <tbody>
+          <tr class="fila-btw"><td>Entre grupos</td><td id="ssB">—</td><td id="dfB">—</td><td id="msB">—</td></tr>
+          <tr class="fila-wth"><td>Dentro grupos</td><td id="ssW">—</td><td id="dfW">—</td><td id="msW">—</td></tr>
+          <tr class="fila-tot"><td>Total</td><td id="ssT">—</td><td id="dfT">—</td><td></td></tr>
+        </tbody>
+      </table>
+
+      <div class="fbox">
+        <div class="fform">F = <span class="btw">MS entre</span> / <span class="wth">MS dentro</span></div>
+        <div class="fval" id="fVal">—</div>
+        <canvas id="ejeF" aria-label="Posición de F frente al valor crítico"></canvas>
+        <div class="critico" id="critico"></div>
+      </div>
+
+      <div class="veredicto" id="veredicto"></div>
+    </div>
+  </div>
+
+  <details class="nota">
+    <summary>La tabla ANOVA, el F crítico y el p-valor explicados</summary>
+    <div class="nota-cuerpo">
+      <p><b>La idea en una frase:</b> si los turnos fueran realmente iguales, la variación entre sus medias
+      no debería ser mayor que la variación que ya hay dentro de cada turno por puro azar. La ANOVA mide
+      justo ese cociente. <b>SS entre</b> (between) suma cuánto se alejan las medias de grupo de la media
+      global; <b>SS dentro</b> (within) suma cuánto se alejan los puntos de la media de su propio grupo; y
+      se cumple exactamente <b>SS total = SS entre + SS dentro</b> (la barra apilada). Dividiendo cada SS
+      entre sus grados de libertad (gl entre = nº grupos − 1; gl dentro = nº datos − nº grupos) se obtienen
+      los <b>MS</b>, que son varianzas medias comparables. Y <b>F = MS entre / MS dentro</b>: es la balanza.</p>
+      <p><b>El F crítico</b> es el valor de referencia: el que dejaría solo un α (típicamente 5%) de
+      probabilidad en la cola derecha de la distribución F si la hipótesis nula (todas las medias iguales)
+      fuese cierta. Es el listón. Si tu F observada <b>supera</b> ese listón, has entrado en la zona que,
+      bajo medias iguales, solo ocurriría el 5% de las veces: rechazas que los turnos sean iguales. El F
+      crítico depende de los dos grados de libertad y del α — por eso cambia al variar el número de grupos.</p>
+      <p><b>El p-valor</b> es la misma decisión vista al revés, y más informativa: es la probabilidad de
+      obtener una F <b>al menos tan grande</b> como la tuya <i>si todas las medias fueran iguales</i>. Un
+      p-valor pequeño (&lt; α) significa "este resultado sería muy raro por puro azar", así que rechazamos la
+      igualdad; uno grande significa "esto entra dentro de lo esperable por azar", y no podemos rechazarla.
+      Decidir con "F &gt; F crítico" y decidir con "p &lt; α" son exactamente la misma regla. Ojo: un p-valor
+      grande <b>no prueba</b> que las medias sean iguales, solo que no hay evidencia suficiente para negarlo.</p>
+      <p><b>Supuestos</b> (para que el p-valor sea fiable): las observaciones son independientes, dentro de
+      cada grupo se distribuyen aproximadamente normal, y las varianzas de los grupos son parecidas
+      (homocedasticidad). <b>Conexión:</b> con solo 2 grupos, la ANOVA equivale al test t de dos muestras —
+      de hecho F = t². Y si se rechaza la igualdad, la ANOVA no dice <i>cuáles</i> turnos difieren: para eso
+      hacen falta comparaciones posteriores (post-hoc).</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de inferencia estadística · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= distribución F (verificada contra tablas) ================= */
+function gammaln(x){
+  const c=[76.18009172947146,-86.50532032941677,24.01409824083091,
+    -1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+  let y=x, tmp=x+5.5; tmp-=(x+0.5)*Math.log(tmp);
+  let ser=1.000000000190015;
+  for(let j=0;j<6;j++){ y++; ser+=c[j]/y; }
+  return -tmp+Math.log(2.5066282746310005*ser/x);
+}
+function betacf(a,b,x){
+  const MAXIT=200, EPS=3e-12, FPMIN=1e-300;
+  let qab=a+b, qap=a+1, qam=a-1;
+  let c=1, d=1-qab*x/qap;
+  if(Math.abs(d)<FPMIN)d=FPMIN; d=1/d; let h=d;
+  for(let m=1;m<=MAXIT;m++){
+    let m2=2*m;
+    let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+    d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN;
+    c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN;
+    d=1/d; h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+    d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN;
+    c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN;
+    d=1/d; let del=d*c; h*=del;
+    if(Math.abs(del-1)<EPS)break;
+  }
+  return h;
+}
+function betai(a,b,x){
+  if(x<=0)return 0; if(x>=1)return 1;
+  const bt=Math.exp(gammaln(a+b)-gammaln(a)-gammaln(b)+a*Math.log(x)+b*Math.log(1-x));
+  if(x<(a+1)/(a+b+2)) return bt*betacf(a,b,x)/a;
+  return 1-bt*betacf(b,a,1-x)/b;
+}
+function pValorF(f,d1,d2){ if(f<=0)return 1; return betai(d2/2, d1/2, d2/(d2+d1*f)); }
+function fCritico(alpha,d1,d2){
+  let lo=1e-6, hi=1e6;
+  for(let i=0;i<200;i++){ const mid=(lo+hi)/2; if(pValorF(mid,d1,d2)>alpha) lo=mid; else hi=mid; }
+  return (lo+hi)/2;
+}
+const ALPHA=0.05;
+
+/* ================= datos ================= */
+const NOMBRES=['Mañana','Tarde','Noche','Madrugada'];
+const COLORES=['#0F766E','#E4572E','#2274C4','#7C5CBF'];
+const BASE=45;                 /* media global aproximada (min) */
+const OFFSETS=[[-1,1],[-1,0,1],[-1.2,-0.4,0.4,1.2]];   /* posición relativa de cada grupo por nº grupos */
+const N_POR_GRUPO=7;
+
+let nGrupos=3;
+let sep=1.0, disp=1.0;
+/* residuos deterministas por grupo (para que al mover deslizadores los puntos no salten al azar) */
+const RES=(()=>{
+  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+  const rng=mulberry32(31415);
+  const m=[];
+  for(let g=0;g<4;g++){
+    const fila=[];
+    /* residuos centrados y normalizados a media 0 para que la media de grupo sea limpia */
+    let tmp=[];
+    for(let i=0;i<N_POR_GRUPO;i++){
+      let u=rng(),v=rng();
+      tmp.push(Math.sqrt(-2*Math.log(u||1e-9))*Math.cos(2*Math.PI*v));
+    }
+    const mean=tmp.reduce((a,b)=>a+b,0)/tmp.length;
+    fila.push(...tmp.map(z=>z-mean));
+    m.push(fila);
+  }
+  return m;
+})();
+
+let PUNTOS=[];   /* {g, y} reconstruidos */
+function construir(){
+  PUNTOS=[];
+  const off=OFFSETS[nGrupos-2];
+  for(let g=0;g<nGrupos;g++){
+    const mediaG=BASE + off[g]*sep*7;         /* separación en minutos */
+    for(let i=0;i<N_POR_GRUPO;i++){
+      PUNTOS.push({g, y: mediaG + RES[g][i]*disp*4});
+    }
+  }
+}
+
+/* ================= ANOVA ================= */
+function anova(){
+  const n=PUNTOS.length;
+  const grandM=PUNTOS.reduce((s,p)=>s+p.y,0)/n;
+  const medias=[], nG=[];
+  for(let g=0;g<nGrupos;g++){
+    const gp=PUNTOS.filter(p=>p.g===g);
+    nG[g]=gp.length;
+    medias[g]=gp.reduce((s,p)=>s+p.y,0)/gp.length;
+  }
+  let ssB=0, ssW=0;
+  for(let g=0;g<nGrupos;g++) ssB+=nG[g]*(medias[g]-grandM)*(medias[g]-grandM);
+  for(const p of PUNTOS) ssW+=(p.y-medias[p.g])*(p.y-medias[p.g]);
+  const ssT=ssB+ssW;
+  const dfB=nGrupos-1, dfW=n-nGrupos, dfT=n-1;
+  const msB=ssB/dfB, msW=ssW/dfW;
+  const F=msW>1e-9?msB/msW:0;
+  const p=pValorF(F,dfB,dfW);
+  const fc=fCritico(ALPHA,dfB,dfW);
+  return {grandM, medias, nG, ssB, ssW, ssT, dfB, dfW, dfT, msB, msW, F, p, fc};
+}
+
+function fmt(v,dec){ return v.toLocaleString('es-ES',{minimumFractionDigits:dec, maximumFractionDigits:dec}); }
+
+/* ================= dibujo del gráfico ================= */
+const cv=document.getElementById('grafico');
+const ctx=cv.getContext('2d');
+let geom={};
+
+function preparaCanvas(canvas,c){
+  const dpr=window.devicePixelRatio||1;
+  const r=canvas.getBoundingClientRect();
+  canvas.width=r.width*dpr; canvas.height=r.height*dpr;
+  c.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function dibujar(){
+  const {W,H}=preparaCanvas(cv,ctx);
+  const mL=44, mR=16, mT=16, mB=34;
+  const YMIN=20, YMAX=70;
+  const py=y=>H-mB-(y-YMIN)/(YMAX-YMIN)*(H-mT-mB);
+  const colW=(W-mL-mR)/nGrupos;
+  const colX=g=>mL+colW*(g+0.5);
+  geom={py, colX, colW, mL, mR, mT, mB, W, H, YMIN, YMAX};
+
+  const a=anova();
+
+  ctx.clearRect(0,0,W,H);
+  /* eje Y */
+  ctx.font='11px "IBM Plex Sans", sans-serif'; ctx.fillStyle='#5B6B80'; ctx.textAlign='right';
+  for(let y=20;y<=70;y+=10){
+    ctx.strokeStyle='#EDF1F6'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(mL,py(y)); ctx.lineTo(W-mR,py(y)); ctx.stroke();
+    ctx.fillStyle='#5B6B80'; ctx.fillText(y, mL-6, py(y)+4);
+  }
+  ctx.save(); ctx.translate(12,(mT+H-mB)/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center';
+  ctx.fillText('tiempo de resolución (min)', 0, 0); ctx.restore();
+
+  /* media global (discontinua) */
+  ctx.strokeStyle='#5B6B80'; ctx.lineWidth=2.5; ctx.setLineDash([7,5]);
+  ctx.beginPath(); ctx.moveTo(mL, py(a.grandM)); ctx.lineTo(W-mR, py(a.grandM)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#5B6B80'; ctx.textAlign='left'; ctx.font='700 11px "Space Grotesk", sans-serif';
+  ctx.fillText('media global', W-mR-78, py(a.grandM)-6);
+
+  for(let g=0;g<nGrupos;g++){
+    const X=colX(g);
+    const col=COLORES[g];
+    /* flecha ENTRE: media de grupo ↔ media global */
+    ctx.strokeStyle='#E4572E'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(X-colW*0.30, py(a.grandM)); ctx.lineTo(X-colW*0.30, py(a.medias[g])); ctx.stroke();
+    /* puntos y segmentos DENTRO */
+    const gp=PUNTOS.filter(p=>p.g===g);
+    gp.forEach((p,i)=>{
+      const jitter=((i%3)-1)*colW*0.11;
+      const X2=X+jitter+colW*0.08;
+      /* segmento dentro: punto ↔ media de grupo */
+      ctx.strokeStyle='rgba(34,116,196,.55)'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(X2, py(p.y)); ctx.lineTo(X2, py(a.medias[g])); ctx.stroke();
+      ctx.beginPath(); ctx.arc(X2, py(p.y), 6, 0, Math.PI*2);
+      ctx.fillStyle=col; ctx.fill();
+      ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=1.6; ctx.stroke();
+    });
+    /* media de grupo (raya gruesa) */
+    ctx.strokeStyle=col; ctx.lineWidth=3.5;
+    ctx.beginPath(); ctx.moveTo(X-colW*0.38, py(a.medias[g])); ctx.lineTo(X+colW*0.38, py(a.medias[g])); ctx.stroke();
+    /* etiqueta del turno */
+    ctx.fillStyle=col; ctx.textAlign='center'; ctx.font='700 12px "Space Grotesk", sans-serif';
+    ctx.fillText(NOMBRES[g], X, H-mB+18);
+  }
+
+  actualizarPaneles(a);
+}
+
+/* ================= eje de F con el crítico ================= */
+const ejeF=document.getElementById('ejeF');
+const ectx=ejeF.getContext('2d');
+function dibujarEjeF(a){
+  const {W,H}=preparaCanvas(ejeF,ectx);
+  const mL=10, mR=10, y=38;
+  const Fmax=Math.max(8, a.fc*1.6, a.F*1.15);
+  const px=f=>mL+f/Fmax*(W-mL-mR);
+  ectx.clearRect(0,0,W,H);
+  /* eje */
+  ectx.strokeStyle='#B9C7D6'; ectx.lineWidth=1.6;
+  ectx.beginPath(); ectx.moveTo(mL,y); ectx.lineTo(W-mR,y); ectx.stroke();
+  ectx.font='10px "IBM Plex Sans", sans-serif'; ectx.fillStyle='#5B6B80'; ectx.textAlign='center';
+  for(let f=0;f<=Fmax;f+=Math.ceil(Fmax/6)){
+    ectx.beginPath(); ectx.moveTo(px(f),y-3); ectx.lineTo(px(f),y+3); ectx.stroke();
+    ectx.fillText(f, px(f), y+15);
+  }
+  /* zona de rechazo (a la derecha del crítico) */
+  ectx.fillStyle='rgba(27,127,75,.13)';
+  ectx.fillRect(px(a.fc), y-20, px(Fmax)-px(a.fc), 20);
+  /* línea del crítico */
+  ectx.strokeStyle='#1B7F4B'; ectx.lineWidth=2; ectx.setLineDash([4,3]);
+  ectx.beginPath(); ectx.moveTo(px(a.fc), y-22); ectx.lineTo(px(a.fc), y+2); ectx.stroke();
+  ectx.setLineDash([]);
+  ectx.fillStyle='#1B7F4B'; ectx.font='700 10px "Space Grotesk", sans-serif'; ectx.textAlign='center';
+  ectx.fillText('F crít '+fmt(a.fc,2), px(a.fc), y-24);
+  /* aguja de F observada */
+  const supera=a.F>=a.fc;
+  const cF=supera?'#E4572E':'#5B6B80';
+  ectx.strokeStyle=cF; ectx.lineWidth=3;
+  ectx.beginPath(); ectx.moveTo(px(Math.min(a.F,Fmax)), y-16); ectx.lineTo(px(Math.min(a.F,Fmax)), y); ectx.stroke();
+  ectx.beginPath(); ectx.arc(px(Math.min(a.F,Fmax)), y-16, 4.5, 0, Math.PI*2); ectx.fillStyle=cF; ectx.fill();
+}
+
+/* ================= paneles ================= */
+function actualizarPaneles(a){
+  /* barra de descomposición */
+  const total=a.ssT||1;
+  const pB=a.ssB/total*100, pW=a.ssW/total*100;
+  document.getElementById('barBtw').style.width=pB+'%';
+  document.getElementById('barWth').style.width=pW+'%';
+  document.getElementById('etBtw').textContent = pB>18?'entre '+Math.round(pB)+'%':'';
+  document.getElementById('etWth').textContent = pW>18?'dentro '+Math.round(pW)+'%':'';
+  document.getElementById('pieDescomp').textContent=
+    'SS total '+fmt(a.ssT,1)+' = SS entre '+fmt(a.ssB,1)+' + SS dentro '+fmt(a.ssW,1);
+
+  /* tabla */
+  document.getElementById('ssB').textContent=fmt(a.ssB,1);
+  document.getElementById('ssW').textContent=fmt(a.ssW,1);
+  document.getElementById('ssT').textContent=fmt(a.ssT,1);
+  document.getElementById('dfB').textContent=a.dfB;
+  document.getElementById('dfW').textContent=a.dfW;
+  document.getElementById('dfT').textContent=a.dfT;
+  document.getElementById('msB').textContent=fmt(a.msB,2);
+  document.getElementById('msW').textContent=fmt(a.msW,2);
+
+  /* F */
+  document.getElementById('fVal').textContent='F = '+fmt(a.F,2);
+  document.getElementById('fVal').style.color = a.F>=a.fc ? '#E4572E' : '#1B2A41';
+  document.getElementById('critico').innerHTML=
+    'F crítico ('+fmt(ALPHA,2)+'; '+a.dfB+', '+a.dfW+') = <b>'+fmt(a.fc,2)+'</b> &nbsp;·&nbsp; p-valor = <b>'+
+    (a.p<0.001?'&lt; 0,001':fmt(a.p,3))+'</b>';
+  dibujarEjeF(a);
+
+  /* veredicto */
+  const v=document.getElementById('veredicto');
+  if(a.F>=a.fc){
+    v.className='veredicto rechaza';
+    v.innerHTML='<b>Rechazamos que los turnos sean iguales.</b> F = '+fmt(a.F,2)+' supera el crítico '+
+      fmt(a.fc,2)+' (p '+(a.p<0.001?'&lt; 0,001':'= '+fmt(a.p,3))+' &lt; 0,05): la variación entre turnos '+
+      'es demasiado grande para achacarla al ruido interno.';
+  } else {
+    v.className='veredicto no';
+    v.innerHTML='<b>No podemos rechazar que sean iguales.</b> F = '+fmt(a.F,2)+' no llega al crítico '+
+      fmt(a.fc,2)+' (p = '+fmt(a.p,3)+' &gt; 0,05): las diferencias entre medias caben dentro de lo que '+
+      'produce el azar. No prueba que sean iguales, solo que no hay evidencia para negarlo.';
+  }
+}
+
+/* ================= controles ================= */
+document.getElementById('sSep').addEventListener('input',e=>{
+  sep=+e.target.value;
+  document.getElementById('vSep').textContent=fmt(sep,1);
+  construir(); dibujar();
+});
+document.getElementById('sDisp').addEventListener('input',e=>{
+  disp=+e.target.value;
+  document.getElementById('vDisp').textContent=fmt(disp,1);
+  construir(); dibujar();
+});
+document.querySelectorAll('.segmentado button[data-g]').forEach(b=>
+  b.addEventListener('click',()=>{
+    nGrupos=+b.dataset.g;
+    document.querySelectorAll('.segmentado button[data-g]').forEach(x=>x.classList.toggle('activo', x===b));
+    construir(); dibujar();
+  }));
+
+const ESCENARIOS={
+  claro:{sep:2.0, disp:0.6},
+  ruido:{sep:0.0, disp:2.2},
+  ambiguo:{sep:0.75, disp:1.95}
+};
+document.querySelectorAll('.escenarios button[data-esc]').forEach(b=>
+  b.addEventListener('click',()=>{
+    const e=ESCENARIOS[b.dataset.esc];
+    sep=e.sep; disp=e.disp;
+    document.getElementById('sSep').value=sep; document.getElementById('vSep').textContent=fmt(sep,1);
+    document.getElementById('sDisp').value=disp; document.getElementById('vDisp').textContent=fmt(disp,1);
+    construir(); dibujar();
+  }));
+
+/* arrastre de puntos */
+function coords(e){ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+let drag=null;
+cv.addEventListener('pointerdown',e=>{
+  const {x,y}=coords(e);
+  let mejor=null, dm=16;
+  PUNTOS.forEach((p,i)=>{
+    const g=p.g;
+    const gp=PUNTOS.filter(q=>q.g===g);
+    const idx=gp.indexOf(p);
+    const jitter=((idx%3)-1)*geom.colW*0.11;
+    const X2=geom.colX(g)+jitter+geom.colW*0.08;
+    const d=Math.hypot(x-X2, y-geom.py(p.y));
+    if(d<dm){ dm=d; mejor=i; }
+  });
+  if(mejor!==null){
+    drag=mejor;
+    cv.setPointerCapture(e.pointerId);
+    cv.style.cursor='grabbing';
+    e.preventDefault();
+  }
+});
+cv.addEventListener('pointermove',e=>{
+  const {x,y}=coords(e);
+  if(drag===null){ cv.style.cursor='default'; return; }
+  const yDato=geom.YMIN+(geom.H-geom.mB-y)/(geom.H-geom.mT-geom.mB)*(geom.YMAX-geom.YMIN);
+  PUNTOS[drag].y=Math.min(geom.YMAX-1, Math.max(geom.YMIN+1, yDato));
+  dibujar();
+});
+function soltar(e){
+  if(drag!==null){ drag=null; try{cv.releasePointerCapture(e.pointerId);}catch(_){} cv.style.cursor='default'; }
+}
+cv.addEventListener('pointerup',soltar);
+cv.addEventListener('pointercancel',soltar);
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>dibujar());
+construir();
+dibujar();
+</script>
+</body>
+</html>
