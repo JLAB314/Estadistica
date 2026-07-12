@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La mejor sombra — reducción de dimensión</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --azul:#2274C4;
+    --coral:#E4572E;
+    --naranja:#F07818;
+    --ambar:#D98E04;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:700px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  #lienzo{width:100%; height:440px; display:block; touch-action:none; cursor:default; border-radius:8px;}
+
+  .leyenda{
+    display:flex; gap:16px; flex-wrap:wrap; justify-content:center;
+    margin-top:8px; font-size:.83rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:6px;}
+  .pto{width:11px; height:11px; border-radius:50%; display:inline-block;}
+  .l-eje{width:22px; height:0; border-top:3px solid var(--naranja); display:inline-block;}
+  .l-perp{width:20px; height:0; border-top:2px dashed var(--tinta-suave); display:inline-block;}
+
+  /* dial de ángulo */
+  .fila-dial{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:14px;}
+  .valor-ang{font-family:'Space Grotesk',sans-serif; font-size:1.5rem; font-weight:700; color:var(--naranja); min-width:78px; font-variant-numeric:tabular-nums;}
+  input[type=range]{flex:1; min-width:150px; accent-color:var(--naranja); height:30px; cursor:pointer;}
+  input[type=range]:focus-visible{outline:3px solid var(--naranja); outline-offset:2px; border-radius:6px;}
+
+  /* medidores */
+  .medidores{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;}
+  .medidor{background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:11px 15px;}
+  .medidor .nom{font-size:.73rem; letter-spacing:.05em; text-transform:uppercase; color:var(--tinta-suave); font-weight:600;}
+  .medidor .val{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.5rem; font-variant-numeric:tabular-nums;}
+  .medidor.cap .val{color:var(--verde);}
+  .medidor.err .val{color:var(--coral);}
+  .medidor .pista{height:9px; background:#E3E9F0; border-radius:999px; overflow:hidden; margin-top:7px;}
+  .medidor .relleno{height:100%; border-radius:999px; transition:width .12s;}
+  .medidor.cap .relleno{background:var(--verde);}
+  .medidor.err .relleno{background:var(--coral);}
+
+  .fila-acciones{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px;}
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.95rem;
+    border:none; border-radius:999px; padding:11px 22px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .btn.coral{background:var(--coral); color:var(--blanco);}
+  .btn.coral:hover{filter:brightness(1.07);}
+  .btn.sec{background:var(--blanco); color:var(--tinta); border:1.5px solid var(--borde); font-weight:500; font-size:.88rem; padding:9px 18px;}
+  .btn.sec:hover{border-color:var(--verde);}
+  .btn.sec.activo{background:var(--verde); color:#fff; border-color:var(--verde);}
+
+  .estado{
+    margin-top:12px; border-radius:10px; padding:11px 15px; font-size:.93rem;
+    border-left:5px solid var(--ambar); background:#FDF6E9;
+  }
+  .estado.ok{border-color:var(--ok); background:var(--ok-fondo);}
+  .estado b{font-family:'Space Grotesk',sans-serif;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #lienzo{height:360px;} .medidores{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>La mejor sombra</h1>
+    <p class="sub">Cada cliente tiene dos números (gasto y frecuencia de compra), pero van muy de la mano.
+    ¿Podríamos resumirlo en <b>uno solo</b> sin perder casi nada? Reducir dimensión es eso: proyectar la
+    nube sobre una recta —hacer su <b>sombra</b>— perdiendo lo mínimo. Gira el eje naranja y busca el ángulo
+    en el que la sombra queda más <b>esparcida</b>: ese es el que mejor conserva la información.
+    Es la idea del PCA, y funciona igual con 2 variables que con 200.</p>
+  </header>
+
+  <div class="panel">
+    <canvas id="lienzo" aria-label="Nube de puntos con eje de proyección girable, sombras y líneas de error"></canvas>
+    <div class="leyenda">
+      <span><span class="pto" style="background:#2274C4"></span> clientes (arrastrables)</span>
+      <span style="color:var(--naranja)"><span class="l-eje"></span> eje de proyección</span>
+      <span style="color:var(--verde)"><span class="pto" style="background:#0F766E"></span> sombra sobre el eje</span>
+      <span><span class="l-perp"></span> lo que se pierde</span>
+    </div>
+
+    <div class="fila-dial">
+      <span class="valor-ang" id="vAng">0°</span>
+      <input type="range" id="sAng" min="0" max="180" step="1" value="10" aria-label="Ángulo del eje de proyección">
+    </div>
+
+    <div class="medidores">
+      <div class="medidor cap">
+        <div class="nom">Varianza capturada (sombra esparcida)</div>
+        <div class="val" id="vCap">—</div>
+        <div class="pista"><div class="relleno" id="bCap" style="width:0%"></div></div>
+      </div>
+      <div class="medidor err">
+        <div class="nom">Error de proyección (lo que se pierde)</div>
+        <div class="val" id="vErr">—</div>
+        <div class="pista"><div class="relleno" id="bErr" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="fila-acciones">
+      <button class="btn coral" id="btnMejor">✦ Encuentra el mejor eje (PC1)</button>
+      <button class="btn sec" id="btnPC2">Mostrar PC2 y % explicado</button>
+      <span style="flex:1"></span>
+      <button class="btn sec" id="btnRestaurar">↺ Restaurar nube</button>
+    </div>
+
+    <div class="estado" id="estado"></div>
+  </div>
+
+  <details class="nota">
+    <summary>Qué acabas de hacer (PCA sin tecnicismos)</summary>
+    <div class="nota-cuerpo">
+      <p><b>La idea:</b> cuando dos variables van muy de la mano (aquí, quien gasta más también compra más a
+      menudo), gran parte de la información está en una sola dirección: la nube es "casi una recta". El PCA
+      busca justo esa dirección —la de <b>máxima varianza</b>, donde los datos más se esparcen— y la usa como
+      nuevo eje. Proyectar los puntos sobre ella es quedarte con un número por cliente en vez de dos, perdiendo
+      muy poco.</p>
+      <p><b>Por qué "más esparcido" = "mejor":</b> lo que la sombra no recoge son las líneas perpendiculares
+      —lo que se aplasta al proyectar—. Y hay una relación exacta: varianza capturada + error de proyección =
+      variabilidad total (siempre la misma). Así que el ángulo que <b>más esparce la sombra</b> es
+      automáticamente el que <b>menos pierde</b>. No hay que elegir entre las dos cosas: son la misma, vista al
+      derecho y al revés. Esa dirección óptima es la <b>primera componente principal</b> (PC1).</p>
+      <p><b>La segunda componente</b> (PC2) es, obligatoriamente, la perpendicular a la primera: recoge lo que
+      quedó. Con 2 variables solo hay 2 componentes; el <b>% explicado</b> por cada una te dice cuánta
+      información aporta. Si la PC1 sola explica el 94%, quedarte con ella y tirar la PC2 casi no duele — eso es
+      reducir de 2 dimensiones a 1. Con muchas variables la lógica es idéntica: se ordenan las componentes de
+      más a menos varianza y te quedas con las primeras (la misma idea de "conservar lo que explica mucho,
+      descartar lo que explica poco" del método del codo).</p>
+      <p><b>¿Cuándo ayuda?</b> Cuando hay redundancia entre variables (como aquí, gasto y frecuencia yendo
+      de la mano): si arrastras los puntos hasta hacer la nube <b>redonda</b>, ningún ángulo captura mucho más
+      que otro — sin dirección dominante no hay nada que comprimir sin perder de verdad. Usos habituales:
+      visualizar datos de muchas variables en 2D, comprimir, o quitar ruido quedándote con las primeras
+      componentes.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de reducción de dimensión · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= datos: nube alargada en diagonal ================= */
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15, 1|a);
+    t=t+Math.imul(t^t>>>7, 61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+function nubeInicial(){
+  const rng=mulberry32(777);
+  const P=[];
+  const ang=Math.PI/6;   /* 30° */
+  for(let i=0;i<38;i++){
+    const u=rng(),v=rng(), z1=Math.sqrt(-2*Math.log(u||1e-9))*Math.cos(2*Math.PI*v);
+    const u2=rng(),v2=rng(), z2=Math.sqrt(-2*Math.log(u2||1e-9))*Math.cos(2*Math.PI*v2);
+    const t=z1*2.4, s=z2*0.6;
+    P.push({x:t*Math.cos(ang)-s*Math.sin(ang), y:t*Math.sin(ang)+s*Math.cos(ang)});
+  }
+  return P;
+}
+let PUNTOS=nubeInicial();
+
+/* ================= PCA / proyección ================= */
+function centro(){
+  const n=PUNTOS.length;
+  return {x:PUNTOS.reduce((s,p)=>s+p.x,0)/n, y:PUNTOS.reduce((s,p)=>s+p.y,0)/n};
+}
+function varTotal(){
+  const c=centro();
+  return PUNTOS.reduce((s,p)=>s+(p.x-c.x)**2+(p.y-c.y)**2,0)/PUNTOS.length;
+}
+function proyeccion(theta){
+  const c=centro();
+  const ux=Math.cos(theta), uy=Math.sin(theta);
+  let vcap=0, err=0;
+  for(const p of PUNTOS){
+    const dx=p.x-c.x, dy=p.y-c.y;
+    const t=dx*ux+dy*uy;
+    vcap+=t*t;
+    const px=t*ux, py=t*uy;
+    err+=(dx-px)**2+(dy-py)**2;
+  }
+  return {vcap:vcap/PUNTOS.length, err:err/PUNTOS.length};
+}
+function anguloOptimo(){
+  const c=centro();
+  let sxx=0,syy=0,sxy=0;
+  for(const p of PUNTOS){ const dx=p.x-c.x, dy=p.y-c.y; sxx+=dx*dx; syy+=dy*dy; sxy+=dx*dy; }
+  const l1=(sxx+syy)/2+Math.sqrt((sxx-syy)**2/4+sxy*sxy);
+  let a=Math.atan2(l1-sxx, sxy);
+  a=((a%Math.PI)+Math.PI)%Math.PI;   /* [0, π) */
+  return a;
+}
+
+/* ================= estado ================= */
+let theta=10*Math.PI/180;
+let mostrarPC2=false;
+let reconstruir=false;
+let drag=null;
+
+function grados(t){ return ((t*180/Math.PI)%180+180)%180; }
+function fmt(v,dec){ return v.toLocaleString('es-ES',{minimumFractionDigits:dec, maximumFractionDigits:dec}); }
+
+/* ================= dibujo ================= */
+const lienzo=document.getElementById('lienzo');
+const ctx=lienzo.getContext('2d');
+let geom={};
+
+function prep(){
+  const dpr=window.devicePixelRatio||1;
+  const r=lienzo.getBoundingClientRect();
+  lienzo.width=r.width*dpr; lienzo.height=r.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function dibujar(){
+  const {W,H}=prep();
+  const m=24;
+  const lado=Math.min(W-2*m, H-2*m);
+  const cx=W/2, cy=H/2;
+  const esc=lado/14;        /* rango de datos ≈ ±7 */
+  const px=x=>cx+x*esc, py=y=>cy-y*esc;
+  geom={px,py,esc,cx,cy};
+  const c=centro();
+
+  ctx.clearRect(0,0,W,H);
+
+  /* rejilla suave centrada */
+  ctx.strokeStyle='#EDF1F6'; ctx.lineWidth=1;
+  for(let g=-6;g<=6;g+=2){
+    ctx.beginPath(); ctx.moveTo(px(g),py(-7)); ctx.lineTo(px(g),py(7)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px(-7),py(g)); ctx.lineTo(px(7),py(g)); ctx.stroke();
+  }
+
+  const ux=Math.cos(theta), uy=Math.sin(theta);
+
+  /* eje de proyección (largo, pasa por el centro) */
+  const L=8;
+  ctx.strokeStyle='#F07818'; ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.moveTo(px(c.x-ux*L), py(c.y-uy*L));
+  ctx.lineTo(px(c.x+ux*L), py(c.y+uy*L));
+  ctx.stroke();
+
+  /* PC2 (perpendicular) si procede */
+  if(mostrarPC2){
+    const vx=-uy, vy=ux;
+    ctx.strokeStyle='rgba(15,118,110,.55)'; ctx.lineWidth=2; ctx.setLineDash([6,5]);
+    ctx.beginPath();
+    ctx.moveTo(px(c.x-vx*4), py(c.y-vy*4));
+    ctx.lineTo(px(c.x+vx*4), py(c.y+vy*4));
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#0F766E'; ctx.font='700 12px "Space Grotesk", sans-serif'; ctx.textAlign='center';
+    ctx.fillText('PC2', px(c.x+vx*4), py(c.y+vy*4)-6);
+  }
+  ctx.fillStyle='#F07818'; ctx.font='700 12px "Space Grotesk", sans-serif'; ctx.textAlign='center';
+  ctx.fillText(mostrarPC2?'PC1':'eje', px(c.x+ux*L)-14, py(c.y+uy*L)+ (uy>0?18:-8));
+
+  /* para cada punto: sombra, línea perpendicular, y reconstrucción */
+  for(const p of PUNTOS){
+    const dx=p.x-c.x, dy=p.y-c.y;
+    const t=dx*ux+dy*uy;
+    const sx=c.x+t*ux, sy=c.y+t*uy;   /* sombra sobre el eje */
+    /* línea perpendicular (lo que se pierde) */
+    ctx.strokeStyle='rgba(91,107,128,.45)'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(px(p.x),py(p.y)); ctx.lineTo(px(sx),py(sy)); ctx.stroke();
+    ctx.setLineDash([]);
+    /* sombra */
+    ctx.beginPath(); ctx.arc(px(sx), py(sy), 4.5, 0, Math.PI*2);
+    ctx.fillStyle='#0F766E'; ctx.fill();
+  }
+
+  /* reconstrucción: fantasmas en la posición reconstruida desde 1D (= la propia sombra en 2D) */
+  if(reconstruir){
+    for(const p of PUNTOS){
+      const dx=p.x-c.x, dy=p.y-c.y;
+      const t=dx*ux+dy*uy;
+      const rx=c.x+t*ux, ry=c.y+t*uy;
+      ctx.beginPath(); ctx.arc(px(rx), py(ry), 7, 0, Math.PI*2);
+      ctx.strokeStyle='#D98E04'; ctx.lineWidth=2; ctx.stroke();
+    }
+  }
+
+  /* puntos originales */
+  for(const p of PUNTOS){
+    ctx.beginPath(); ctx.arc(px(p.x), py(p.y), 6, 0, Math.PI*2);
+    ctx.fillStyle='#2274C4'; ctx.fill();
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=1.6; ctx.stroke();
+  }
+
+  actualizarPaneles();
+}
+
+/* ================= paneles ================= */
+function actualizarPaneles(){
+  const {vcap,err}=proyeccion(theta);
+  const tot=vcap+err;
+  const pctCap=vcap/tot*100, pctErr=err/tot*100;
+  document.getElementById('vCap').textContent=fmt(pctCap,1)+'%';
+  document.getElementById('vErr').textContent=fmt(pctErr,1)+'%';
+  document.getElementById('bCap').style.width=pctCap+'%';
+  document.getElementById('bErr').style.width=pctErr+'%';
+
+  const opt=grados(anguloOptimo());
+  const dif=Math.min(Math.abs(grados(theta)-opt), 180-Math.abs(grados(theta)-opt));
+  const est=document.getElementById('estado');
+  if(reconstruir){
+    est.className='estado';
+    est.innerHTML='<b>Reconstrucción (aros ámbar):</b> cada cliente vuelve al plano usando solo su sombra 1D. '+
+      'Ahora mismo conservas el <b>'+fmt(pctCap,1)+'%</b> de la información. '+
+      (pctCap>90?'Los aros caen casi sobre los puntos: resumir en 1D apenas ha dolido.'
+        :'Los aros quedan lejos de varios puntos: en este ángulo (o con esta nube) se pierde bastante. '+
+         'Prueba a girar al mejor eje, o arrastra los puntos para hacer la nube más alargada.');
+  } else if(dif<2){
+    est.className='estado ok';
+    est.innerHTML='<b>¡Ese es el mejor eje (PC1)!</b> La sombra captura el <b>'+fmt(pctCap,1)+'%</b> de la '+
+      'variabilidad y solo pierdes el '+fmt(pctErr,1)+'%. Ningún otro ángulo esparce más la sombra ni pierde menos: '+
+      'son la misma cosa.';
+  } else {
+    est.className='estado';
+    est.innerHTML='<b>Girando…</b> capturas el '+fmt(pctCap,1)+'% y pierdes el '+fmt(pctErr,1)+'%. '+
+      'Fíjate: cuando la sombra se esparce, las líneas perpendiculares (lo perdido) se acortan — y al revés. '+
+      'Busca el ángulo donde la sombra quede lo más larga posible, o pulsa "Encuentra el mejor eje".';
+  }
+}
+
+/* ================= controles ================= */
+function fijarAngulo(t){
+  theta=t;
+  document.getElementById('sAng').value=Math.round(grados(t));
+  document.getElementById('vAng').textContent=Math.round(grados(t))+'°';
+  dibujar();
+}
+document.getElementById('sAng').addEventListener('input',e=>fijarAngulo(+e.target.value*Math.PI/180));
+
+document.getElementById('btnMejor').addEventListener('click',()=>{
+  const dest=anguloOptimo();
+  if(reducirMovimiento){ fijarAngulo(dest); return; }
+  const ini=theta;
+  /* girar por el camino más corto */
+  let d=dest-ini; while(d>Math.PI/2) d-=Math.PI; while(d<-Math.PI/2) d+=Math.PI;
+  const t0=performance.now();
+  (function anima(t){
+    const f=Math.min(1,(t-t0)/500);
+    fijarAngulo(ini+d*(1-Math.pow(1-f,3)));
+    if(f<1) requestAnimationFrame(anima);
+  })(t0);
+});
+document.getElementById('btnPC2').addEventListener('click',e=>{
+  mostrarPC2=!mostrarPC2;
+  e.target.classList.toggle('activo', mostrarPC2);
+  dibujar();
+});
+document.getElementById('btnRestaurar').addEventListener('click',()=>{
+  PUNTOS=nubeInicial();
+  dibujar();
+});
+
+/* ================= arrastre de puntos ================= */
+function coords(e){ const r=lienzo.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+lienzo.addEventListener('pointerdown',e=>{
+  const {x,y}=coords(e);
+  for(let i=0;i<PUNTOS.length;i++){
+    if(Math.hypot(x-geom.px(PUNTOS[i].x), y-geom.py(PUNTOS[i].y))<14){
+      drag=i; lienzo.setPointerCapture(e.pointerId); lienzo.style.cursor='grabbing'; e.preventDefault(); return;
+    }
+  }
+});
+lienzo.addEventListener('pointermove',e=>{
+  const {x,y}=coords(e);
+  if(drag===null){
+    let sobre=false;
+    for(const p of PUNTOS) if(Math.hypot(x-geom.px(p.x), y-geom.py(p.y))<14){ sobre=true; break; }
+    lienzo.style.cursor=sobre?'grab':'default';
+    return;
+  }
+  PUNTOS[drag].x=Math.min(7, Math.max(-7, (x-geom.cx)/geom.esc));
+  PUNTOS[drag].y=Math.min(7, Math.max(-7, (geom.cy-y)/geom.esc));
+  dibujar();
+});
+function soltar(e){
+  if(drag!==null){ drag=null; try{lienzo.releasePointerCapture(e.pointerId);}catch(_){} lienzo.style.cursor='default'; }
+}
+lienzo.addEventListener('pointerup',soltar);
+lienzo.addEventListener('pointercancel',soltar);
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>dibujar());
+fijarAngulo(theta);
+</script>
+</body>
+</html>
