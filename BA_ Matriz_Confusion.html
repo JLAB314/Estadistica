@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El umbral manda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --azul:#2274C4;
+    --coral:#E4572E;
+    --naranja:#F07818;
+    --ambar:#D98E04;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    /* celdas de la matriz */
+    --vp:#0F766E;
+    --vn:#7C8AA0;
+    --fp:#E4572E;
+    --fn:#D98E04;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:700px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  .layout{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  @media (max-width:760px){ .layout{grid-template-columns:1fr;} }
+
+  h2{font-family:'Space Grotesk', sans-serif; font-size:1rem; font-weight:700; margin-bottom:4px;}
+  h2 small{color:var(--tinta-suave); font-size:.85rem; display:block; font-weight:400;}
+
+  /* lista de 20 casos */
+  #listaCanvas{width:100%; height:520px; display:block; touch-action:none; cursor:default; border-radius:8px;}
+
+  /* control de corte */
+  .corte-fila{display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap;}
+  .corte-fila .nom{font-family:'Space Grotesk',sans-serif; font-weight:700;}
+  .corte-fila .val{font-family:'Space Grotesk',sans-serif; font-weight:700; color:var(--naranja); font-size:1.2rem; min-width:56px; font-variant-numeric:tabular-nums;}
+  input[type=range]{flex:1; min-width:150px; accent-color:var(--naranja); height:30px; cursor:pointer;}
+  input[type=range]:focus-visible{outline:3px solid var(--naranja); outline-offset:2px; border-radius:6px;}
+  .atajos{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;}
+  .atajos button{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.82rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:5px 12px; cursor:pointer;
+  }
+  .atajos button:hover{border-color:var(--naranja);}
+  .atajos button:focus-visible{outline:3px solid var(--naranja); outline-offset:2px;}
+  .btn-sec{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.82rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:5px 14px; cursor:pointer; margin-left:auto;
+  }
+  .btn-sec:hover{border-color:var(--verde);}
+
+  /* matriz de confusión */
+  .matriz{border-collapse:separate; border-spacing:6px; margin:6px auto 0; width:100%;}
+  .matriz td, .matriz th{text-align:center; padding:0;}
+  .matriz .eje{font-size:.72rem; color:var(--tinta-suave); font-weight:600; text-transform:uppercase; letter-spacing:.03em;}
+  .matriz .celda{
+    border-radius:10px; padding:12px 6px; color:var(--blanco);
+    min-width:80px;
+  }
+  .matriz .celda .n{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.7rem; line-height:1; font-variant-numeric:tabular-nums;}
+  .matriz .celda .et{font-size:.72rem; opacity:.92; margin-top:2px;}
+  .matriz .cVP{background:var(--verde);}
+  .matriz .cFN{background:var(--ambar);}
+  .matriz .cFP{background:var(--coral);}
+  .matriz .cVN{background:#7C8AA0;}
+  .matriz .tot{font-family:'Space Grotesk',sans-serif; font-weight:700; color:var(--tinta-suave); font-size:.92rem;}
+  .matriz .esq{font-size:.7rem; color:var(--tinta-suave);}
+
+  /* métricas */
+  .metricas{margin-top:16px; display:flex; flex-direction:column; gap:10px;}
+  .metrica{background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:10px 14px;}
+  .metrica .top{display:flex; justify-content:space-between; align-items:baseline;}
+  .metrica .nom{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.95rem;}
+  .metrica .val{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.3rem; font-variant-numeric:tabular-nums;}
+  .metrica.acc .val{color:var(--tinta);}
+  .metrica.sens .val{color:var(--verde);}
+  .metrica.esp .val{color:#5A6B86;}
+  .metrica .frac{font-size:.82rem; color:var(--tinta-suave); font-variant-numeric:tabular-nums; margin-top:2px;}
+  .metrica .pista{height:8px; background:#E3E9F0; border-radius:999px; overflow:hidden; margin-top:7px;}
+  .metrica .relleno{height:100%; border-radius:999px; transition:width .18s;}
+  .metrica.acc .relleno{background:var(--tinta);}
+  .metrica.sens .relleno{background:var(--verde);}
+  .metrica.esp .relleno{background:#5A6B86;}
+  .secundarias{display:flex; gap:10px; margin-top:2px;}
+  .secundarias .metrica{flex:1;}
+  .metrica.mini .val{font-size:1.05rem;}
+  .metrica.prec .val{color:var(--azul);}
+  .metrica.f1 .val{color:var(--naranja);}
+
+  .compromiso{
+    margin-top:14px; border-radius:10px; padding:11px 15px; font-size:.92rem;
+    border-left:5px solid var(--ambar); background:#FDF6E9;
+  }
+  .compromiso b{font-family:'Space Grotesk',sans-serif;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>El umbral manda</h1>
+    <p class="sub">Un modelo logit ha dado a cada uno de 20 clientes su <b>probabilidad estimada de impago</b>
+    p̂. Tú decides el <b>umbral de corte</b>: por encima predices "impago", por debajo "pago". Arrastra la
+    línea de corte y mira cómo cada cliente cambia de celda, cómo se rehace la <b>matriz de confusión</b> y
+    cómo se mueven las métricas. Descubrirás que ningún corte lo gana todo.</p>
+  </header>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>Los 20 clientes, ordenados por p̂ <small>arrastra la línea de corte · a la derecha, la clase real</small></h2>
+      <canvas id="listaCanvas" aria-label="Lista de 20 clientes con su probabilidad estimada, clase real y línea de corte arrastrable"></canvas>
+      <div class="corte-fila">
+        <span class="nom">Corte</span>
+        <span class="val" id="vCorte">0,50</span>
+        <input type="range" id="sCorte" min="0" max="1" step="0.01" value="0.5" aria-label="Umbral de corte">
+      </div>
+      <div class="atajos">
+        <button data-c="0">Corte 0 (todos impago)</button>
+        <button data-c="0.5">0,50</button>
+        <button data-c="1">Corte 1 (todos pago)</button>
+        <button class="btn-sec" id="btnRegenerar">↻ Otros 20 clientes</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Matriz de confusión <small>filas = realidad · columnas = predicción del modelo</small></h2>
+      <table class="matriz" aria-label="Matriz de confusión">
+        <tr>
+          <td class="esq"></td>
+          <td class="eje">pred. impago</td>
+          <td class="eje">pred. pago</td>
+          <td class="eje">total</td>
+        </tr>
+        <tr>
+          <td class="eje">real impago</td>
+          <td class="celda cVP"><div class="n" id="cVP">0</div><div class="et">VP</div></td>
+          <td class="celda cFN"><div class="n" id="cFN">0</div><div class="et">FN</div></td>
+          <td class="tot" id="totReal1">0</td>
+        </tr>
+        <tr>
+          <td class="eje">real pago</td>
+          <td class="celda cFP"><div class="n" id="cFP">0</div><div class="et">FP</div></td>
+          <td class="celda cVN"><div class="n" id="cVN">0</div><div class="et">VN</div></td>
+          <td class="tot" id="totReal0">0</td>
+        </tr>
+        <tr>
+          <td class="eje">total</td>
+          <td class="tot" id="totPred1">0</td>
+          <td class="tot" id="totPred0">0</td>
+          <td class="tot">20</td>
+        </tr>
+      </table>
+
+      <div class="metricas">
+        <div class="metrica acc">
+          <div class="top"><span class="nom">Accuracy (acierto global)</span><span class="val" id="vAcc">—</span></div>
+          <div class="frac" id="fAcc"></div>
+          <div class="pista"><div class="relleno" id="bAcc" style="width:0%"></div></div>
+        </div>
+        <div class="metrica sens">
+          <div class="top"><span class="nom">Sensibilidad / Recall</span><span class="val" id="vSens">—</span></div>
+          <div class="frac" id="fSens"></div>
+          <div class="pista"><div class="relleno" id="bSens" style="width:0%"></div></div>
+        </div>
+        <div class="metrica esp">
+          <div class="top"><span class="nom">Especificidad</span><span class="val" id="vEsp">—</span></div>
+          <div class="frac" id="fEsp"></div>
+          <div class="pista"><div class="relleno" id="bEsp" style="width:0%"></div></div>
+        </div>
+        <div class="secundarias">
+          <div class="metrica mini prec">
+            <div class="top"><span class="nom">Precisión</span><span class="val" id="vPrec">—</span></div>
+            <div class="frac" id="fPrec"></div>
+          </div>
+          <div class="metrica mini f1">
+            <div class="top"><span class="nom">F1</span><span class="val" id="vF1">—</span></div>
+            <div class="frac" id="fF1"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="compromiso" id="compromiso"></div>
+    </div>
+  </div>
+
+  <details class="nota">
+    <summary>Qué mide cada métrica y por qué ningún corte lo gana todo</summary>
+    <div class="nota-cuerpo">
+      <p>El logit produce <b>probabilidades</b>, no decisiones. Convertir p̂ en un sí/no exige elegir un
+      <b>umbral</b>, y esa elección es tuya, no del modelo — igual que el corte de la demo de la neurona.
+      Las cuatro celdas de la matriz nombran los dos aciertos y los dos errores: <b>VP</b> (impago predicho
+      y real), <b>VN</b> (pago predicho y real), <b>FP</b> (predije impago pero pagó: molestas a un buen
+      cliente) y <b>FN</b> (predije pago pero impagó: se te cuela un moroso).</p>
+      <p><b>Las métricas, cada una responde a una pregunta distinta:</b> Accuracy = (VP+VN)/total, la
+      proporción global de aciertos (engañosa si una clase es rara). Sensibilidad = VP/(VP+FN): de los que de
+      verdad impagaron, ¿a cuántos cacé? Especificidad = VN/(VN+FP): de los que de verdad pagaron, ¿a cuántos
+      dejé en paz? Precisión = VP/(VP+FP): de los que señalé como impago, ¿cuántos lo eran? Y F1 es la media
+      armónica de precisión y sensibilidad, un resumen de ambas.</p>
+      <p><b>El compromiso inevitable:</b> baja el corte y cazarás más morosos (sube la sensibilidad) pero a
+      costa de rechazar buenos clientes (baja la especificidad); súbelo y ocurre lo contrario. No hay umbral
+      mágico: depende de qué error es más caro para el negocio — un impago colado o un cliente bueno perdido.
+      Recorrer todos los cortes a la vez es lo que dibuja la curva ROC.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de clasificación · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= datos: 20 clientes con p̂ y clase real =================
+   Un logit decente pero imperfecto: los de p̂ alta tienden a ser impago real,
+   pero con solape (algún impago con p̂ baja y algún pago con p̂ alta). */
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15, 1|a);
+    t=t+Math.imul(t^t>>>7, 61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+let semilla=20260716;
+let CASOS=[];
+function generar(){
+  const rng=mulberry32(semilla);
+  const arr=[];
+  for(let i=0;i<20;i++){
+    const p=Math.round(rng()*1000)/1000;           /* probabilidad estimada */
+    /* clase real: Bernoulli con probabilidad p (así el modelo está "calibrado" y hay solape natural) */
+    const real=rng()<p ? 1 : 0;
+    arr.push({p, real});
+  }
+  /* garantizamos que hay de ambas clases y algo de solape para que mover el corte importe */
+  const pos=arr.filter(a=>a.real===1).length;
+  if(pos<8 || pos>12){ semilla++; return generar(); }
+  arr.sort((a,b)=>b.p-a.p);
+  CASOS=arr;
+}
+generar();
+
+/* ================= métricas ================= */
+let corte=0.5;
+function matriz(){
+  let VP=0,FP=0,FN=0,VN=0;
+  for(const c of CASOS){
+    const predPos = c.p>=corte;   /* predicho impago */
+    if(c.real===1){ if(predPos)VP++; else FN++; }
+    else { if(predPos)FP++; else VN++; }
+  }
+  return {VP,FP,FN,VN};
+}
+
+function fmt(v){ return v.toLocaleString('es-ES',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+function pct(x){ return isNaN(x)?'—':fmt(x); }
+
+/* ================= lista (canvas) ================= */
+const cv=document.getElementById('listaCanvas');
+const ctx=cv.getContext('2d');
+let geom={};
+
+function preparaCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const r=cv.getBoundingClientRect();
+  cv.width=r.width*dpr; cv.height=r.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+const COL={VP:'#0F766E', FN:'#D98E04', FP:'#E4572E', VN:'#7C8AA0'};
+function celdaDe(c){
+  const predPos=c.p>=corte;
+  if(c.real===1) return predPos?'VP':'FN';
+  return predPos?'FP':'VN';
+}
+
+function dibujar(){
+  const {W,H}=preparaCanvas();
+  const mT=10, mB=10, mL=10, mR=10;
+  const filaH=(H-mT-mB)/20;
+  const bx=mL+52, bw=W-mR-bx-92;   /* zona de la barra de probabilidad */
+  /* corte → y: fila cuyo p cruza; posición continua entre filas por interpolación de p */
+  geom={filaH, mT, bx, bw, W, H, mL, mR};
+
+  ctx.clearRect(0,0,W,H);
+  ctx.textBaseline='middle';
+
+  CASOS.forEach((c,i)=>{
+    const y=mT+i*filaH;
+    const cy=y+filaH/2;
+    const cel=celdaDe(c);
+    const color=COL[cel];
+    /* fondo de fila teñido de su celda */
+    ctx.fillStyle=color+'20';
+    ctx.fillRect(mL, y+1, W-mL-mR, filaH-2);
+    /* p̂ */
+    ctx.fillStyle='#1B2A41'; ctx.textAlign='left';
+    ctx.font='700 12px "Space Grotesk", sans-serif';
+    ctx.fillText(fmt(c.p), mL+4, cy);
+    /* barra de probabilidad */
+    ctx.fillStyle='#E3E9F0';
+    ctx.fillRect(bx, cy-6, bw, 12);
+    ctx.fillStyle=color;
+    ctx.fillRect(bx, cy-6, bw*c.p, 12);
+    /* etiqueta de celda */
+    ctx.fillStyle=color; ctx.textAlign='left';
+    ctx.font='700 11px "Space Grotesk", sans-serif';
+    ctx.fillText(cel, bx+bw+8, cy);
+    /* clase real (punto a la derecha) */
+    const rx=W-mR-30;
+    ctx.beginPath(); ctx.arc(rx, cy, 6, 0, Math.PI*2);
+    ctx.fillStyle=c.real===1?'#1B2A41':'#B9C7D6';
+    ctx.fill();
+    ctx.fillStyle='#5B6B80'; ctx.font='10px "IBM Plex Sans", sans-serif'; ctx.textAlign='left';
+    ctx.fillText(c.real===1?'impago':'pago', rx+11, cy);
+  });
+
+  /* línea de corte: entre la última fila con p>=corte y la primera con p<corte */
+  let idx=CASOS.findIndex(c=>c.p<corte);
+  if(idx<0) idx=20;               /* corte por debajo de todos: línea abajo del todo */
+  const yCorte=mT+idx*filaH;
+  ctx.strokeStyle='#F07818'; ctx.lineWidth=3; ctx.setLineDash([8,5]);
+  ctx.beginPath(); ctx.moveTo(mL, yCorte); ctx.lineTo(W-mR, yCorte); ctx.stroke();
+  ctx.setLineDash([]);
+  /* etiqueta del corte */
+  ctx.fillStyle='#F07818'; ctx.font='700 11px "Space Grotesk", sans-serif'; ctx.textAlign='right';
+  const yTxt=Math.max(mT+8, Math.min(H-mB-8, yCorte));
+  ctx.fillText('corte '+fmt(corte)+' ▲ predigo impago', W-mR-2, yTxt-8 < mT+4 ? yCorte+10 : yCorte-8);
+  /* asa arrastrable */
+  ctx.beginPath(); ctx.arc(mL+14, yCorte, 8, 0, Math.PI*2);
+  ctx.fillStyle='#F07818'; ctx.fill();
+  ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=2.4; ctx.stroke();
+
+  actualizarPaneles();
+}
+
+/* ================= paneles ================= */
+function actualizarPaneles(){
+  const {VP,FP,FN,VN}=matriz();
+  document.getElementById('cVP').textContent=VP;
+  document.getElementById('cFP').textContent=FP;
+  document.getElementById('cFN').textContent=FN;
+  document.getElementById('cVN').textContent=VN;
+  document.getElementById('totReal1').textContent=VP+FN;
+  document.getElementById('totReal0').textContent=FP+VN;
+  document.getElementById('totPred1').textContent=VP+FP;
+  document.getElementById('totPred0').textContent=FN+VN;
+
+  const acc=(VP+VN)/20;
+  const sens=(VP+FN)>0?VP/(VP+FN):NaN;
+  const esp=(VN+FP)>0?VN/(VN+FP):NaN;
+  const prec=(VP+FP)>0?VP/(VP+FP):NaN;
+  const f1=(!isNaN(prec)&&!isNaN(sens)&&(prec+sens)>0)?2*prec*sens/(prec+sens):NaN;
+
+  document.getElementById('vAcc').textContent=pct(acc);
+  document.getElementById('fAcc').textContent='(VP+VN)/20 = ('+VP+'+'+VN+')/20';
+  document.getElementById('bAcc').style.width=(acc*100)+'%';
+
+  document.getElementById('vSens').textContent=pct(sens);
+  document.getElementById('fSens').textContent='VP/(VP+FN) = '+VP+'/'+(VP+FN);
+  document.getElementById('bSens').style.width=((isNaN(sens)?0:sens)*100)+'%';
+
+  document.getElementById('vEsp').textContent=pct(esp);
+  document.getElementById('fEsp').textContent='VN/(VN+FP) = '+VN+'/'+(VN+FP);
+  document.getElementById('bEsp').style.width=((isNaN(esp)?0:esp)*100)+'%';
+
+  document.getElementById('vPrec').textContent=pct(prec);
+  document.getElementById('fPrec').textContent='VP/(VP+FP) = '+VP+'/'+(VP+FP);
+  document.getElementById('vF1').textContent=pct(f1);
+  document.getElementById('fF1').textContent='media armónica';
+
+  /* mensaje del compromiso */
+  const comp=document.getElementById('compromiso');
+  if(corte<=0.001){
+    comp.innerHTML='<b>Corte 0:</b> predices "impago" a todos. Cazas el 100% de los morosos '+
+      '(sensibilidad = 1) pero rechazas a todos los buenos clientes (especificidad = 0). El extremo cazador.';
+  } else if(corte>=0.999){
+    comp.innerHTML='<b>Corte 1:</b> predices "pago" a todos. No molestas a ningún buen cliente '+
+      '(especificidad = 1) pero no cazas ni un moroso (sensibilidad = 0). El extremo permisivo.';
+  } else {
+    comp.innerHTML='<b>El compromiso:</b> sensibilidad = '+pct(sens)+' y especificidad = '+pct(esp)+'. '+
+      'Baja el corte para cazar más morosos (más sensibilidad, menos especificidad); súbelo para molestar '+
+      'a menos buenos clientes (al revés). Elegir el punto es una decisión de negocio.';
+  }
+}
+
+/* ================= controles ================= */
+function fijarCorte(c){
+  corte=Math.min(1, Math.max(0, c));
+  document.getElementById('sCorte').value=corte;
+  document.getElementById('vCorte').textContent=fmt(corte);
+  dibujar();
+}
+document.getElementById('sCorte').addEventListener('input',e=>fijarCorte(+e.target.value));
+document.querySelectorAll('.atajos button[data-c]').forEach(b=>
+  b.addEventListener('click',()=>fijarCorte(+b.dataset.c)));
+document.getElementById('btnRegenerar').addEventListener('click',()=>{
+  semilla=Math.floor(Math.random()*1e9);
+  generar();
+  dibujar();
+});
+
+/* arrastre de la línea de corte sobre el canvas */
+function coords(e){ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+function corteDesdeY(y){
+  /* invertimos: la fila i marca el umbral entre CASOS[i-1] y CASOS[i] */
+  const i=Math.round((y-geom.mT)/geom.filaH);
+  const idx=Math.min(20, Math.max(0, i));
+  if(idx===0) return 1;                              /* por encima de todos */
+  if(idx>=20) return 0;                              /* por debajo de todos */
+  /* corte a medio camino entre las p̂ de las filas idx-1 e idx */
+  return (CASOS[idx-1].p + CASOS[idx].p)/2;
+}
+let arrastrando=false;
+cv.addEventListener('pointerdown',e=>{
+  arrastrando=true;
+  fijarCorte(corteDesdeY(coords(e).y));
+  cv.setPointerCapture(e.pointerId);
+  cv.style.cursor='grabbing';
+  e.preventDefault();
+});
+cv.addEventListener('pointermove',e=>{
+  if(arrastrando){ fijarCorte(corteDesdeY(coords(e).y)); }
+});
+function soltar(e){
+  if(arrastrando){ arrastrando=false; try{cv.releasePointerCapture(e.pointerId);}catch(_){} cv.style.cursor='default'; }
+}
+cv.addEventListener('pointerup',soltar);
+cv.addEventListener('pointercancel',soltar);
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>dibujar());
+dibujar();
+</script>
+</body>
+</html>
