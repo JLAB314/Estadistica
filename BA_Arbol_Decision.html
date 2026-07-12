@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El árbol que aprende (y se pasa de listo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --verde-suave:rgba(15,118,110,.14);
+    --azul:#2274C4;
+    --coral:#E4572E;
+    --coral-suave:rgba(228,87,46,.14);
+    --naranja:#F07818;
+    --ambar:#D98E04;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --mal:#C0392B;
+    --mal-fondo:#FBEEEC;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:980px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:700px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  .layout{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  @media (max-width:820px){ .layout{grid-template-columns:1fr;} }
+
+  h2{font-family:'Space Grotesk', sans-serif; font-size:1rem; font-weight:700; margin-bottom:6px;}
+  h2 small{color:var(--tinta-suave); font-size:.85rem; display:block; font-weight:400;}
+
+  #plano{width:100%; height:360px; display:block; touch-action:none; cursor:default; border-radius:8px;}
+  #arbol{width:100%; height:360px; display:block; border-radius:8px;}
+
+  .leyenda{
+    display:flex; gap:14px; flex-wrap:wrap; justify-content:center;
+    margin-top:8px; font-size:.82rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:6px;}
+  .pto{width:11px; height:11px; border-radius:50%; display:inline-block;}
+  .cuad{width:11px; height:11px; display:inline-block; border-radius:2px;}
+
+  /* deslizador de profundidad */
+  .fila-prof{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:14px;}
+  .valor-prof{font-family:'Space Grotesk', sans-serif; font-size:1.5rem; font-weight:700; color:var(--naranja); min-width:120px;}
+  .valor-prof small{display:block; font-size:.72rem; color:var(--tinta-suave); font-weight:500; margin-top:-4px;}
+  input[type=range]{flex:1; min-width:140px; accent-color:var(--naranja); height:30px; cursor:pointer;}
+  input[type=range]:focus-visible{outline:3px solid var(--naranja); outline-offset:2px; border-radius:6px;}
+
+  .fila-acciones{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px;}
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.95rem;
+    border:none; border-radius:999px; padding:11px 22px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .btn.coral{background:var(--coral); color:var(--blanco);}
+  .btn.coral:hover{filter:brightness(1.07);}
+  .btn.sec{background:var(--blanco); color:var(--tinta); border:1.5px solid var(--borde); font-weight:500; font-size:.88rem; padding:9px 18px;}
+  .btn.sec:hover{border-color:var(--verde);}
+
+  .lecturas{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px;}
+  .lectura{background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:9px 12px; text-align:center;}
+  .lectura .nom{font-size:.68rem; letter-spacing:.04em; text-transform:uppercase; color:var(--tinta-suave); font-weight:600;}
+  .lectura .val{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.3rem; font-variant-numeric:tabular-nums;}
+  .lectura.tr .val{color:var(--verde);}
+  .lectura.te .val{color:var(--coral);}
+  .lectura.te.oculta .val{color:var(--tinta-suave);}
+
+  .veredicto{
+    margin-top:12px; border-radius:10px; padding:11px 15px; font-size:.93rem; border-left:5px solid;
+  }
+  .veredicto.infra{background:#EBF2FB; border-color:var(--azul);}
+  .veredicto.buen{background:var(--ok-fondo); border-color:var(--ok);}
+  .veredicto.sobre{background:var(--mal-fondo); border-color:var(--mal);}
+  .veredicto b{font-family:'Space Grotesk',sans-serif;}
+
+  h2.sep{margin-top:34px;}
+  #curva{width:100%; height:220px; display:block; border-radius:8px;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #plano,#arbol{height:300px;} .lecturas{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>El árbol que aprende (y se pasa de listo)</h1>
+    <p class="sub">Un árbol de decisión clasifica preguntando "¿la variable X supera tal valor?" y partiendo
+    los datos en cajas. Aquí decide si <b style="color:var(--verde)">aprobar</b> o
+    <b style="color:var(--coral)">denegar</b> un préstamo según ingresos y antigüedad. Mueve la
+    <b>profundidad máxima</b>: verás a la izquierda las <b>regiones de decisión</b> (las cajas escalonadas
+    del árbol) y a la derecha el <b>árbol</b> creciendo. Poca profundidad se queda corta; demasiada, dibuja
+    una caja a medida para cada punto — <b>sobreajuste</b>.</p>
+  </header>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>Regiones de decisión <small>ingresos (x) · antigüedad (y) — cada caja predice una clase</small></h2>
+      <canvas id="plano" aria-label="Plano con clientes y las regiones de decisión del árbol"></canvas>
+      <div class="leyenda">
+        <span><span class="pto" style="background:#0F766E"></span> aprobado (real)</span>
+        <span><span class="pto" style="background:#E4572E"></span> denegado (real)</span>
+        <span><span class="cuad" style="background:var(--verde-suave); border:1px solid #0F766E"></span> zona "aprobar"</span>
+        <span><span class="cuad" style="background:var(--coral-suave); border:1px solid #E4572E"></span> zona "denegar"</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>El árbol <small>cada nodo pregunta por una variable; las hojas deciden</small></h2>
+      <canvas id="arbol" aria-label="Diagrama del árbol de decisión"></canvas>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:18px">
+    <div class="fila-prof">
+      <div class="valor-prof">Profundidad <span id="txtProf">1</span><small id="txtProfSub">1 pregunta</small></div>
+      <input type="range" id="sProf" min="1" max="6" step="1" value="1" aria-label="Profundidad máxima del árbol">
+    </div>
+    <div class="fila-acciones">
+      <button class="btn coral" id="btnTest">👁 Ver datos de test</button>
+      <button class="btn sec" id="btnRegenerar">↻ Regenerar datos</button>
+    </div>
+    <div class="lecturas">
+      <div class="lectura"><div class="nom">Hojas del árbol</div><div class="val" id="vHojas">—</div></div>
+      <div class="lectura tr"><div class="nom">Acierto en entrenamiento</div><div class="val" id="vTr">—</div></div>
+      <div class="lectura te oculta" id="cardTe"><div class="nom">Acierto en test</div><div class="val" id="vTe">?</div></div>
+    </div>
+    <div class="veredicto" id="veredicto" style="display:none"></div>
+
+    <h2 class="sep">Acierto según la profundidad
+      <small>se construye al evaluar en test — entrenamiento en verde, test en coral</small></h2>
+    <canvas id="curva" aria-label="Curva de acierto en entrenamiento y test según la profundidad"></canvas>
+  </div>
+
+  <details class="nota">
+    <summary>Cómo parte el árbol, por qué sobreajusta y qué es podar</summary>
+    <div class="nota-cuerpo">
+      <p><b>Cómo decide dónde cortar:</b> en cada nodo, el árbol prueba todos los cortes posibles ("ingresos
+      &lt; 5,7", "antigüedad &lt; 3,2"…) y elige el que deja los dos lados <b>más puros</b> — más homogéneos en
+      su clase. La pureza se mide con el <b>índice de Gini</b>: vale 0 si un grupo es todo de una clase y sube
+      cuanto más mezclado está. El árbol repite el proceso en cada rama hasta alcanzar la profundidad máxima o
+      hasta que las hojas son puras.</p>
+      <p><b>Por qué sobreajusta con tanta facilidad:</b> un árbol suficientemente profundo puede aislar cada
+      punto en su propia caja y acertar el 100% en entrenamiento — incluidos los puntos de ruido. Pero esas
+      cajas minúsculas alrededor de un dato raro no representan ningún patrón real, así que fallan con datos
+      nuevos. Por eso el acierto en entrenamiento sube siempre hacia el 100% al aumentar la profundidad,
+      mientras que el de test sube, alcanza un máximo y luego <b>cae</b>: la misma joroba del sobreajuste que
+      viste con el grado del polinomio, pero ahora dibujada como fronteras escalonadas. La frontera real de
+      estos datos es curva, y el árbol solo sabe hacer cortes rectos: la aproxima a base de escalones.</p>
+      <p><b>Podar</b> es la solución: dejar crecer el árbol y después recortar las ramas que no mejoran el
+      acierto en datos de validación (o limitar la profundidad desde el principio, como hace este deslizador).
+      Un árbol podado generaliza mejor que uno que memoriza. Y combinar muchos árboles distintos promediando
+      sus decisiones —<i>random forest</i>— reduce el sobreajuste aún más: esa es la idea detrás de los
+      modelos de árboles más usados en la práctica.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de clasificación · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= datos: frontera curva (círculo) + ruido ================= */
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15, 1|a);
+    t=t+Math.imul(t^t>>>7, 61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+let seedTrain=19, seedTest=519;
+function generar(seed,n){
+  const rng=mulberry32(seed);
+  const P=[];
+  for(let i=0;i<n;i++){
+    const x=Math.round(rng()*100)/10, y=Math.round(rng()*100)/10;
+    let c=(x<5 && y<6)?1:0;      /* aprobado: ingresos y antigüedad bajos (esquina) */
+    if(rng()<0.15) c=1-c;        /* 15% de ruido → solape que el árbol memoriza pronto */
+    P.push({x,y,c});
+  }
+  return P;
+}
+let TRAIN=generar(seedTrain,50), TEST=generar(seedTest,50);
+
+/* ================= CART ================= */
+function gini(pts){
+  if(!pts.length) return 0;
+  const p=pts.filter(q=>q.c===1).length/pts.length;
+  return 1-p*p-(1-p)*(1-p);
+}
+function mejorCorte(pts){
+  if(pts.length<2) return null;
+  let best=null;
+  for(const eje of ['x','y']){
+    const vals=[...new Set(pts.map(p=>p[eje]))].sort((a,b)=>a-b);
+    for(let i=0;i<vals.length-1;i++){
+      const u=(vals[i]+vals[i+1])/2;
+      const iz=pts.filter(p=>p[eje]<u), de=pts.filter(p=>p[eje]>=u);
+      if(!iz.length||!de.length) continue;
+      const g=(iz.length*gini(iz)+de.length*gini(de))/pts.length;
+      if(!best||g<best.g) best={eje,umbral:u,g,izq:iz,der:de};
+    }
+  }
+  return best;
+}
+function construir(pts,prof,maxP){
+  const clase=pts.filter(p=>p.c===1).length>=pts.length/2?1:0;
+  const nodo={clase, n:pts.length, prof};
+  if(prof>=maxP || gini(pts)===0 || pts.length<2) return nodo;
+  const c=mejorCorte(pts);
+  if(!c) return nodo;
+  nodo.eje=c.eje; nodo.umbral=c.umbral;
+  nodo.izq=construir(c.izq,prof+1,maxP);
+  nodo.der=construir(c.der,prof+1,maxP);
+  return nodo;
+}
+function predecir(n,p){
+  if(n.izq===undefined) return n.clase;
+  return p[n.eje]<n.umbral ? predecir(n.izq,p) : predecir(n.der,p);
+}
+function hojas(n){ return n.izq===undefined?1:hojas(n.izq)+hojas(n.der); }
+function acc(n,pts){ return pts.filter(p=>predecir(n,p)===p.c).length/pts.length; }
+
+/* ================= estado ================= */
+let prof=1;
+let arbol=construir(TRAIN,0,prof);
+let testVisible=false;
+let evaluaciones=new Map();   // prof -> {tr, te}
+
+function fmt(v){ return v.toLocaleString('es-ES'); }
+
+/* ================= plano ================= */
+const plano=document.getElementById('plano');
+const pctx=plano.getContext('2d');
+function prep(canvas,c){
+  const dpr=window.devicePixelRatio||1;
+  const r=canvas.getBoundingClientRect();
+  canvas.width=r.width*dpr; canvas.height=r.height*dpr;
+  c.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+let geomP={};
+function dibujarPlano(){
+  const {W,H}=prep(plano,pctx);
+  const m=16;
+  const lado=Math.min(W-2*m, H-2*m);
+  const x0=(W-lado)/2, y0=(H-lado)/2;
+  const px=x=>x0+x/10*lado, py=y=>y0+lado-y/10*lado;
+  geomP={px,py,x0,y0,lado};
+
+  pctx.clearRect(0,0,W,H);
+  /* regiones: rasterizado grueso */
+  const NG=80, cw=lado/NG;
+  for(let i=0;i<NG;i++) for(let j=0;j<NG;j++){
+    const cx=(i+0.5)/NG*10, cy=(j+0.5)/NG*10;
+    const cl=predecir(arbol,{x:cx,y:cy});
+    pctx.fillStyle = cl===1 ? 'rgba(15,118,110,.13)' : 'rgba(228,87,46,.13)';
+    pctx.fillRect(px(cx)-cw/2-0.5, py(cy)-cw/2-0.5, cw+1, cw+1);
+  }
+  /* marco */
+  pctx.strokeStyle='#B9C7D6'; pctx.lineWidth=1.6;
+  pctx.strokeRect(x0,y0,lado,lado);
+  pctx.font='11px "IBM Plex Sans", sans-serif'; pctx.fillStyle='#5B6B80'; pctx.textAlign='center';
+  pctx.fillText('ingresos →', x0+lado/2, y0+lado+14);
+  pctx.save(); pctx.translate(x0-6, y0+lado/2); pctx.rotate(-Math.PI/2); pctx.fillText('antigüedad →',0,0); pctx.restore();
+
+  /* puntos test (si visibles) con borde */
+  if(testVisible){
+    for(const p of TEST){
+      pctx.beginPath(); pctx.arc(px(p.x),py(p.y),5,0,Math.PI*2);
+      pctx.fillStyle=p.c===1?'#0F766E':'#E4572E'; pctx.fill();
+      pctx.strokeStyle='#1B2A41'; pctx.lineWidth=2; pctx.stroke();
+    }
+  }
+  /* puntos train */
+  for(const p of TRAIN){
+    pctx.beginPath(); pctx.arc(px(p.x),py(p.y),6,0,Math.PI*2);
+    pctx.fillStyle=p.c===1?'#0F766E':'#E4572E'; pctx.fill();
+    pctx.strokeStyle='#FFFFFF'; pctx.lineWidth=1.8; pctx.stroke();
+  }
+}
+
+/* ================= árbol ================= */
+const arbolC=document.getElementById('arbol');
+const actx=arbolC.getContext('2d');
+function profMax(n){ return n.izq===undefined?0:1+Math.max(profMax(n.izq),profMax(n.der)); }
+function contarHojas(n){ return n.izq===undefined?1:contarHojas(n.izq)+contarHojas(n.der); }
+function dibujarArbol(){
+  const {W,H}=prep(arbolC,actx);
+  actx.clearRect(0,0,W,H);
+  const pMax=profMax(arbol);
+  const mT=24, mB=16, mLat=18;
+  const nivelH=(H-mT-mB)/(Math.max(1,pMax)+0.15);
+  const nHojas=contarHojas(arbol);
+  const ancho=W-2*mLat;
+
+  /* layout por hojas: cada hoja ocupa una franja igual; un nodo interno se centra sobre sus hijos */
+  let hojaIdx=0;
+  function asignaX(n, nivel){
+    n._y=mT+nivel*nivelH;
+    if(n.izq===undefined){
+      n._x = mLat + (nHojas===1 ? ancho/2 : (hojaIdx+0.5)/nHojas*ancho);
+      hojaIdx++;
+    } else {
+      asignaX(n.izq, nivel+1);
+      asignaX(n.der, nivel+1);
+      n._x=(n.izq._x+n.der._x)/2;
+    }
+  }
+  asignaX(arbol, 0);
+
+  /* escalar tamaños según cuántas hojas hay (nodos más pequeños si el árbol es grande) */
+  const compacto = nHojas>10;
+  const rHoja = compacto?5:7;
+  const fontN = compacto?9:10;
+
+  function rec(n){
+    if(n.izq!==undefined){
+      actx.strokeStyle='#B9C7D6'; actx.lineWidth=1.3;
+      actx.beginPath(); actx.moveTo(n._x,n._y); actx.lineTo(n.izq._x,n.izq._y); actx.stroke();
+      actx.beginPath(); actx.moveTo(n._x,n._y); actx.lineTo(n.der._x,n.der._y); actx.stroke();
+      rec(n.izq); rec(n.der);
+    }
+    if(n.izq===undefined){
+      actx.beginPath(); actx.arc(n._x,n._y,rHoja,0,Math.PI*2);
+      actx.fillStyle=n.clase===1?'#0F766E':'#E4572E'; actx.fill();
+      actx.strokeStyle='#FFFFFF'; actx.lineWidth=2; actx.stroke();
+    } else {
+      const et=(n.eje==='x'?'ingr.':'antig.')+'<'+n.umbral.toFixed(1);
+      actx.font=fontN+'px "IBM Plex Sans", sans-serif';
+      const w=actx.measureText(et).width+10;
+      actx.fillStyle='#1B2A41';
+      actx.beginPath(); actx.roundRect(n._x-w/2, n._y-8, w, 16, 5); actx.fill();
+      actx.fillStyle='#FFFFFF'; actx.textAlign='center'; actx.textBaseline='middle';
+      actx.fillText(et, n._x, n._y);
+      actx.textBaseline='alphabetic';
+    }
+  }
+  if(!actx.roundRect){
+    CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+      this.moveTo(x+r,y); this.arcTo(x+w,y,x+w,y+h,r); this.arcTo(x+w,y+h,x,y+h,r);
+      this.arcTo(x,y+h,x,y,r); this.arcTo(x,y,x+w,y,r); this.closePath(); return this;
+    };
+  }
+  rec(arbol);
+
+  if(pMax===0){
+    actx.fillStyle='#8FA3B8'; actx.font='13px "IBM Plex Sans", sans-serif'; actx.textAlign='center';
+    actx.fillText('(una sola hoja: predice la clase mayoritaria)', W/2, H/2);
+  }
+}
+
+/* ================= curva acierto vs profundidad ================= */
+const curva=document.getElementById('curva');
+const cctx=curva.getContext('2d');
+function dibujarCurva(){
+  const {W,H}=prep(curva,cctx);
+  const mL=44, mR=16, mT=14, mB=32;
+  const px=d=>mL+(d-1)/5*(W-mL-mR);
+  const py=a=>H-mB-(a-0.4)/0.62*(H-mT-mB);   /* eje 0,4..1,02 */
+
+  cctx.clearRect(0,0,W,H);
+  cctx.font='11px "IBM Plex Sans", sans-serif'; cctx.fillStyle='#5B6B80'; cctx.textAlign='right';
+  for(let a=0.5;a<=1.001;a+=0.1){
+    cctx.strokeStyle='#EDF1F6'; cctx.lineWidth=1;
+    cctx.beginPath(); cctx.moveTo(mL,py(a)); cctx.lineTo(W-mR,py(a)); cctx.stroke();
+    cctx.fillStyle='#5B6B80'; cctx.fillText(Math.round(a*100)+'%', mL-6, py(a)+4);
+  }
+  cctx.strokeStyle='#B9C7D6'; cctx.lineWidth=1.6;
+  cctx.beginPath(); cctx.moveTo(mL,mT); cctx.lineTo(mL,H-mB); cctx.lineTo(W-mR,H-mB); cctx.stroke();
+  cctx.textAlign='center';
+  for(let d=1;d<=6;d++){ cctx.fillStyle='#5B6B80'; cctx.fillText(d, px(d), H-mB+15); }
+  cctx.fillText('profundidad máxima', (mL+W-mR)/2, H-3);
+
+  if(evaluaciones.size===0){
+    cctx.fillStyle='#8FA3B8'; cctx.font='13px "IBM Plex Sans", sans-serif';
+    cctx.fillText('Pulsa "Ver datos de test" en distintas profundidades y aquí aparecerá la joroba…', (mL+W-mR)/2, (mT+H-mB)/2);
+    return;
+  }
+  const ds=[...evaluaciones.keys()].sort((a,b)=>a-b);
+  function serie(campo,color){
+    cctx.strokeStyle=color; cctx.lineWidth=2.6; cctx.lineJoin='round';
+    cctx.beginPath();
+    ds.forEach((d,i)=>{ const Y=py(evaluaciones.get(d)[campo]); i?cctx.lineTo(px(d),Y):cctx.moveTo(px(d),Y); });
+    if(ds.length>1) cctx.stroke();
+    for(const d of ds){
+      cctx.beginPath(); cctx.arc(px(d), py(evaluaciones.get(d)[campo]), 5, 0, Math.PI*2);
+      cctx.fillStyle=color; cctx.fill(); cctx.strokeStyle='#FFF'; cctx.lineWidth=1.6; cctx.stroke();
+    }
+  }
+  serie('tr','#0F766E');
+  serie('te','#E4572E');
+  cctx.textAlign='left'; cctx.font='700 12px "Space Grotesk", sans-serif';
+  cctx.fillStyle='#0F766E'; cctx.fillText('● train', W-mR-130, mT+12);
+  cctx.fillStyle='#E4572E'; cctx.fillText('● test', W-mR-60, mT+12);
+}
+
+/* ================= flujo ================= */
+function rehacer(){
+  arbol=construir(TRAIN,0,prof);
+  const tr=acc(arbol,TRAIN);
+  document.getElementById('vHojas').textContent=hojas(arbol);
+  document.getElementById('vTr').textContent=Math.round(tr*100)+'%';
+  /* test se reoculta a cada cambio de profundidad */
+  testVisible=false;
+  document.getElementById('cardTe').classList.add('oculta');
+  document.getElementById('vTe').textContent='?';
+  document.getElementById('btnTest').disabled=false;
+  document.getElementById('veredicto').style.display='none';
+  dibujarPlano(); dibujarArbol();
+}
+function fijarProf(p){
+  prof=p;
+  document.getElementById('sProf').value=p;
+  document.getElementById('txtProf').textContent=p;
+  document.getElementById('txtProfSub').textContent = p===1?'1 pregunta':'hasta '+p+' preguntas';
+  rehacer();
+}
+document.getElementById('sProf').addEventListener('input',e=>fijarProf(+e.target.value));
+
+document.getElementById('btnTest').addEventListener('click',()=>{
+  testVisible=true;
+  const tr=acc(arbol,TRAIN), te=acc(arbol,TEST);
+  evaluaciones.set(prof,{tr,te});
+  document.getElementById('cardTe').classList.remove('oculta');
+  document.getElementById('vTe').textContent=Math.round(te*100)+'%';
+  document.getElementById('btnTest').disabled=true;
+  /* veredicto */
+  const v=document.getElementById('veredicto');
+  v.style.display='block';
+  const gap=tr-te;
+  /* ¿el test ha empezado a caer respecto a alguna profundidad menor ya evaluada? */
+  let mejorTeMenor=0;
+  for(const [d,r] of evaluaciones){ if(d<prof && r.te>mejorTeMenor) mejorTeMenor=r.te; }
+  const testCae = mejorTeMenor>0 && te < mejorTeMenor-0.02;
+  if(tr<0.8 && !testCae){
+    v.className='veredicto infra';
+    v.innerHTML='<b>Se queda corto.</b> Con profundidad '+prof+' el árbol acierta solo el '+Math.round(tr*100)+
+      '% en entrenamiento: aún no ha captado la forma de la frontera. Sube la profundidad.';
+  } else if(testCae || (gap>0.18 && tr>0.97)){
+    v.className='veredicto sobre';
+    v.innerHTML='<b>⚠ Sobreajuste.</b> Acierta el '+Math.round(tr*100)+'% en entrenamiento pero el test '+
+      (testCae?'ha empezado a caer ('+Math.round(te*100)+'%)':'se queda en el '+Math.round(te*100)+'%')+
+      '. El árbol fabrica cajas a medida para puntos concretos (mira las '+hojas(arbol)+' hojas): memoriza en vez de generalizar.';
+  } else {
+    v.className='veredicto buen';
+    v.innerHTML='<b>✓ Buen equilibrio.</b> Entrenamiento '+Math.round(tr*100)+'% y test '+Math.round(te*100)+
+      '%: el árbol capta el patrón sin obsesionarse con cada punto. Sigue probando: el mejor test suele estar '+
+      'en una profundidad intermedia.';
+  }
+  dibujarPlano(); dibujarCurva();
+});
+
+document.getElementById('btnRegenerar').addEventListener('click',()=>{
+  seedTrain=Math.floor(Math.random()*1e5); seedTest=seedTrain+500;
+  TRAIN=generar(seedTrain,50); TEST=generar(seedTest,50);
+  evaluaciones=new Map();
+  fijarProf(prof);
+  dibujarCurva();
+});
+
+/* arrastre de puntos de entrenamiento */
+function coords(e){ const r=plano.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+let drag=null;
+plano.addEventListener('pointerdown',e=>{
+  const {x,y}=coords(e);
+  for(let i=0;i<TRAIN.length;i++){
+    if(Math.hypot(x-geomP.px(TRAIN[i].x), y-geomP.py(TRAIN[i].y))<12){
+      drag=i; plano.setPointerCapture(e.pointerId); plano.style.cursor='grabbing'; e.preventDefault(); return;
+    }
+  }
+});
+plano.addEventListener('pointermove',e=>{
+  const {x,y}=coords(e);
+  if(drag===null){
+    let sobre=false;
+    for(const p of TRAIN) if(Math.hypot(x-geomP.px(p.x), y-geomP.py(p.y))<12){ sobre=true; break; }
+    plano.style.cursor=sobre?'grab':'default';
+    return;
+  }
+  TRAIN[drag].x=Math.min(10,Math.max(0,(x-geomP.x0)/geomP.lado*10));
+  TRAIN[drag].y=Math.min(10,Math.max(0,(geomP.y0+geomP.lado-y)/geomP.lado*10));
+  evaluaciones=new Map();   /* los datos cambiaron: la curva se reinicia */
+  rehacer(); dibujarCurva();
+});
+function soltar(e){
+  if(drag!==null){ drag=null; try{plano.releasePointerCapture(e.pointerId);}catch(_){} plano.style.cursor='default'; }
+}
+plano.addEventListener('pointerup',soltar);
+plano.addEventListener('pointercancel',soltar);
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>{ dibujarPlano(); dibujarArbol(); dibujarCurva(); });
+fijarProf(1);
+dibujarCurva();
+</script>
+</body>
+</html>
