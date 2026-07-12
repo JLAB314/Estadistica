@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El turno de examinar — validación cruzada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --azul:#2274C4;
+    --coral:#E4572E;
+    --naranja:#F07818;
+    --ambar:#D98E04;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:700px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  h2{font-family:'Space Grotesk', sans-serif; font-size:1rem; font-weight:700; margin-bottom:8px;}
+  h2 small{color:var(--tinta-suave); font-size:.85rem; display:block; font-weight:400;}
+
+  /* rejilla de folds */
+  .datos{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:6px;}
+  .celda{
+    width:38px; height:38px; border-radius:8px; border:2px solid;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.8rem;
+    transition:background .25s, border-color .25s, transform .18s;
+  }
+  .celda.train{background:var(--verde); border-color:var(--verde); color:#fff;}
+  .celda.test{background:var(--coral); border-color:var(--coral); color:#fff; transform:scale(1.08);}
+  .celda .fnum{font-size:.62rem; opacity:.8;}
+  .rot-leyenda{display:flex; gap:16px; flex-wrap:wrap; font-size:.85rem; color:var(--tinta-suave); margin-top:4px;}
+  .rot-leyenda span{display:inline-flex; align-items:center; gap:6px;}
+  .cuad{width:13px; height:13px; border-radius:3px; display:inline-block;}
+
+  .ronda-info{
+    margin-top:12px; background:#FDF6E9; border-left:4px solid var(--ambar);
+    padding:9px 14px; border-radius:0 8px 8px 0; font-size:.93rem;
+  }
+  .ronda-info b{font-family:'Space Grotesk',sans-serif;}
+
+  /* controles */
+  .fila-k{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:16px;}
+  .valor-k{font-family:'Space Grotesk',sans-serif; font-size:1.4rem; font-weight:700; color:var(--naranja); min-width:150px;}
+  .valor-k small{display:block; font-size:.72rem; color:var(--tinta-suave); font-weight:500;}
+  input[type=range]{flex:1; min-width:140px; accent-color:var(--naranja); height:30px; cursor:pointer;}
+  input[type=range]:focus-visible{outline:3px solid var(--naranja); outline-offset:2px; border-radius:6px;}
+  .fila-acciones{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px;}
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.95rem;
+    border:none; border-radius:999px; padding:11px 22px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .btn.coral{background:var(--coral); color:var(--blanco);}
+  .btn.coral:hover{filter:brightness(1.07);}
+  .btn.coral:disabled{opacity:.5; cursor:default;}
+  .btn.sec{background:var(--blanco); color:var(--tinta); border:1.5px solid var(--borde); font-weight:500; font-size:.88rem; padding:9px 18px;}
+  .btn.sec:hover{border-color:var(--verde);}
+
+  /* panel de puntuaciones */
+  #barras{width:100%; height:210px; display:block; margin-top:6px;}
+  #curvaK{width:100%; height:230px; display:block; margin-top:6px;}
+  .resumen{
+    display:flex; gap:12px; flex-wrap:wrap; margin-top:12px; align-items:stretch;
+  }
+  .resumen .caja{flex:1; min-width:150px; background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:11px 15px;}
+  .resumen .nom{font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--tinta-suave); font-weight:600;}
+  .resumen .val{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.7rem; font-variant-numeric:tabular-nums;}
+  .resumen .caja.media .val{color:var(--verde);}
+  .resumen .caja.disp .val{color:var(--ambar);}
+
+  /* contraste holdout */
+  .holdout{margin-top:0;}
+  .holdout .compara{display:flex; gap:12px; flex-wrap:wrap; margin-top:10px;}
+  .holdout .lado{flex:1; min-width:200px; border-radius:10px; padding:12px 15px; border:1px solid var(--borde);}
+  .holdout .lado.uno{background:#FBEEEC; border-color:#F0B8AC;}
+  .holdout .lado.cv{background:var(--ok-fondo); border-color:#A9D7BC;}
+  .holdout .lado .tit{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.9rem; margin-bottom:6px;}
+  .holdout .lado .cifra{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:2rem; font-variant-numeric:tabular-nums;}
+  .holdout .lado.uno .cifra{color:var(--coral);}
+  .holdout .lado.cv .cifra{color:var(--ok);}
+  .holdout .lado .hist{font-size:.8rem; color:var(--tinta-suave); margin-top:4px; min-height:1.2em; font-variant-numeric:tabular-nums;}
+  .holdout .nota-h{font-size:.9rem; color:var(--tinta-suave); margin-top:10px;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ .celda{width:32px; height:32px;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>El turno de examinar</h1>
+    <p class="sub">Para saber si un modelo funcionará con datos nuevos, lo probamos con datos que no ha visto.
+    Pero si partimos en "entrenar" y "examinar" <b>una sola vez</b>, el resultado depende de la suerte de esa
+    división. La <b>validación cruzada</b> lo arregla: parte los datos en <b>k bloques</b> y va turnando cuál
+    hace de examen — <b style="color:var(--coral)">cada bloque es examen una vez</b>,
+    <b style="color:var(--verde)">entrenamiento las demás</b>. Al final promedias. Pulsa "Ejecutar" y mira
+    rotar el turno.</p>
+  </header>
+
+  <div class="panel">
+    <h2>Los 20 datos repartidos en <span id="txtK3">4</span> bloques <small>el bloque coral es el examen de la ronda actual</small></h2>
+    <div class="datos" id="datos"></div>
+    <div class="rot-leyenda">
+      <span><span class="cuad" style="background:var(--verde)"></span> entrena en esta ronda</span>
+      <span><span class="cuad" style="background:var(--coral)"></span> examen de esta ronda</span>
+    </div>
+    <div class="ronda-info" id="rondaInfo">Elige k y pulsa <b>Ejecutar validación cruzada</b>.</div>
+
+    <div class="fila-k">
+      <div class="valor-k">k = <span id="txtK">4</span> bloques<small id="txtKsub">4 rondas · examen de 5 datos</small></div>
+      <input type="range" id="sK" min="2" max="20" step="1" value="4" aria-label="Número de bloques k">
+    </div>
+    <div class="fila-acciones">
+      <button class="btn coral" id="btnRun">▶ Ejecutar validación cruzada</button>
+      <button class="btn sec" id="btnLoocv">Saltar a LOOCV (k = 20)</button>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:18px">
+    <h2>Las puntuaciones de cada ronda <small>varían entre sí — esa variación es justo lo que un examen único te oculta</small></h2>
+    <canvas id="barras" aria-label="Puntuación de acierto en cada ronda de la validación cruzada"></canvas>
+    <div class="resumen">
+      <div class="caja media"><div class="nom">Acierto medio (estimación honesta)</div><div class="val" id="vMedia">—</div></div>
+      <div class="caja disp"><div class="nom">Dispersión entre rondas (±)</div><div class="val" id="vDisp">—</div></div>
+    </div>
+  </div>
+
+  <div class="panel holdout" style="margin-top:18px">
+    <h2>¿Por qué no fiarse de una sola partición? <small>pulsa varias veces y mira bailar el número de la izquierda</small></h2>
+    <div class="compara">
+      <div class="lado uno">
+        <div class="tit">Un único examen (70/30 al azar)</div>
+        <div class="cifra" id="hoNum">—</div>
+        <div class="hist" id="hoHist"></div>
+      </div>
+      <div class="lado cv">
+        <div class="tit">Validación cruzada (k actual)</div>
+        <div class="cifra" id="hoCV">—</div>
+        <div class="hist">estable ronda tras ronda</div>
+      </div>
+    </div>
+    <button class="btn sec" id="btnHoldout" style="margin-top:12px">🎲 Probar otra partición al azar</button>
+    <div class="nota-h" id="hoNota"></div>
+  </div>
+
+  <div class="panel" style="margin-top:18px">
+    <h2>Acierto medio según k — CV frente a una sola partición
+      <small>ejecuta la CV con distintos valores de k y ve cómo la media se mantiene estable mientras la partición única da tumbos</small></h2>
+    <canvas id="curvaK" aria-label="Acierto medio de la validación cruzada y de una partición única para distintos valores de k"></canvas>
+    <div class="rot-leyenda" style="margin-top:8px">
+      <span><span class="cuad" style="background:var(--verde)"></span> media de validación cruzada (estable)</span>
+      <span><span class="cuad" style="background:var(--coral)"></span> una sola partición al azar (salta)</span>
+    </div>
+    <div class="nota-h" id="curvaKnota" style="margin-top:8px; font-size:.9rem; color:var(--tinta-suave)">
+      Cada vez que ejecutas la validación cruzada con un k, se marca aquí su media (verde) y, para comparar,
+      el acierto de <b>una única partición</b> del mismo tamaño de examen (coral).
+    </div>
+  </div>
+
+  <details class="nota">
+    <summary>Fold, k-fold, LOOCV y la elección de k</summary>
+    <div class="nota-cuerpo">
+      <p><b>Un fold (bloque)</b> es cada trozo en que dividimos los datos. En <b>k-fold cross-validation</b>
+      hacemos k rondas: en cada una, un fold distinto es el examen y los otros k−1 sirven para entrenar. Así
+      <b>cada dato es examen exactamente una vez</b> y entrenamiento k−1 veces — aprovechas todos los datos
+      para ambas cosas, sin que ningún punto se evalúe con un modelo que ya lo vio. La estimación final es la
+      <b>media</b> de las k puntuaciones, y su <b>dispersión</b> te avisa de cuánto dependía del reparto.</p>
+      <p><b>LOOCV</b> (leave-one-out) es el extremo: k = n, un fold por dato. Cada ronda entrena con todos
+      menos uno y examina con ese único dato, así que su puntuación solo puede ser 100% (acertó) o 0% (falló).
+      Entrena con casi todos los datos (estimación muy poco sesgada) pero exige n rondas — caro con muchos
+      datos— y las puntuaciones individuales saltan entre 0 y 100, aunque su media siga siendo informativa.</p>
+      <p><b>Elegir k es un compromiso.</b> Con k pequeño (p. ej. 2) entrenas con pocos datos y la estimación
+      queda sesgada hacia abajo; con k grande entrenas casi con todo (más realista) pero haces más rondas.
+      Por eso <b>k = 5 o 10</b> es el estándar: buen equilibrio entre coste y fiabilidad. Ojo con un matiz:
+      que la dispersión <i>entre folds</i> suba al aumentar k no significa que la media sea menos fiable — los
+      folds son más pequeños y por eso sus puntuaciones son más extremas, pero se promedian más veces.</p>
+      <p><b>Para qué sirve, y para qué no:</b> la validación cruzada <b>estima</b> cómo de bien generalizará un
+      modelo y ayuda a comparar modelos o elegir sus ajustes. No es el modelo final: una vez decidido cuál usar,
+      este se <b>entrena con todos los datos</b> disponibles. La CV es el banco de pruebas, no el producto.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de evaluación de modelos · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= datos y clasificador NEUTRO (umbral 1D) ================= */
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15, 1|a);
+    t=t+Math.imul(t^t>>>7, 61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+const N=20;
+const DATOS=(()=>{
+  const rng=mulberry32(42);
+  const P=[];
+  for(let i=0;i<N;i++){
+    const s=Math.round(rng()*100)/10;
+    let c=(s>5)?1:0;
+    if(rng()<0.20) c=1-c;
+    P.push({s,c});
+  }
+  return P;
+})();
+
+function entrenar(train){
+  let best={u:5,acc:-1,signo:1};
+  for(let u=0;u<=10;u+=0.5) for(const sg of [1,-1]){
+    let ok=0;
+    for(const p of train){ const pr=(sg>0?(p.s>=u):(p.s<u))?1:0; if(pr===p.c) ok++; }
+    const a=ok/train.length;
+    if(a>best.acc) best={u,acc:a,signo:sg};
+  }
+  return best;
+}
+function evaluar(m,test){
+  let ok=0;
+  for(const p of test){ const pr=(m.signo>0?(p.s>=m.u):(p.s<m.u))?1:0; if(pr===p.c) ok++; }
+  return ok/test.length;
+}
+/* asignación de cada dato a su fold (round-robin), para k dado */
+function asignaciones(k){ return DATOS.map((_,i)=>i%k); }
+function foldScores(k){
+  const asig=asignaciones(k);
+  const scores=[];
+  for(let f=0;f<k;f++){
+    const test=DATOS.filter((_,i)=>asig[i]===f);
+    const train=DATOS.filter((_,i)=>asig[i]!==f);
+    scores.push(evaluar(entrenar(train), test));
+  }
+  return scores;
+}
+
+/* ================= estado ================= */
+let k=4;
+let rondaActual=-1;       // -1 = sin ejecutar; 0..k-1 durante la animación; k = terminado
+let scores=[];
+let corriendo=false;
+let holdoutHist=[];
+
+function fmt(v,dec){ return v.toLocaleString('es-ES',{minimumFractionDigits:dec, maximumFractionDigits:dec}); }
+
+/* ================= rejilla de folds ================= */
+const cont=document.getElementById('datos');
+function construirRejilla(){
+  cont.innerHTML='';
+  const asig=asignaciones(k);
+  for(let i=0;i<N;i++){
+    const d=document.createElement('div');
+    d.className='celda train';
+    d.dataset.fold=asig[i];
+    d.innerHTML='<span class="fnum">B'+(asig[i]+1)+'</span>';
+    cont.appendChild(d);
+  }
+  pintarRonda(rondaActual);
+}
+function pintarRonda(r){
+  const celdas=cont.children;
+  for(let i=0;i<celdas.length;i++){
+    const esFoldTest = +celdas[i].dataset.fold === r;
+    celdas[i].className='celda '+(esFoldTest?'test':'train');
+  }
+}
+
+/* ================= barras de puntuación ================= */
+const bar=document.getElementById('barras');
+const bctx=bar.getContext('2d');
+function prep(){
+  const dpr=window.devicePixelRatio||1;
+  const r=bar.getBoundingClientRect();
+  bar.width=r.width*dpr; bar.height=r.height*dpr;
+  bctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+function dibujarBarras(){
+  const {W,H}=prep();
+  const mL=40, mR=12, mT=12, mB=28;
+  const py=v=>H-mB-v*(H-mT-mB);
+  bctx.clearRect(0,0,W,H);
+  /* eje y */
+  bctx.font='11px "IBM Plex Sans", sans-serif'; bctx.fillStyle='#5B6B80'; bctx.textAlign='right';
+  for(let v=0;v<=1.001;v+=0.25){
+    bctx.strokeStyle='#EDF1F6'; bctx.lineWidth=1;
+    bctx.beginPath(); bctx.moveTo(mL,py(v)); bctx.lineTo(W-mR,py(v)); bctx.stroke();
+    bctx.fillStyle='#5B6B80'; bctx.fillText(Math.round(v*100)+'%', mL-6, py(v)+4);
+  }
+  if(scores.length===0){
+    bctx.fillStyle='#8FA3B8'; bctx.textAlign='center'; bctx.font='13px "IBM Plex Sans", sans-serif';
+    bctx.fillText('Ejecuta la validación cruzada para ver la puntuación de cada ronda', W/2, H/2);
+    return;
+  }
+  const reveladas=Math.min(scores.length, rondaActual<0?scores.length:rondaActual+1);
+  const n=scores.length;
+  const bw=Math.min(46, (W-mL-mR)/n*0.7);
+  const paso=(W-mL-mR)/n;
+  const media=scores.slice(0,reveladas).reduce((a,b)=>a+b,0)/Math.max(1,reveladas);
+
+  /* línea de media (de lo revelado) */
+  if(reveladas>0){
+    bctx.strokeStyle='#0F766E'; bctx.lineWidth=2; bctx.setLineDash([6,4]);
+    bctx.beginPath(); bctx.moveTo(mL, py(media)); bctx.lineTo(W-mR, py(media)); bctx.stroke();
+    bctx.setLineDash([]);
+    bctx.fillStyle='#0F766E'; bctx.font='700 11px "Space Grotesk", sans-serif'; bctx.textAlign='left';
+    bctx.fillText('media '+Math.round(media*100)+'%', mL+2, py(media)-5);
+  }
+  /* barras */
+  for(let i=0;i<n;i++){
+    const X=mL+paso*(i+0.5);
+    const revelada = i<reveladas;
+    const esActual = i===rondaActual;
+    bctx.fillStyle = !revelada ? '#E3E9F0' : (esActual?'#E4572E':'#9BC4BC');
+    const h=revelada? (H-mB-py(scores[i])) : 4;
+    bctx.beginPath();
+    if(bctx.roundRect) bctx.roundRect(X-bw/2, py(revelada?scores[i]:0), bw, Math.max(h,2), 4);
+    else bctx.rect(X-bw/2, py(revelada?scores[i]:0), bw, Math.max(h,2));
+    bctx.fill();
+    if(revelada){
+      bctx.fillStyle=esActual?'#E4572E':'#0F766E'; bctx.font='700 11px "Space Grotesk", sans-serif'; bctx.textAlign='center';
+      bctx.fillText(Math.round(scores[i]*100)+'%', X, py(scores[i])-6);
+    }
+    bctx.fillStyle='#5B6B80'; bctx.font='10px "IBM Plex Sans", sans-serif'; bctx.textAlign='center';
+    if(n<=12) bctx.fillText('R'+(i+1), X, H-mB+15);
+  }
+}
+
+/* ================= resumen ================= */
+function actualizarResumen(){
+  const reveladas=(rondaActual<0||rondaActual>=scores.length)?scores.length:rondaActual+1;
+  if(reveladas<=0 || scores.length===0){
+    document.getElementById('vMedia').textContent='—';
+    document.getElementById('vDisp').textContent='—';
+    return;
+  }
+  const sc=scores.slice(0,reveladas);
+  const media=sc.reduce((a,b)=>a+b,0)/sc.length;
+  const sd=Math.sqrt(sc.reduce((a,b)=>a+(b-media)**2,0)/sc.length);
+  document.getElementById('vMedia').textContent=Math.round(media*100)+'%';
+  document.getElementById('vDisp').textContent='±'+Math.round(sd*100);
+}
+
+/* ================= animación de rondas ================= */
+function ejecutar(){
+  if(corriendo) return;
+  scores=foldScores(k);
+  corriendo=true;
+  document.getElementById('btnRun').disabled=true;
+  document.getElementById('btnLoocv').disabled=true;
+  rondaActual=-1;
+  let r=0;
+  const paso=()=>{
+    rondaActual=r;
+    pintarRonda(r);
+    dibujarBarras();
+    actualizarResumen();
+    const test=DATOS.filter((_,i)=>i%k===r).length;
+    document.getElementById('rondaInfo').innerHTML='<b>Ronda '+(r+1)+' de '+k+':</b> el bloque '+
+      '<b style="color:var(--coral)">B'+(r+1)+'</b> ('+test+' dato'+(test>1?'s':'')+') hace de examen; '+
+      'los otros '+(k-1)+' bloques entrenan. Acierto en este examen: <b>'+Math.round(scores[r]*100)+'%</b>.';
+    r++;
+    if(r<k){
+      setTimeout(()=>{ if(reducirMovimiento){paso();} else requestAnimationFrame(paso); }, reducirMovimiento?0:Math.max(180, 900/k));
+    } else {
+      terminar();
+    }
+  };
+  paso();
+}
+function terminar(){
+  corriendo=false;
+  rondaActual=scores.length;   // todas reveladas
+  pintarRonda(-1);             // ningún test destacado al acabar
+  dibujarBarras();
+  actualizarResumen();
+  const media=scores.reduce((a,b)=>a+b,0)/scores.length;
+  const sd=Math.sqrt(scores.reduce((a,b)=>a+(b-media)**2,0)/scores.length);
+  document.getElementById('rondaInfo').innerHTML='<b>Terminado.</b> Cada uno de los '+N+' datos ha sido '+
+    'examen exactamente una vez. La estimación honesta del modelo es la media de las '+k+' rondas: <b>'+
+    Math.round(media*100)+'% ± '+Math.round(sd*100)+'</b>.';
+  document.getElementById('btnRun').disabled=false;
+  document.getElementById('btnLoocv').disabled=false;
+  /* actualizar el lado CV del comparador */
+  document.getElementById('hoCV').textContent=Math.round(media*100)+'%';
+  /* registrar el punto en la curva media-CV-vs-k */
+  registrarK(k, media);
+}
+
+/* ================= controles de k ================= */
+function fijarK(nuevo){
+  if(corriendo) return;
+  k=Math.min(20, Math.max(2, nuevo));
+  document.getElementById('sK').value=k;
+  document.getElementById('txtK').textContent=k;
+  document.getElementById('txtK3').textContent=k;
+  const tam=Math.floor(N/k), resto=N%k;
+  const desc = k===N ? 'LOOCV · examen de 1 dato' :
+    (resto===0 ? k+' rondas · examen de '+tam+' datos' : k+' rondas · examen de '+tam+'–'+(tam+1)+' datos');
+  document.getElementById('txtKsub').textContent=desc;
+  scores=[]; rondaActual=-1;
+  construirRejilla();
+  dibujarBarras();
+  actualizarResumen();
+  document.getElementById('vMedia').textContent='—';
+  document.getElementById('vDisp').textContent='—';
+  document.getElementById('rondaInfo').innerHTML='Pulsa <b>Ejecutar validación cruzada</b> para ver rotar el turno con k = '+k+'.';
+}
+document.getElementById('sK').addEventListener('input',e=>fijarK(+e.target.value));
+document.getElementById('btnRun').addEventListener('click',ejecutar);
+document.getElementById('btnLoocv').addEventListener('click',()=>{ fijarK(N); ejecutar(); });
+
+/* ================= contraste holdout ================= */
+function unHoldout(seed){
+  const rng=mulberry32(seed);
+  const idx=DATOS.map((_,i)=>i);
+  for(let i=idx.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+  const nTest=6;
+  const test=idx.slice(0,nTest).map(i=>DATOS[i]);
+  const train=idx.slice(nTest).map(i=>DATOS[i]);
+  return evaluar(entrenar(train), test);
+}
+document.getElementById('btnHoldout').addEventListener('click',()=>{
+  const s=Math.floor(Math.random()*1e9);
+  const a=unHoldout(s);
+  document.getElementById('hoNum').textContent=Math.round(a*100)+'%';
+  holdoutHist.push(Math.round(a*100));
+  if(holdoutHist.length>8) holdoutHist.shift();
+  document.getElementById('hoHist').textContent='historial: '+holdoutHist.map(x=>x+'%').join('  ');
+  /* asegurar que el lado CV tiene el valor actual */
+  if(document.getElementById('hoCV').textContent==='—'){
+    const sc=foldScores(k), m=sc.reduce((a,b)=>a+b,0)/sc.length;
+    document.getElementById('hoCV').textContent=Math.round(m*100)+'%';
+  }
+  const min=Math.min(...holdoutHist), max=Math.max(...holdoutHist);
+  if(holdoutHist.length>=3){
+    document.getElementById('hoNota').innerHTML='Con solo cambiar qué datos caen en el examen, el número salta '+
+      'entre <b>'+min+'%</b> y <b>'+max+'%</b> — hasta '+(max-min)+' puntos de diferencia por pura suerte. '+
+      'La validación cruzada, en cambio, apenas se mueve: por eso es en la que se confía.';
+  } else {
+    document.getElementById('hoNota').textContent='Pulsa unas cuantas veces más y observa cuánto salta el número de la izquierda…';
+  }
+});
+
+/* ================= curva media CV vs k comparada con partición única ================= */
+const curvaK=document.getElementById('curvaK');
+const kctx=curvaK.getContext('2d');
+const puntosCV=new Map();      // k -> media CV
+const puntosUnica=new Map();   // k -> acierto de una sola partición del tamaño equivalente
+function unaParticionPorK(kk){
+  /* holdout con test ≈ N/kk, semilla fija por k para que sea reproducible dentro de la sesión */
+  const seed=7000+kk*13;
+  const rng=mulberry32(seed);
+  const idx=DATOS.map((_,i)=>i);
+  for(let i=idx.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+  const nTest=Math.max(1, Math.round(N/kk));
+  const test=idx.slice(0,nTest).map(i=>DATOS[i]);
+  const train=idx.slice(nTest).map(i=>DATOS[i]);
+  return evaluar(entrenar(train), test);
+}
+function dibujarCurvaK(){
+  const dpr=window.devicePixelRatio||1;
+  const r=curvaK.getBoundingClientRect();
+  curvaK.width=r.width*dpr; curvaK.height=r.height*dpr;
+  kctx.setTransform(dpr,0,0,dpr,0,0);
+  const W=r.width, H=r.height;
+  const mL=40, mR=14, mT=14, mB=30;
+  const px=kk=>mL+(kk-2)/18*(W-mL-mR);
+  const py=v=>H-mB-v*(H-mT-mB);
+
+  kctx.clearRect(0,0,W,H);
+  kctx.font='11px "IBM Plex Sans", sans-serif'; kctx.textAlign='right';
+  for(let v=0;v<=1.001;v+=0.25){
+    kctx.strokeStyle='#EDF1F6'; kctx.lineWidth=1;
+    kctx.beginPath(); kctx.moveTo(mL,py(v)); kctx.lineTo(W-mR,py(v)); kctx.stroke();
+    kctx.fillStyle='#5B6B80'; kctx.fillText(Math.round(v*100)+'%', mL-6, py(v)+4);
+  }
+  kctx.strokeStyle='#B9C7D6'; kctx.lineWidth=1.6;
+  kctx.beginPath(); kctx.moveTo(mL,mT); kctx.lineTo(mL,H-mB); kctx.lineTo(W-mR,H-mB); kctx.stroke();
+  kctx.textAlign='center'; kctx.fillStyle='#5B6B80'; kctx.font='10px "IBM Plex Sans", sans-serif';
+  for(let kk=2;kk<=20;kk+=2) kctx.fillText(kk, px(kk), H-mB+15);
+  kctx.fillText('número de bloques k', (mL+W-mR)/2, H-3);
+
+  if(puntosCV.size===0){
+    kctx.fillStyle='#8FA3B8'; kctx.font='13px "IBM Plex Sans", sans-serif';
+    kctx.fillText('Ejecuta la CV con varios valores de k y la comparación irá apareciendo aquí…', (mL+W-mR)/2, (mT+H-mB)/2);
+    return;
+  }
+  const ks=[...puntosCV.keys()].sort((a,b)=>a-b);
+  /* línea + puntos de la partición única (coral) */
+  function serie(mapa,color,rad){
+    kctx.strokeStyle=color; kctx.lineWidth=2.4; kctx.lineJoin='round';
+    kctx.beginPath();
+    ks.forEach((kk,i)=>{ const Y=py(mapa.get(kk)); i?kctx.lineTo(px(kk),Y):kctx.moveTo(px(kk),Y); });
+    if(ks.length>1) kctx.stroke();
+    for(const kk of ks){
+      kctx.beginPath(); kctx.arc(px(kk), py(mapa.get(kk)), rad, 0, Math.PI*2);
+      kctx.fillStyle=color; kctx.fill(); kctx.strokeStyle='#FFF'; kctx.lineWidth=1.5; kctx.stroke();
+    }
+  }
+  serie(puntosUnica,'#E4572E',4.5);
+  serie(puntosCV,'#0F766E',5);
+}
+function registrarK(kk, mediaCV){
+  puntosCV.set(kk, mediaCV);
+  puntosUnica.set(kk, unaParticionPorK(kk));
+  dibujarCurvaK();
+  if(puntosCV.size>=3){
+    const cvs=[...puntosCV.values()], un=[...puntosUnica.values()];
+    const rCV=Math.round((Math.max(...cvs)-Math.min(...cvs))*100);
+    const rUn=Math.round((Math.max(...un)-Math.min(...un))*100);
+    document.getElementById('curvaKnota').innerHTML='Con los k probados hasta ahora, la media de CV (verde) '+
+      'se mueve en una banda de <b>'+rCV+' puntos</b>, mientras la partición única (coral) abarca <b>'+rUn+
+      ' puntos</b>. Cuantos más k pruebes, más claro se ve: la CV da una cifra estable; una sola partición, no.';
+  }
+}
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>{ dibujarBarras(); dibujarCurvaK(); });
+fijarK(4);
+dibujarCurvaK();
+</script>
+</body>
+</html>
