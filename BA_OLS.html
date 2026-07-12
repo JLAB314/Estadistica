@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gana a los mínimos cuadrados</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --azul:#2274C4;
+    --coral:#E4572E;
+    --naranja:#F07818;
+    --ambar:#D98E04;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:680px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  #lienzo{width:100%; height:440px; display:block; touch-action:none; cursor:default; border-radius:8px;}
+
+  .leyenda{
+    display:flex; gap:16px; flex-wrap:wrap; justify-content:center;
+    margin-top:8px; font-size:.85rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:6px;}
+  .l-linea{width:24px; height:0; border-top:3.5px solid; display:inline-block; border-radius:2px;}
+  .l-cuadro{width:12px; height:12px; display:inline-block; border:1.5px solid;}
+  .pto{width:11px; height:11px; border-radius:50%; display:inline-block;}
+
+  .fila-acciones{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:16px;}
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.96rem;
+    border:none; border-radius:999px; padding:11px 24px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .btn.coral{background:var(--coral); color:var(--blanco);}
+  .btn.coral:hover{filter:brightness(1.07);}
+  .btn.sec{background:var(--blanco); color:var(--tinta); border:1.5px solid var(--borde); font-weight:500; font-size:.88rem; padding:9px 18px;}
+  .btn.sec:hover{border-color:var(--verde);}
+  .segmentado{display:none; border:2px solid var(--tinta); border-radius:999px; overflow:hidden;}
+  .segmentado.visible{display:flex;}
+  .segmentado button{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.85rem;
+    border:none; background:var(--blanco); color:var(--tinta);
+    padding:8px 15px; cursor:pointer;
+  }
+  .segmentado button:focus-visible{outline:3px solid var(--naranja); outline-offset:-3px;}
+  .segmentado button.activo{background:var(--tinta); color:var(--blanco);}
+  .seg-etiq{display:none; font-size:.82rem; color:var(--tinta-suave); font-weight:600;}
+  .seg-etiq.visible{display:inline;}
+
+  .lecturas{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:10px; margin-top:14px;}
+  .lectura{background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:10px 14px;}
+  .lectura .nom{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--tinta-suave); font-weight:600;}
+  .lectura .val{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.4rem; font-variant-numeric:tabular-nums;}
+  .lectura.tuya .val{color:var(--naranja);}
+  .lectura.ols .val{color:var(--verde);}
+  .lectura.oculta{display:none;}
+
+  .estado{
+    margin-top:12px; border-radius:10px; padding:11px 15px; font-size:.94rem;
+    border-left:5px solid var(--ambar); background:#FDF6E9;
+  }
+  .estado.ok{border-color:var(--ok); background:var(--ok-fondo);}
+  .estado b{font-family:'Space Grotesk',sans-serif;}
+
+  /* fórmulas OLS */
+  .formulas{
+    margin-top:14px; background:#F7FAFC; border:1px solid var(--borde);
+    border-radius:var(--radio); padding:13px 17px; display:none;
+    font-size:.95rem; font-variant-numeric:tabular-nums;
+  }
+  .formulas.visible{display:block;}
+  .formulas .f{margin-top:4px;}
+  .formulas b{font-family:'Space Grotesk',sans-serif;}
+  .formulas .res{color:var(--verde); font-weight:700;}
+  .formulas .ecuacion{
+    margin-top:8px; font-family:'Space Grotesk',sans-serif; font-weight:700;
+    font-size:1.05rem; color:var(--tinta);
+  }
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #lienzo{height:340px;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>Gana a los mínimos cuadrados</h1>
+    <p class="sub">Gasto en publicidad (miles €) frente a ventas (miles €) en 15 campañas. Ajusta tu recta
+    arrastrando los <b style="color:var(--naranja)">dos tiradores naranjas</b>: de cada punto cuelga su
+    <b>residuo</b>, y sobre él se dibuja <b>un cuadrado cuyo lado es ese error</b> — "mínimos cuadrados"
+    significa, literalmente, <b>minimizar la suma de esas áreas</b>. Cuando creas que no puedes hacerlo
+    mejor, pulsa el botón y compárate con la recta OLS. Después, <b>arrastra los propios puntos</b> y
+    mira cómo reacciona la recta óptima.</p>
+  </header>
+
+  <div class="panel">
+    <canvas id="lienzo" aria-label="Nube de puntos con recta ajustable, residuos y cuadrados de error"></canvas>
+    <div class="leyenda">
+      <span><span class="pto" style="background:#2274C4"></span> Campañas (arrastrables)</span>
+      <span style="color:var(--naranja)"><span class="l-linea" style="border-color:var(--naranja)"></span> Tu recta</span>
+      <span style="color:var(--verde)" id="legOls" hidden><span class="l-linea" style="border-color:var(--verde)"></span> Recta OLS</span>
+      <span><span class="l-cuadro" style="border-color:var(--naranja); background:rgba(240,120,24,.18)"></span> Cuadrados de error</span>
+      <span style="color:var(--ambar)" id="legMedia" hidden><span class="pto" style="background:var(--ambar)"></span> (x̄, ȳ)</span>
+    </div>
+
+    <div class="fila-acciones">
+      <button class="btn coral" id="btnOls">📐 Mostrar la recta OLS</button>
+      <span class="seg-etiq" id="segEtiq">Cuadrados de:</span>
+      <div class="segmentado" id="segCuadrados" role="group" aria-label="De qué recta mostrar los cuadrados">
+        <button id="cqTuya" class="activo">Tu recta</button>
+        <button id="cqOls">OLS</button>
+      </div>
+      <span style="flex:1"></span>
+      <button class="btn sec" id="btnRestaurar">↺ Restaurar datos</button>
+    </div>
+
+    <div class="lecturas">
+      <div class="lectura tuya"><div class="nom">SSE de tu recta (Σ áreas)</div><div class="val" id="sseTuya">—</div></div>
+      <div class="lectura ols oculta" id="cardOls"><div class="nom">SSE de la recta OLS</div><div class="val" id="sseOls">—</div></div>
+      <div class="lectura oculta" id="cardR2"><div class="nom">R² de la recta OLS</div><div class="val" id="r2Ols">—</div></div>
+    </div>
+
+    <div class="estado" id="estado"></div>
+
+    <div class="formulas" id="formulas"></div>
+  </div>
+
+  <details class="nota">
+    <summary>Por qué cuadrados, las fórmulas, y el peligro de los puntos extremos</summary>
+    <div class="nota-cuerpo">
+      <p><b>¿Por qué cuadrados y no valores absolutos?</b> Elevar al cuadrado penaliza mucho más los errores
+      grandes (un residuo doble cuenta por cuatro), garantiza una solución única y permite despejarla con una
+      fórmula cerrada — sin tanteos. El precio se ve en esta demo: como los errores grandes "duelen" al
+      cuadrado, la recta OLS hará lo que sea por aplacar un cuadrado gigante.</p>
+      <p><b>Las fórmulas:</b> la pendiente es b₁ = Sxy / Sxx (covarianza entre x e y partida por la varianza
+      de x) y la constante b₀ = ȳ − b₁·x̄, que obliga a la recta a pasar por el punto de medias (x̄, ȳ) — el
+      punto ámbar. Aquí <b>Sxy</b> es la covarianza, media de los productos (x − x̄)(y − ȳ): mide cómo varían
+      x e y a la vez; <b>Sxx</b> es la varianza de x, media de (x − x̄)²: mide cuánto se dispersa la publicidad.
+      <b>Lectura de negocio:</b> b₁ dice cuánto suben las ventas por cada mil euros extra de
+      publicidad; b₀, las ventas esperadas sin publicidad (ojo: extrapolación fuera de los datos).</p>
+      <p><b>Las dos sumas de cuadrados:</b> <b>SSE</b> (suma de cuadrados de los errores, Σ(y − ŷ)²) es el
+      área total de los cuadrados que ves en pantalla: lo que tu recta <i>no</i> consigue explicar. <b>SST</b>
+      (suma de cuadrados total, Σ(y − ȳ)²) es la variabilidad de las ventas respecto a su media, es decir el
+      error que tendrías sin usar la publicidad para nada (prediciendo siempre ȳ). El <b>R² = 1 − SSE/SST</b>
+      mide qué fracción de esa variabilidad total sí explica la recta: R² = 1 es un ajuste perfecto (SSE = 0),
+      R² = 0 significa que la recta no mejora en nada a predecir la media.</p>
+      <p><b>El experimento de arrastrar puntos:</b> mueve hacia arriba un punto del <i>centro</i> de la nube y
+      la recta OLS apenas se inmuta; mueve uno del <i>extremo</i> y la recta pivota entera. Es el
+      <b>apalancamiento</b>: los puntos con x extrema tienen un brazo de palanca enorme, y como su error cuenta
+      al cuadrado, un solo dato atípico puede secuestrar el modelo. Por eso, antes de fiarse de una regresión,
+      se dibuja la nube y se buscan atípicos.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de regresión lineal · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= datos: 15 campañas (deterministas) ================= */
+const XS=[1.2,1.8,2.5,3.1,3.8,4.4,5.0,5.6,6.3,7.0,7.6,8.2,8.8,9.4,10.0];
+const ES=[2.1,-3.0,1.5,-1.2,3.8,-2.6,0.9,-4.1,2.4,-0.8,3.1,-2.2,1.0,-3.4,2.0];
+function datosIniciales(){
+  return XS.map((x,i)=>({x, y:Math.round((12+3.2*x+ES[i])*10)/10}));
+}
+let PUNTOS=datosIniciales();
+const XMIN=0, XMAX=11, YMIN=5, YMAX=52;
+
+/* ================= rectas ================= */
+/* la recta del alumno se define por dos tiradores verticales en x=2 y x=9 */
+const TX1=2, TX2=9;
+let h1=28, h2=28;   /* alturas de los tiradores */
+function rectaTuya(){
+  const b1=(h2-h1)/(TX2-TX1);
+  return {b1, b0:h1-b1*TX1};
+}
+function ols(){
+  const n=PUNTOS.length;
+  const mx=PUNTOS.reduce((s,p)=>s+p.x,0)/n;
+  const my=PUNTOS.reduce((s,p)=>s+p.y,0)/n;
+  let sxy=0, sxx=0;
+  for(const p of PUNTOS){ sxy+=(p.x-mx)*(p.y-my); sxx+=(p.x-mx)*(p.x-mx); }
+  const b1=sxy/sxx;
+  return {b1, b0:my-b1*mx, mx, my, sxy:sxy/n, sxx:sxx/n};
+}
+function sse(recta){
+  let s=0;
+  for(const p of PUNTOS){
+    const e=p.y-(recta.b0+recta.b1*p.x);
+    s+=e*e;
+  }
+  return s;
+}
+function sst(){
+  const my=PUNTOS.reduce((s,p)=>s+p.y,0)/PUNTOS.length;
+  return PUNTOS.reduce((s,p)=>s+(p.y-my)*(p.y-my),0);
+}
+
+/* ================= estado ================= */
+let olsVisible=false;
+let cuadradosDe='tuya';   // 'tuya' | 'ols'
+let drag=null;            // {tipo:'h1'|'h2'|'punto', i}
+
+function fmt(v,dec){ return v.toLocaleString('es-ES',{minimumFractionDigits:dec, maximumFractionDigits:dec}); }
+
+/* ================= dibujo ================= */
+const lienzo=document.getElementById('lienzo');
+const ctx=lienzo.getContext('2d');
+let geom={};
+
+function preparaCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const r=lienzo.getBoundingClientRect();
+  lienzo.width=r.width*dpr; lienzo.height=r.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+
+function dibujar(){
+  const {W,H}=preparaCanvas();
+  const mL=52, mR=18, mT=16, mB=44;
+  const px=x=>mL+(x-XMIN)/(XMAX-XMIN)*(W-mL-mR);
+  const py=y=>H-mB-(y-YMIN)/(YMAX-YMIN)*(H-mT-mB);
+  geom={px, py, mL, mR, mT, mB, W, H};
+
+  ctx.clearRect(0,0,W,H);
+
+  /* ejes y rejilla */
+  ctx.font='11px "IBM Plex Sans", sans-serif'; ctx.fillStyle='#5B6B80'; ctx.textAlign='center';
+  for(let x=0;x<=XMAX;x+=2){
+    ctx.strokeStyle='#EDF1F6'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(px(x),mT); ctx.lineTo(px(x),H-mB); ctx.stroke();
+    ctx.fillText(x, px(x), H-mB+16);
+  }
+  ctx.textAlign='right';
+  for(let y=10;y<=50;y+=10){
+    ctx.strokeStyle='#EDF1F6';
+    ctx.beginPath(); ctx.moveTo(mL,py(y)); ctx.lineTo(W-mR,py(y)); ctx.stroke();
+    ctx.fillStyle='#5B6B80'; ctx.fillText(y, mL-7, py(y)+4);
+  }
+  ctx.strokeStyle='#B9C7D6'; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(mL,mT); ctx.lineTo(mL,H-mB); ctx.lineTo(W-mR,H-mB); ctx.stroke();
+  ctx.textAlign='center'; ctx.fillStyle='#5B6B80';
+  ctx.fillText('gasto en publicidad (miles €)', (mL+W-mR)/2, H-6);
+  ctx.save(); ctx.translate(13,(mT+H-mB)/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('ventas (miles €)', 0, 0); ctx.restore();
+
+  /* recta de la que mostramos cuadrados */
+  const rT=rectaTuya();
+  const rO=olsVisible?ols():null;
+  const rectaCuadros = (cuadradosDe==='ols' && rO) ? rO : rT;
+  const colCuadro = (cuadradosDe==='ols' && rO) ? ['rgba(15,118,110,.15)','rgba(15,118,110,.7)'] : ['rgba(240,120,24,.18)','rgba(240,120,24,.75)'];
+
+  /* cuadrados de error: lado = |residuo| en píxeles, apoyados en el segmento del residuo */
+  ctx.save();
+  ctx.beginPath(); ctx.rect(mL,mT,W-mL-mR,H-mT-mB); ctx.clip();
+  for(const p of PUNTOS){
+    const yHat=rectaCuadros.b0+rectaCuadros.b1*p.x;
+    const X=px(p.x), Y=py(p.y), Yh=py(yHat);
+    const lado=Math.abs(Y-Yh);
+    if(lado<0.5) continue;
+    /* el cuadrado crece hacia la derecha; si no cabe, hacia la izquierda */
+    const haciaIzq = X+lado > W-mR;
+    const x0=haciaIzq ? X-lado : X;
+    const y0=Math.min(Y,Yh);
+    ctx.fillStyle=colCuadro[0];
+    ctx.fillRect(x0, y0, lado, lado);
+    ctx.strokeStyle=colCuadro[1]; ctx.lineWidth=1.2;
+    ctx.strokeRect(x0, y0, lado, lado);
+    /* segmento del residuo, remarcado */
+    ctx.strokeStyle=colCuadro[1]; ctx.lineWidth=2.2;
+    ctx.beginPath(); ctx.moveTo(X,Y); ctx.lineTo(X,Yh); ctx.stroke();
+  }
+  ctx.restore();
+
+  /* rectas */
+  ctx.save();
+  ctx.beginPath(); ctx.rect(mL,mT,W-mL-mR,H-mT-mB); ctx.clip();
+  if(rO){
+    ctx.strokeStyle='#0F766E'; ctx.lineWidth=3.5;
+    ctx.beginPath();
+    ctx.moveTo(px(XMIN), py(rO.b0+rO.b1*XMIN));
+    ctx.lineTo(px(XMAX), py(rO.b0+rO.b1*XMAX));
+    ctx.stroke();
+  }
+  ctx.strokeStyle='#F07818'; ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.moveTo(px(XMIN), py(rT.b0+rT.b1*XMIN));
+  ctx.lineTo(px(XMAX), py(rT.b0+rT.b1*XMAX));
+  ctx.stroke();
+  ctx.restore();
+
+  /* punto de medias */
+  if(rO){
+    ctx.beginPath(); ctx.arc(px(rO.mx), py(rO.my), 7, 0, Math.PI*2);
+    ctx.fillStyle='#D98E04'; ctx.fill();
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=2.4; ctx.stroke();
+    ctx.fillStyle='#D98E04'; ctx.font='700 12px "Space Grotesk", sans-serif'; ctx.textAlign='left';
+    ctx.fillText('(x̄, ȳ)', px(rO.mx)+11, py(rO.my)-8);
+  }
+
+  /* puntos de datos */
+  for(const p of PUNTOS){
+    ctx.beginPath(); ctx.arc(px(p.x), py(p.y), 7, 0, Math.PI*2);
+    ctx.fillStyle='#2274C4'; ctx.fill();
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=2; ctx.stroke();
+  }
+
+  /* tiradores de la recta del alumno */
+  for(const [tx,h] of [[TX1,h1],[TX2,h2]]){
+    ctx.beginPath(); ctx.arc(px(tx), py(h), 10, 0, Math.PI*2);
+    ctx.fillStyle='#F07818'; ctx.fill();
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=2.6; ctx.stroke();
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=1.8;
+    ctx.beginPath();
+    ctx.moveTo(px(tx)-4, py(h)-3); ctx.lineTo(px(tx)+4, py(h)-3);
+    ctx.moveTo(px(tx)-4, py(h)+3); ctx.lineTo(px(tx)+4, py(h)+3);
+    ctx.stroke();
+  }
+
+  actualizarPaneles();
+}
+
+/* ================= paneles ================= */
+function actualizarPaneles(){
+  const rT=rectaTuya();
+  const sseT=sse(rT);
+  document.getElementById('sseTuya').textContent=fmt(sseT,1);
+
+  const est=document.getElementById('estado');
+  if(!olsVisible){
+    est.className='estado';
+    est.innerHTML='<b>Fase 1.</b> Mueve los tiradores y haz encoger la suma de áreas. Notarás el compromiso: '+
+      'aplacar un cuadrado grande hincha otros. Cuando no puedas mejorar más, pulsa <b>"Mostrar la recta OLS"</b>.';
+    document.getElementById('formulas').className='formulas';
+    return;
+  }
+
+  const rO=ols();
+  const sseO=sse(rO);
+  document.getElementById('sseOls').textContent=fmt(sseO,1);
+  const r2=1-sseO/sst();
+  document.getElementById('r2Ols').textContent=fmt(r2,3);
+
+  const exceso=(sseT-sseO)/sseO*100;
+  est.className='estado '+(exceso<=5?'ok':'');
+  est.innerHTML='<b>Fase 2.</b> Tu SSE ('+fmt(sseT,1)+') queda un <b>'+fmt(Math.max(0,exceso),1)+
+    '%</b> por encima del óptimo ('+fmt(sseO,1)+').'+
+    (exceso<=5?' ¡Excelente ojo!':' Puedes seguir afinando tu recta si quieres —el óptimo no se mueve.')+
+    ' Y ahora la <b>fase 3</b>: arrastra un punto del centro hacia arriba (la recta verde casi ni se entera) '+
+    'y luego uno de los extremos (la recta pivota entera). Ese es el apalancamiento.';
+
+  const f=document.getElementById('formulas');
+  f.className='formulas visible';
+  f.innerHTML=
+    '<div class="f">x̄ = '+fmt(rO.mx,2)+' &nbsp;·&nbsp; ȳ = '+fmt(rO.my,2)+
+      ' &nbsp;·&nbsp; Sxy = '+fmt(rO.sxy,2)+' &nbsp;·&nbsp; Sxx = '+fmt(rO.sxx,2)+'</div>'+
+    '<div class="f"><b>b₁</b> = Sxy / Sxx = '+fmt(rO.sxy,2)+' / '+fmt(rO.sxx,2)+' = <span class="res">'+fmt(rO.b1,3)+'</span>'+
+      ' &nbsp;&nbsp; <b>b₀</b> = ȳ − b₁·x̄ = '+fmt(rO.my,2)+' − '+fmt(rO.b1,3)+' · '+fmt(rO.mx,2)+' = <span class="res">'+fmt(rO.b0,3)+'</span></div>'+
+    '<div class="ecuacion">ventas estimadas = '+fmt(rO.b0,2)+' + '+fmt(rO.b1,2)+' · publicidad</div>'+
+    '<div class="f" style="margin-top:6px; color:var(--tinta-suave)">Cada mil € extra de publicidad se asocia con '+
+      '+'+fmt(rO.b1,2)+' mil € de ventas. La recta pasa siempre por el punto ámbar (x̄, ȳ). '+
+      'R² = 1 − SSE/SST = 1 − '+fmt(sse(rO),1)+' / '+fmt(sst(),1)+' = <b>'+fmt(r2,3)+'</b>.</div>';
+}
+
+/* ================= botones ================= */
+document.getElementById('btnOls').addEventListener('click',()=>{
+  olsVisible=!olsVisible;
+  document.getElementById('btnOls').textContent = olsVisible ? '🙈 Ocultar la recta OLS' : '📐 Mostrar la recta OLS';
+  document.getElementById('cardOls').classList.toggle('oculta', !olsVisible);
+  document.getElementById('cardR2').classList.toggle('oculta', !olsVisible);
+  document.getElementById('legOls').hidden=!olsVisible;
+  document.getElementById('legMedia').hidden=!olsVisible;
+  document.getElementById('segCuadrados').classList.toggle('visible', olsVisible);
+  document.getElementById('segEtiq').classList.toggle('visible', olsVisible);
+  if(!olsVisible){ cuadradosDe='tuya'; fijarCuadrados('tuya'); }
+  dibujar();
+});
+function fijarCuadrados(de){
+  cuadradosDe=de;
+  document.getElementById('cqTuya').classList.toggle('activo', de==='tuya');
+  document.getElementById('cqOls').classList.toggle('activo', de==='ols');
+  dibujar();
+}
+document.getElementById('cqTuya').addEventListener('click',()=>fijarCuadrados('tuya'));
+document.getElementById('cqOls').addEventListener('click',()=>fijarCuadrados('ols'));
+
+document.getElementById('btnRestaurar').addEventListener('click',()=>{
+  PUNTOS=datosIniciales();
+  dibujar();
+});
+
+/* ================= interacción ================= */
+function coords(e){ const r=lienzo.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+
+lienzo.addEventListener('pointerdown',e=>{
+  const {x,y}=coords(e);
+  /* tiradores primero */
+  for(const [tipo,tx,h] of [['h1',TX1,h1],['h2',TX2,h2]]){
+    if(Math.hypot(x-geom.px(tx), y-geom.py(h))<18){
+      drag={tipo};
+      lienzo.setPointerCapture(e.pointerId);
+      lienzo.style.cursor='grabbing';
+      e.preventDefault();
+      return;
+    }
+  }
+  /* puntos de datos */
+  for(let i=PUNTOS.length-1;i>=0;i--){
+    if(Math.hypot(x-geom.px(PUNTOS[i].x), y-geom.py(PUNTOS[i].y))<14){
+      drag={tipo:'punto', i};
+      lienzo.setPointerCapture(e.pointerId);
+      lienzo.style.cursor='grabbing';
+      e.preventDefault();
+      return;
+    }
+  }
+});
+lienzo.addEventListener('pointermove',e=>{
+  const {x,y}=coords(e);
+  if(!drag){
+    let cur='default';
+    for(const [tx,h] of [[TX1,h1],[TX2,h2]]){
+      if(Math.hypot(x-geom.px(tx), y-geom.py(h))<18){ cur='grab'; break; }
+    }
+    if(cur==='default'){
+      for(const p of PUNTOS){
+        if(Math.hypot(x-geom.px(p.x), y-geom.py(p.y))<14){ cur='grab'; break; }
+      }
+    }
+    lienzo.style.cursor=cur;
+    return;
+  }
+  const yDato=YMIN+(geom.H-geom.mB-y)/(geom.H-geom.mT-geom.mB)*(YMAX-YMIN);
+  const xDato=XMIN+(x-geom.mL)/(geom.W-geom.mL-geom.mR)*(XMAX-XMIN);
+  if(drag.tipo==='h1') h1=Math.min(YMAX, Math.max(YMIN, yDato));
+  else if(drag.tipo==='h2') h2=Math.min(YMAX, Math.max(YMIN, yDato));
+  else {
+    PUNTOS[drag.i].x=Math.min(XMAX-0.2, Math.max(XMIN+0.2, xDato));
+    PUNTOS[drag.i].y=Math.min(YMAX-1, Math.max(YMIN+1, yDato));
+  }
+  dibujar();
+});
+function soltar(e){
+  if(drag){ drag=null; try{lienzo.releasePointerCapture(e.pointerId);}catch(_){} lienzo.style.cursor='default'; dibujar(); }
+}
+lienzo.addEventListener('pointerup',soltar);
+lienzo.addEventListener('pointercancel',soltar);
+
+/* ================= arranque (todo definido antes de ejecutar nada) ================= */
+window.addEventListener('resize',()=>dibujar());
+dibujar();
+</script>
+</body>
+</html>
