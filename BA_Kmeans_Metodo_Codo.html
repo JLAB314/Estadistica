@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elige tu k — el método del codo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --azul:#2274C4;
+    --coral:#E4572E;
+    --naranja:#F07818;
+    --ambar:#D98E04;
+    --morado:#7C5CBF;
+    --rosa:#D6336C;
+    --oliva:#6B8E23;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:700px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  .layout{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  @media (max-width:780px){ .layout{grid-template-columns:1fr;} }
+
+  h2{font-family:'Space Grotesk', sans-serif; font-size:1rem; font-weight:700; margin-bottom:6px;}
+  h2 small{color:var(--tinta-suave); font-size:.85rem; display:block; font-weight:400;}
+
+  #nube{width:100%; height:340px; display:block; border-radius:8px;}
+  #codo{width:100%; height:250px; display:block; border-radius:8px;}
+  #silueta{width:100%; height:150px; display:block; border-radius:8px; margin-top:6px;}
+
+  /* deslizador de k */
+  .fila-k{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:14px;}
+  .valor-k{
+    font-family:'Space Grotesk', sans-serif; font-size:1.6rem; font-weight:700;
+    color:var(--naranja); min-width:66px;
+  }
+  input[type=range]{flex:1; min-width:150px; accent-color:var(--naranja); height:30px; cursor:pointer;}
+  input[type=range]:focus-visible{outline:3px solid var(--naranja); outline-offset:2px; border-radius:6px;}
+  .atajos{display:flex; gap:6px; flex-wrap:wrap;}
+  .atajos button{
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:.85rem;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; width:34px; height:34px; cursor:pointer;
+  }
+  .atajos button:hover{border-color:var(--naranja);}
+  .atajos button:focus-visible{outline:3px solid var(--naranja); outline-offset:2px;}
+  .atajos button.activo{background:var(--tinta); color:var(--blanco); border-color:var(--tinta);}
+
+  .lecturas{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  .lectura{background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:9px 14px;}
+  .lectura .nom{font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--tinta-suave); font-weight:600;}
+  .lectura .val{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.35rem; font-variant-numeric:tabular-nums;}
+  .lectura.inercia .val{color:var(--coral);}
+  .lectura.sil .val{color:var(--verde);}
+
+  .estado{
+    margin-top:12px; border-radius:10px; padding:11px 15px; font-size:.93rem;
+    border-left:5px solid var(--ambar); background:#FDF6E9;
+  }
+  .estado.ok{border-color:var(--ok); background:var(--ok-fondo);}
+  .estado b{font-family:'Space Grotesk',sans-serif;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #nube{height:280px;} #codo{height:210px;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>Elige tu k</h1>
+    <p class="sub">K-means necesita que le digas <b>cuántos grupos</b> quieres. ¿Pero cuántos hay?
+    Mueve el deslizador de k y observa dos cosas: arriba, cómo se reparten los clientes; abajo, la
+    <b style="color:var(--coral)">inercia</b> (lo apretados que quedan los grupos). Verás que subir k
+    <i>siempre</i> baja la inercia… así que no puedes elegir k buscando la inercia mínima. Lo que buscas
+    es el <b>codo</b>: el punto donde dejar de ganar de golpe.</p>
+  </header>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>Los 42 clientes agrupados <small>con k = <span id="txtK2">1</span> grupo(s)</small></h2>
+      <canvas id="nube" aria-label="Nube de clientes coloreados por su grupo de k-means"></canvas>
+      <div class="fila-k">
+        <span class="valor-k">k = <span id="txtK">1</span></span>
+        <input type="range" id="sK" min="1" max="8" step="1" value="1" aria-label="Número de grupos k">
+        <div class="atajos" id="atajos"></div>
+      </div>
+      <div class="lecturas">
+        <div class="lectura inercia"><div class="nom">Inercia (Σ dist² al centro)</div><div class="val" id="vInercia">—</div></div>
+        <div class="lectura sil"><div class="nom">Silueta media</div><div class="val" id="vSil">—</div></div>
+      </div>
+      <div class="estado" id="estado"></div>
+    </div>
+
+    <div class="panel">
+      <h2>La curva del codo <small>inercia frente a k — se construye al mover el deslizador</small></h2>
+      <canvas id="codo" aria-label="Curva de inercia frente al número de grupos k"></canvas>
+      <h2 style="margin-top:14px">Segunda opinión: la silueta <small>más alta = grupos mejor definidos</small></h2>
+      <canvas id="silueta" aria-label="Coeficiente de silueta frente a k"></canvas>
+    </div>
+  </div>
+
+  <details class="nota">
+    <summary>Por qué la inercia no basta, qué es el codo y qué añade la silueta</summary>
+    <div class="nota-cuerpo">
+      <p><b>La inercia</b> (o WCSS, suma de distancias al cuadrado de cada punto a su centro) mide lo
+      compactos que son los grupos: cuanto menor, más apretados. El problema es que <b>siempre baja al subir
+      k</b> — con más centros, cada punto tiene uno más cerca — y en el extremo k = n (un grupo por cliente)
+      vale 0. Por eso <b>minimizar la inercia no sirve para elegir k</b>: siempre te diría "cuantos más,
+      mejor", lo cual no agrupa nada.</p>
+      <p><b>El método del codo</b> mira la <i>forma</i> de la caída, no su mínimo. Mientras k es menor que el
+      número real de grupos, subir k separa nubes que estaban mezcladas y la inercia se desploma; una vez
+      alcanzado el número natural, subir más solo parte grupos que ya eran buenos, y la ganancia se vuelve
+      pequeña. Ese cambio brusco de pendiente — de caída en picado a casi plano — es el <b>codo</b>, y
+      señala el k razonable. Aquí cae en k = 3, porque los datos tienen 3 grupos.</p>
+      <p><b>La silueta</b> es una segunda opinión más objetiva. Para cada punto compara lo cerca que está de
+      su propio grupo (a) frente al grupo vecino más próximo (b): su silueta es (b − a) / max(a, b), entre −1
+      y 1. Cerca de 1 = bien asignado; cerca de 0 = en la frontera; negativa = probablemente en el grupo
+      equivocado. La <b>silueta media</b> de todos los puntos resume la calidad del agrupamiento, y su
+      <b>máximo</b> suele coincidir con el codo — cuando ambos apuntan al mismo k, la elección es sólida.
+      El codo puede ser ambiguo (a veces no hay un ángulo claro); la silueta ayuda a desempatar.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de segmentación · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= datos: 3 grupos claros ================= */
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15, 1|a);
+    t=t+Math.imul(t^t>>>7, 61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+const PUNTOS=(()=>{
+  const rng=mulberry32(2024);
+  const centros=[{x:2.5,y:3},{x:7,y:6.5},{x:7.5,y:2}];
+  const P=[];
+  for(const c of centros) for(let i=0;i<14;i++){
+    const u=rng(),v=rng(), z1=Math.sqrt(-2*Math.log(u||1e-9))*Math.cos(2*Math.PI*v);
+    const u2=rng(),v2=rng(), z2=Math.sqrt(-2*Math.log(u2||1e-9))*Math.cos(2*Math.PI*v2);
+    P.push({x:c.x+z1*0.7, y:c.y+z2*0.7});
+  }
+  return P;
+})();
+const N=PUNTOS.length;
+const COLORES=['#0F766E','#E4572E','#2274C4','#7C5CBF','#D98E04','#D6336C','#6B8E23','#F07818'];
+
+/* ================= k-means + métricas ================= */
+function dist2(a,b){ const dx=a.x-b.x, dy=a.y-b.y; return dx*dx+dy*dy; }
+function kmeans(k,seed){
+  const rng=mulberry32(seed);
+  let centros=[{...PUNTOS[Math.floor(rng()*N)]}];
+  while(centros.length<k){
+    const d=PUNTOS.map(p=>Math.min(...centros.map(c=>dist2(p,c))));
+    const sum=d.reduce((a,b)=>a+b,0);
+    let r=rng()*sum, i=0;
+    while(r>d[i] && i<N-1){ r-=d[i]; i++; }
+    centros.push({x:PUNTOS[i].x, y:PUNTOS[i].y});
+  }
+  let asig=new Array(N).fill(0);
+  for(let it=0;it<100;it++){
+    let cambio=false;
+    for(let i=0;i<N;i++){
+      let mj=0,dm=Infinity;
+      for(let j=0;j<k;j++){ const d=dist2(PUNTOS[i],centros[j]); if(d<dm){dm=d;mj=j;} }
+      if(asig[i]!==mj){ asig[i]=mj; cambio=true; }
+    }
+    for(let j=0;j<k;j++){
+      const gp=PUNTOS.filter((_,i)=>asig[i]===j);
+      if(gp.length) centros[j]={x:gp.reduce((s,p)=>s+p.x,0)/gp.length, y:gp.reduce((s,p)=>s+p.y,0)/gp.length};
+    }
+    if(!cambio) break;
+  }
+  const inercia=PUNTOS.reduce((s,p,i)=>s+dist2(p,centros[asig[i]]),0);
+  return {centros, asig, inercia};
+}
+function mejor(k){
+  let best=null;
+  for(let r=0;r<10;r++){
+    const km=kmeans(k, 1000+r*97+k*7);
+    if(!best||km.inercia<best.inercia) best=km;
+  }
+  return best;
+}
+function silueta(asig,k){
+  if(k<2) return 0;
+  const idxC=Array.from({length:k},()=>[]);
+  asig.forEach((c,i)=>idxC[c].push(i));
+  let suma=0, cuenta=0;
+  for(let i=0;i<N;i++){
+    const ci=asig[i];
+    if(idxC[ci].length<=1) continue;
+    let a=0;
+    for(const j of idxC[ci]) if(j!==i) a+=Math.sqrt(dist2(PUNTOS[i],PUNTOS[j]));
+    a/=(idxC[ci].length-1);
+    let b=Infinity;
+    for(let c=0;c<k;c++){
+      if(c===ci||idxC[c].length===0) continue;
+      let d=0; for(const j of idxC[c]) d+=Math.sqrt(dist2(PUNTOS[i],PUNTOS[j]));
+      d/=idxC[c].length;
+      if(d<b) b=d;
+    }
+    suma+=(b-a)/Math.max(a,b); cuenta++;
+  }
+  return cuenta? suma/cuenta : 0;
+}
+
+/* precomputar k=1..8 */
+const SOL=[null];
+const INERCIA=[null], SIL=[null];
+for(let k=1;k<=8;k++){
+  const s=mejor(k);
+  SOL[k]=s;
+  INERCIA[k]=s.inercia;
+  SIL[k]=silueta(s.asig,k);
+}
+const KOPT=(()=>{ let m=2; for(let k=2;k<=8;k++) if(SIL[k]>SIL[m]) m=k; return m; })();
+
+/* ================= estado ================= */
+let k=1;
+
+function fmt(v,dec){ return v.toLocaleString('es-ES',{minimumFractionDigits:dec, maximumFractionDigits:dec}); }
+
+/* ================= dibujo de la nube ================= */
+const nube=document.getElementById('nube');
+const nctx=nube.getContext('2d');
+function prep(canvas,c){
+  const dpr=window.devicePixelRatio||1;
+  const r=canvas.getBoundingClientRect();
+  canvas.width=r.width*dpr; canvas.height=r.height*dpr;
+  c.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+function dibujarNube(){
+  const {W,H}=prep(nube,nctx);
+  const m=20;
+  const lado=Math.min(W-2*m, H-2*m);
+  const x0=(W-lado)/2, y0=(H-lado)/2;
+  const px=x=>x0+x/10*lado, py=y=>y0+lado-y/9*lado;
+  const sol=SOL[k];
+
+  nctx.clearRect(0,0,W,H);
+  nctx.strokeStyle='#E4E9F0'; nctx.lineWidth=1;
+  nctx.strokeRect(x0,y0,lado,lado);
+
+  /* segmentos punto→centro (tenues) */
+  for(let i=0;i<N;i++){
+    const c=sol.centros[sol.asig[i]];
+    nctx.strokeStyle='rgba(91,107,128,.18)'; nctx.lineWidth=1;
+    nctx.beginPath(); nctx.moveTo(px(PUNTOS[i].x),py(PUNTOS[i].y)); nctx.lineTo(px(c.x),py(c.y)); nctx.stroke();
+  }
+  /* puntos */
+  for(let i=0;i<N;i++){
+    nctx.beginPath(); nctx.arc(px(PUNTOS[i].x), py(PUNTOS[i].y), 6, 0, Math.PI*2);
+    nctx.fillStyle=COLORES[sol.asig[i]]; nctx.fill();
+    nctx.strokeStyle='#FFFFFF'; nctx.lineWidth=1.6; nctx.stroke();
+  }
+  /* centros ✕ */
+  sol.centros.forEach((c,j)=>{
+    const X=px(c.x), Y=py(c.y), r=8;
+    nctx.strokeStyle='#FFFFFF'; nctx.lineWidth=6; nctx.lineCap='round';
+    nctx.beginPath(); nctx.moveTo(X-r,Y-r); nctx.lineTo(X+r,Y+r); nctx.moveTo(X-r,Y+r); nctx.lineTo(X+r,Y-r); nctx.stroke();
+    nctx.strokeStyle=COLORES[j]; nctx.lineWidth=3.5;
+    nctx.beginPath(); nctx.moveTo(X-r,Y-r); nctx.lineTo(X+r,Y+r); nctx.moveTo(X-r,Y+r); nctx.lineTo(X+r,Y-r); nctx.stroke();
+  });
+}
+
+/* ================= dibujo de la curva del codo ================= */
+const codo=document.getElementById('codo');
+const cctx=codo.getContext('2d');
+function dibujarCodo(){
+  const {W,H}=prep(codo,cctx);
+  const mL=48, mR=16, mT=16, mB=34;
+  const px=kk=>mL+(kk-1)/7*(W-mL-mR);
+  const imax=INERCIA[1]*1.05;
+  const py=v=>H-mB-v/imax*(H-mT-mB);
+
+  cctx.clearRect(0,0,W,H);
+  cctx.font='11px "IBM Plex Sans", sans-serif'; cctx.fillStyle='#5B6B80';
+  cctx.strokeStyle='#B9C7D6'; cctx.lineWidth=1.6;
+  cctx.beginPath(); cctx.moveTo(mL,mT); cctx.lineTo(mL,H-mB); cctx.lineTo(W-mR,H-mB); cctx.stroke();
+  cctx.textAlign='center';
+  for(let kk=1;kk<=8;kk++) cctx.fillText(kk, px(kk), H-mB+16);
+  cctx.fillText('número de grupos k', (mL+W-mR)/2, H-4);
+  cctx.save(); cctx.translate(13,(mT+H-mB)/2); cctx.rotate(-Math.PI/2); cctx.fillText('inercia', 0,0); cctx.restore();
+
+  /* curva revelada hasta k */
+  cctx.strokeStyle='#E4572E'; cctx.lineWidth=3; cctx.lineJoin='round';
+  cctx.beginPath();
+  for(let kk=1;kk<=k;kk++){ const X=px(kk),Y=py(INERCIA[kk]); kk===1?cctx.moveTo(X,Y):cctx.lineTo(X,Y); }
+  cctx.stroke();
+  /* puntos ya visitados */
+  for(let kk=1;kk<=k;kk++){
+    cctx.beginPath(); cctx.arc(px(kk), py(INERCIA[kk]), kk===k?7:5, 0, Math.PI*2);
+    cctx.fillStyle=kk===k?'#E4572E':'#F0A080'; cctx.fill();
+    cctx.strokeStyle='#FFFFFF'; cctx.lineWidth=2; cctx.stroke();
+  }
+  /* fantasma del resto de la curva */
+  if(k<8){
+    cctx.strokeStyle='rgba(228,87,46,.25)'; cctx.lineWidth=2; cctx.setLineDash([4,4]);
+    cctx.beginPath();
+    for(let kk=k;kk<=8;kk++){ const X=px(kk),Y=py(INERCIA[kk]); kk===k?cctx.moveTo(X,Y):cctx.lineTo(X,Y); }
+    cctx.stroke(); cctx.setLineDash([]);
+  }
+  /* marca del codo cuando ya se ha revelado */
+  if(k>=3){
+    const X=px(3), Y=py(INERCIA[3]);
+    cctx.strokeStyle='#1B7F4B'; cctx.lineWidth=2;
+    cctx.beginPath(); cctx.arc(X,Y,12,0,Math.PI*2); cctx.stroke();
+    cctx.fillStyle='#1B7F4B'; cctx.font='700 11px "Space Grotesk", sans-serif'; cctx.textAlign='left';
+    cctx.fillText('codo (k=3)', X+15, Y-6);
+  }
+}
+
+/* ================= dibujo de la silueta ================= */
+const sil=document.getElementById('silueta');
+const sctx=sil.getContext('2d');
+function dibujarSilueta(){
+  const {W,H}=prep(sil,sctx);
+  const mL=48, mR=16, mT=12, mB=28;
+  const px=kk=>mL+(kk-2)/6*(W-mL-mR);
+  const smax=Math.max(...SIL.slice(2))*1.15;
+  const py=v=>H-mB-v/smax*(H-mT-mB);
+
+  sctx.clearRect(0,0,W,H);
+  sctx.font='11px "IBM Plex Sans", sans-serif'; sctx.fillStyle='#5B6B80';
+  sctx.strokeStyle='#B9C7D6'; sctx.lineWidth=1.6;
+  sctx.beginPath(); sctx.moveTo(mL,mT); sctx.lineTo(mL,H-mB); sctx.lineTo(W-mR,H-mB); sctx.stroke();
+  sctx.textAlign='center';
+  for(let kk=2;kk<=8;kk++) sctx.fillText(kk, px(kk), H-mB+15);
+  sctx.save(); sctx.translate(13,(mT+H-mB)/2); sctx.rotate(-Math.PI/2); sctx.fillText('silueta', 0,0); sctx.restore();
+
+  /* barras de silueta reveladas hasta max(2,k) */
+  const bw=(px(3)-px(2))*0.5;
+  for(let kk=2;kk<=8;kk++){
+    if(kk>k) continue;
+    const X=px(kk), Y=py(SIL[kk]);
+    const esOpt=kk===KOPT;
+    sctx.fillStyle=esOpt?'#0F766E':'#9BC4BC';
+    sctx.fillRect(X-bw/2, Y, bw, H-mB-Y);
+    sctx.fillStyle=esOpt?'#0F766E':'#5B6B80'; sctx.font=(esOpt?'700 ':'')+'10px "IBM Plex Sans", sans-serif';
+    sctx.textAlign='center';
+    sctx.fillText(fmt(SIL[kk],2), X, Y-4);
+  }
+}
+
+/* ================= paneles ================= */
+function actualizar(){
+  document.getElementById('txtK').textContent=k;
+  document.getElementById('txtK2').textContent=k;
+  document.querySelectorAll('#atajos button').forEach(b=>b.classList.toggle('activo', +b.dataset.k===k));
+  document.getElementById('vInercia').textContent=fmt(INERCIA[k],1);
+  document.getElementById('vSil').textContent = k<2 ? '— (necesita k≥2)' : fmt(SIL[k],3);
+
+  const e=document.getElementById('estado');
+  const caida = k>1 ? (INERCIA[k-1]-INERCIA[k])/INERCIA[k-1]*100 : null;
+  if(k===1){
+    e.className='estado';
+    e.innerHTML='<b>k = 1:</b> un solo grupo con todos los clientes. La inercia es máxima. Sube k y observa cuánto baja.';
+  } else if(k<3){
+    e.className='estado';
+    e.innerHTML='<b>k = '+k+':</b> la inercia cae un <b>'+fmt(caida,0)+'%</b> respecto a k = '+(k-1)+
+      '. Caída fuerte: todavía estás separando grupos que estaban mezclados. Sigue subiendo.';
+  } else if(k===3){
+    e.className='estado ok';
+    e.innerHTML='<b>k = 3: el codo.</b> Última caída fuerte ('+fmt(caida,0)+'%). A partir de aquí, subir k '+
+      'apenas mejora — y la <b>silueta</b> alcanza aquí su máximo ('+fmt(SIL[3],2)+'). Ambas señales coinciden: 3 grupos.';
+  } else {
+    e.className='estado';
+    e.innerHTML='<b>k = '+k+':</b> la inercia solo baja un <b>'+fmt(caida,0)+'%</b> más: estás partiendo grupos '+
+      'que ya eran buenos. La silueta ('+fmt(SIL[k],2)+') ha empeorado frente a k = 3. Complejidad de más.';
+  }
+  dibujarNube(); dibujarCodo(); dibujarSilueta();
+}
+
+/* ================= controles ================= */
+function fijarK(nuevo){
+  k=Math.min(8, Math.max(1, nuevo));
+  document.getElementById('sK').value=k;
+  actualizar();
+}
+document.getElementById('sK').addEventListener('input',e=>fijarK(+e.target.value));
+(function(){
+  const cont=document.getElementById('atajos');
+  for(let kk=1;kk<=8;kk++){
+    const b=document.createElement('button');
+    b.textContent=kk; b.dataset.k=kk;
+    b.addEventListener('click',()=>fijarK(kk));
+    cont.appendChild(b);
+  }
+})();
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>{ dibujarNube(); dibujarCodo(); dibujarSilueta(); });
+actualizar();
+</script>
+</body>
+</html>
