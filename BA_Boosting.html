@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aprender de los errores — boosting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --azul:#2274C4;
+    --coral:#E4572E;
+    --naranja:#F07818;
+    --ambar:#D98E04;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --mal:#C0392B;
+    --mal-fondo:#FBEEEC;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:700px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  #plano{width:100%; height:420px; display:block; border-radius:8px;}
+  #curvaM{width:100%; height:220px; display:block; border-radius:8px; margin-top:6px;}
+
+  .leyenda{
+    display:flex; gap:14px; flex-wrap:wrap; justify-content:center;
+    margin-top:8px; font-size:.82rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:6px;}
+  .pto{width:11px; height:11px; border-radius:50%; display:inline-block;}
+  .pto.grande{width:16px; height:16px;}
+  .cuad{width:11px; height:11px; display:inline-block; border-radius:2px;}
+  .l-corte{width:18px; height:0; border-top:2.5px dashed var(--naranja); display:inline-block;}
+
+  .fila-n{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:16px;}
+  .valor-n{font-family:'Space Grotesk',sans-serif; font-size:1.5rem; font-weight:700; color:var(--naranja); min-width:190px;}
+  .valor-n small{display:block; font-size:.72rem; color:var(--tinta-suave); font-weight:500;}
+  input[type=range]{flex:1; min-width:140px; accent-color:var(--naranja); height:30px; cursor:pointer;}
+  input[type=range]:focus-visible{outline:3px solid var(--naranja); outline-offset:2px; border-radius:6px;}
+
+  .fila-acciones{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px;}
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.95rem;
+    border:none; border-radius:999px; padding:11px 22px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .btn.coral{background:var(--coral); color:var(--blanco);}
+  .btn.coral:hover{filter:brightness(1.07);}
+
+  .lecturas{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px;}
+  .lectura{background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:9px 12px; text-align:center;}
+  .lectura .nom{font-size:.68rem; letter-spacing:.04em; text-transform:uppercase; color:var(--tinta-suave); font-weight:600;}
+  .lectura .val{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.3rem; font-variant-numeric:tabular-nums;}
+  .lectura.mod .val{color:var(--tinta);}
+  .lectura.tr .val{color:var(--verde);}
+  .lectura.te .val{color:var(--coral);}
+  .lectura.te.oculta .val{color:var(--tinta-suave);}
+
+  .estado{
+    margin-top:12px; border-radius:10px; padding:11px 15px; font-size:.93rem; border-left:5px solid var(--ambar); background:#FDF6E9;
+  }
+  .estado.ok{border-color:var(--ok); background:var(--ok-fondo);}
+  .estado.mal{border-color:var(--mal); background:var(--mal-fondo);}
+  .estado b{font-family:'Space Grotesk',sans-serif;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #plano{height:340px;} .lecturas{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>Aprender de los errores</h1>
+    <p class="sub">El <b>boosting</b> es la filosofía opuesta al bagging: en vez de muchos árboles independientes
+    votando a la vez, entrena modelos <b>en fila</b>, y cada uno se concentra en <b>los puntos que los anteriores
+    fallaron</b>. Aquí cada modelo es un "tocón" (un árbol de una sola pregunta). Mueve el número de modelos y
+    fíjate en el <b>tamaño de los puntos</b>: los que el conjunto sigue fallando <b>engordan</b> — pesan más — y
+    el siguiente tocón irá a por ellos. Potentísimo… hasta que empieza a obsesionarse con el ruido.</p>
+  </header>
+
+  <div class="panel">
+    <canvas id="plano" aria-label="Plano con clientes cuyo tamaño refleja su peso y las regiones de decisión del conjunto"></canvas>
+    <div class="leyenda">
+      <span><span class="pto" style="background:#0F766E"></span> clase A</span>
+      <span><span class="pto" style="background:#E4572E"></span> clase B</span>
+      <span><span class="pto grande" style="background:#C4CFDA; border:2px solid #5B6B80"></span> punto gordo = pesa más (aún se falla)</span>
+      <span style="color:var(--naranja)"><span class="l-corte"></span> corte del último tocón</span>
+    </div>
+
+    <div class="fila-n">
+      <div class="valor-n"><span id="txtM">1</span> modelo<span id="txtMplural"></span> en fila<small id="txtMsub">un solo tocón: una pregunta</small></div>
+      <input type="range" id="sM" min="0" max="13" step="1" value="0" aria-label="Número de modelos del boosting">
+    </div>
+    <div class="fila-acciones">
+      <button class="btn coral" id="btnTest">👁 Ver acierto en test</button>
+    </div>
+
+    <div class="lecturas">
+      <div class="lectura mod"><div class="nom">Modelos encadenados</div><div class="val" id="vM">1</div></div>
+      <div class="lectura tr"><div class="nom">Acierto en entrenamiento</div><div class="val" id="vTr">—</div></div>
+      <div class="lectura te oculta" id="cardTe"><div class="nom">Acierto en test</div><div class="val" id="vTe">?</div></div>
+    </div>
+    <div class="estado" id="estado"></div>
+  </div>
+
+  <div class="panel" style="margin-top:18px">
+    <h2 style="font-family:'Space Grotesk',sans-serif; font-size:1rem; font-weight:700; margin-bottom:6px;">
+      Acierto según el número de modelos
+      <small style="color:var(--tinta-suave); font-size:.85rem; display:block; font-weight:400;">se va dibujando a medida que pruebas valores (pulsa antes "Ver acierto en test") — atento a la joroba</small>
+    </h2>
+    <canvas id="curvaM" aria-label="Acierto en entrenamiento y test según el número de modelos encadenados"></canvas>
+    <div class="leyenda" style="margin-top:6px">
+      <span style="color:var(--verde)"><span class="cuad" style="background:var(--verde)"></span> entrenamiento</span>
+      <span style="color:var(--coral)"><span class="cuad" style="background:var(--coral)"></span> test</span>
+    </div>
+  </div>
+
+  <details class="nota">
+    <summary>Cómo encadena modelos el boosting, en qué se diferencia del bagging y por qué acaba sobreajustando</summary>
+    <div class="nota-cuerpo">
+      <p><b>¿Qué es un "tocón"?</b> Un árbol de decisión recortado al mínimo: <b>profundidad 1</b>, es decir,
+      una única pregunta con un único corte ("¿x supera 5,3?") y dos hojas. Es el clasificador más simple
+      posible — solo, apenas supera al azar en problemas como este —, y por eso es el compañero clásico del
+      boosting: la gracia está en que la potencia no la ponga ningún modelo individual, sino la cadena. En
+      inglés se llama <i>decision stump</i>, de ahí el nombre.</p>
+      <p><b>La mecánica (AdaBoost):</b> todos los puntos empiezan pesando lo mismo. Se entrena el primer tocón y
+      se mira qué falla: los puntos fallados <b>suben de peso</b> y los acertados bajan. El segundo tocón se
+      entrena sobre esos pesos — así que le renta concentrarse en lo que el primero falló. Y así sucesivamente.
+      Cada tocón recibe además una <b>voz</b> (α) proporcional a lo bien que lo hizo: la predicción final es una
+      votación ponderada donde los tocones buenos pesan más. Por eso los puntos gordos de la pantalla son el
+      mapa de "lo que aún nos cuesta".</p>
+      <p><b>Espejo del bagging:</b> en el bagging los árboles son <i>independientes</i> (cada uno ve una muestra
+      al azar) y se combinan <i>en paralelo</i> para reducir la <b>varianza</b> — limar los caprichos. En el
+      boosting los modelos son <i>dependientes</i> (cada uno existe por los errores del anterior) y se combinan
+      <i>en secuencia</i> para reducir el <b>sesgo</b> — cada tocón por separado es malísimo (una sola pregunta),
+      pero la cadena construye una frontera que ninguno podría lograr solo. Mismo objetivo, filosofías opuestas.</p>
+      <p><b>Por qué acaba sobreajustando:</b> los puntos de ruido son, por definición, imposibles de acertar de
+      forma consistente — así que el algoritmo los falla una y otra vez, sus pesos <b>se disparan</b> (míralos
+      engordar al subir los modelos), y las últimas iteraciones se dedican a perseguir casos que no representan
+      ningún patrón real. El acierto en entrenamiento sigue subiendo hacia el 100%, pero el de test alcanza un
+      máximo y <b>cae</b>: la joroba del gráfico. En la práctica el número de iteraciones se elige con validación
+      (por ejemplo, validación cruzada) y se para en el pico. Los descendientes modernos de esta idea —
+      <i>gradient boosting</i>, XGBoost, LightGBM — dominan las competiciones de datos tabulares, siempre con ese
+      mismo cuidado: parar a tiempo.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de métodos de conjunto · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= datos: frontera diagonal + ruido ================= */
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15, 1|a);
+    t=t+Math.imul(t^t>>>7, 61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+const seedTrain=72, seedTest=9999;
+function generar(seed,n){
+  const rng=mulberry32(seed);
+  const P=[];
+  for(let i=0;i<n;i++){
+    const x=Math.round(rng()*100)/10, y=Math.round(rng()*100)/10;
+    let c=(y>x)?1:-1;              /* clases +1 / −1 (convención AdaBoost) */
+    if(rng()<0.12) c=-c;           /* 12% ruido */
+    P.push({x,y,c});
+  }
+  return P;
+}
+const TRAIN=generar(seedTrain,80), TEST=generar(seedTest,400);
+const nTr=TRAIN.length;
+
+/* ================= AdaBoost con tocones ================= */
+function tocon(P,w){
+  let best=null;
+  for(const eje of ['x','y']){
+    const vals=[...new Set(P.map(p=>p[eje]))].sort((a,b)=>a-b);
+    for(let i=0;i<=vals.length;i++){
+      const u = i===0 ? vals[0]-0.05 : i===vals.length ? vals[vals.length-1]+0.05 : (vals[i-1]+vals[i])/2;
+      for(const pol of [1,-1]){
+        let err=0;
+        for(let j=0;j<P.length;j++){
+          const pred = P[j][eje]>=u ? pol : -pol;
+          if(pred!==P[j].c) err+=w[j];
+        }
+        if(!best||err<best.err) best={eje,u,pol,err};
+      }
+    }
+  }
+  return best;
+}
+function predT(t,p){ return p[t.eje]>=t.u ? t.pol : -t.pol; }
+
+/* entrenar 100 rondas UNA VEZ, guardando alfas y una foto de los pesos tras cada ronda */
+const MAXM=100;
+const MODELOS=[];          /* {t, alfa} */
+const PESOS=[];            /* PESOS[m] = Float64Array(nTr) tras la ronda m (m=0..MAXM-1) */
+(function entrenar(){
+  let w=new Float64Array(nTr).fill(1/nTr);
+  for(let m=0;m<MAXM;m++){
+    const t=tocon(TRAIN,w);
+    const err=Math.max(1e-10,Math.min(1-1e-10,t.err));
+    const alfa=0.5*Math.log((1-err)/err);
+    MODELOS.push({t,alfa});
+    let Z=0;
+    for(let j=0;j<nTr;j++){ w[j]*=Math.exp(-alfa*TRAIN[j].c*predT(t,TRAIN[j])); Z+=w[j]; }
+    for(let j=0;j<nTr;j++) w[j]/=Z;
+    PESOS.push(Float64Array.from(w));
+  }
+})();
+
+/* ================= cachés para el deslizador instantáneo ================= */
+const NG=64;
+const predCelda=[];   /* predCelda[m] = Int8Array(NG*NG) con ±1 del tocón m */
+const predTrain=[], predTest=[];
+for(let m=0;m<MAXM;m++){
+  const t=MODELOS[m].t;
+  const pc=new Int8Array(NG*NG);
+  for(let i=0;i<NG;i++) for(let j=0;j<NG;j++){
+    pc[i*NG+j]=predT(t,{x:(i+0.5)/NG*10, y:(j+0.5)/NG*10});
+  }
+  predCelda.push(pc);
+  const pt=new Int8Array(nTr);
+  for(let k=0;k<nTr;k++) pt[k]=predT(t,TRAIN[k]);
+  predTrain.push(pt);
+  const pe=new Int8Array(TEST.length);
+  for(let k=0;k<TEST.length;k++) pe[k]=predT(t,TEST[k]);
+  predTest.push(pe);
+}
+function margenCelda(i,j,M){
+  let s=0; const idx=i*NG+j;
+  for(let m=0;m<M;m++) s+=MODELOS[m].alfa*predCelda[m][idx];
+  return s;
+}
+function accTrain(M){
+  let ok=0;
+  for(let k=0;k<nTr;k++){ let s=0; for(let m=0;m<M;m++) s+=MODELOS[m].alfa*predTrain[m][k]; if((s>=0?1:-1)===TRAIN[k].c) ok++; }
+  return ok/nTr;
+}
+function accTest(M){
+  let ok=0;
+  for(let k=0;k<TEST.length;k++){ let s=0; for(let m=0;m<M;m++) s+=MODELOS[m].alfa*predTest[m][k]; if((s>=0?1:-1)===TEST[k].c) ok++; }
+  return ok/TEST.length;
+}
+
+/* ================= estado ================= */
+const VALORES_M=[1,2,3,4,5,7,10,15,20,30,40,60,80,100];
+let M=1;
+let testVisible=false;
+const evaluaciones=new Map();
+
+/* ================= plano ================= */
+const plano=document.getElementById('plano');
+const pctx=plano.getContext('2d');
+function prep(canvas,c){
+  const dpr=window.devicePixelRatio||1;
+  const r=canvas.getBoundingClientRect();
+  canvas.width=r.width*dpr; canvas.height=r.height*dpr;
+  c.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+function dibujar(){
+  const {W,H}=prep(plano,pctx);
+  const m=16;
+  const lado=Math.min(W-2*m, H-2*m);
+  const x0=(W-lado)/2, y0=(H-lado)/2;
+  const px=x=>x0+x/10*lado, py=y=>y0+lado-y/10*lado;
+
+  pctx.clearRect(0,0,W,H);
+  /* regiones: color por margen normalizado */
+  let sumA=0; for(let m2=0;m2<M;m2++) sumA+=Math.abs(MODELOS[m2].alfa);
+  const cw=lado/NG;
+  for(let i=0;i<NG;i++) for(let j=0;j<NG;j++){
+    const s=margenCelda(i,j,M);
+    const pa=Math.max(0,Math.min(1,(s/(sumA||1)+1)/2));   /* 0=B(coral) .. 1=A(verde) */
+    const r=Math.round(228+(15-228)*pa), g=Math.round(87+(118-87)*pa), b=Math.round(46+(110-46)*pa);
+    pctx.fillStyle='rgba('+r+','+g+','+b+',0.16)';
+    pctx.fillRect(px((i+0.5)/NG*10)-cw/2-0.5, py((j+0.5)/NG*10)-cw/2-0.5, cw+1, cw+1);
+  }
+  /* marco */
+  pctx.strokeStyle='#B9C7D6'; pctx.lineWidth=1.6;
+  pctx.strokeRect(x0,y0,lado,lado);
+
+  /* corte del último tocón añadido (discontinuo naranja) */
+  const ult=MODELOS[M-1].t;
+  pctx.strokeStyle='#F07818'; pctx.lineWidth=2.5; pctx.setLineDash([8,5]);
+  pctx.beginPath();
+  if(ult.eje==='x'){ pctx.moveTo(px(ult.u), py(0)); pctx.lineTo(px(ult.u), py(10)); }
+  else { pctx.moveTo(px(0), py(ult.u)); pctx.lineTo(px(10), py(ult.u)); }
+  pctx.stroke(); pctx.setLineDash([]);
+
+  /* puntos: radio según su peso tras M rondas */
+  const w=PESOS[M-1];
+  for(let k=0;k<nTr;k++){
+    const p=TRAIN[k];
+    const rad=Math.max(3.5, Math.min(15, 5*Math.sqrt(w[k]*nTr)));
+    pctx.beginPath(); pctx.arc(px(p.x), py(p.y), rad, 0, Math.PI*2);
+    pctx.fillStyle=p.c===1?'#0F766E':'#E4572E'; pctx.fill();
+    pctx.strokeStyle='#FFFFFF'; pctx.lineWidth=1.8; pctx.stroke();
+  }
+
+  actualizarPaneles();
+}
+
+/* ================= paneles ================= */
+function actualizarPaneles(){
+  const tr=accTrain(M);
+  document.getElementById('vM').textContent=M;
+  document.getElementById('vTr').textContent=Math.round(tr*100)+'%';
+
+  const e=document.getElementById('estado');
+  if(!testVisible){
+    if(M===1){
+      e.className='estado';
+      e.innerHTML='<b>Un solo tocón:</b> una única pregunta ("¿'+(MODELOS[0].t.eje==='x'?'x':'y')+' supera '+
+        MODELOS[0].t.u.toFixed(1)+'?"). Frontera pobre. Sube el número de modelos y fíjate en qué puntos engordan.';
+    } else {
+      e.className='estado';
+      e.innerHTML='<b>'+M+' modelos en fila.</b> Los puntos gordos son los que la cadena sigue fallando: el '+
+        'próximo tocón (línea naranja) va a por ellos. Pulsa <b>"Ver acierto en test"</b> para vigilar cuándo '+
+        'esta obsesión deja de compensar.';
+    }
+    return;
+  }
+  const te=accTest(M);
+  document.getElementById('vTe').textContent=Math.round(te*100)+'%';
+  evaluaciones.set(M,{tr,te});
+  registrarM();
+
+  let mejorTeMenor=0;
+  for(const [mm,r] of evaluaciones){ if(mm<M && r.te>mejorTeMenor) mejorTeMenor=r.te; }
+  const cae = mejorTeMenor>0 && te < mejorTeMenor-0.02;
+  if(M<=2){
+    e.className='estado';
+    e.innerHTML='<b>Arrancando:</b> con '+M+' modelo'+(M>1?'s':'')+' el conjunto acierta el '+Math.round(te*100)+
+      '% en test. Cada tocón nuevo debería mejorar las cosas… durante un tiempo. Sigue subiendo.';
+  } else if(cae){
+    e.className='estado mal';
+    e.innerHTML='<b>⚠ Sobreajuste por obsesión.</b> El test ha caído al '+Math.round(te*100)+'% (llegó a estar en el '+
+      Math.round(mejorTeMenor*100)+'%), mientras el entrenamiento sube ('+Math.round(tr*100)+'%). Mira los puntos '+
+      'enormes: son ruido que el algoritmo persigue sin descanso. Las últimas iteraciones memorizan, no aprenden. '+
+      'Habría que haber parado antes.';
+  } else {
+    e.className='estado ok';
+    e.innerHTML='<b>✓ La cadena funciona.</b> Con '+M+' modelos, test al '+Math.round(te*100)+'% — tocones que por '+
+      'separado son malísimos construyen juntos una frontera decente. Sigue subiendo modelos y vigila el gráfico: '+
+      'en algún momento la mejora se torcerá.';
+  }
+}
+
+/* ================= controles ================= */
+function fijarPorIndice(idx){
+  idx=Math.min(VALORES_M.length-1, Math.max(0, idx));
+  fijarM(VALORES_M[idx]);
+}
+function fijarM(mm){
+  M=Math.min(MAXM, Math.max(1, mm));
+  const idx=VALORES_M.indexOf(M);
+  if(idx>=0) document.getElementById('sM').value=idx;
+  document.getElementById('txtM').textContent=M;
+  document.getElementById('txtMplural').textContent = M>1?'s':'';
+  document.getElementById('txtMsub').textContent = M===1?'un solo tocón: una pregunta':
+    (M<10?'la cadena empieza a refinar la frontera':'muchos modelos: vigila la obsesión con el ruido');
+  dibujar();
+}
+document.getElementById('sM').addEventListener('input',e=>fijarPorIndice(+e.target.value));
+
+document.getElementById('btnTest').addEventListener('click',()=>{
+  testVisible=true;
+  document.getElementById('cardTe').classList.remove('oculta');
+  dibujar();
+});
+
+/* ================= curva acierto vs nº de modelos ================= */
+const curvaM=document.getElementById('curvaM');
+const mctx=curvaM.getContext('2d');
+const puntosTr=new Map(), puntosTe=new Map();
+function dibujarCurvaM(){
+  const dpr=window.devicePixelRatio||1;
+  const r=curvaM.getBoundingClientRect();
+  curvaM.width=r.width*dpr; curvaM.height=r.height*dpr;
+  mctx.setTransform(dpr,0,0,dpr,0,0);
+  const W=r.width, H=r.height;
+  const mL=42, mR=14, mT=14, mB=30;
+  const px=n=>mL+(n-1)/99*(W-mL-mR);
+  const py=v=>H-mB-(v-0.4)/0.62*(H-mT-mB);
+
+  mctx.clearRect(0,0,W,H);
+  mctx.font='11px "IBM Plex Sans", sans-serif'; mctx.textAlign='right';
+  for(let v=0.5;v<=1.001;v+=0.1){
+    mctx.strokeStyle='#EDF1F6'; mctx.lineWidth=1;
+    mctx.beginPath(); mctx.moveTo(mL,py(v)); mctx.lineTo(W-mR,py(v)); mctx.stroke();
+    mctx.fillStyle='#5B6B80'; mctx.fillText(Math.round(v*100)+'%', mL-6, py(v)+4);
+  }
+  mctx.strokeStyle='#B9C7D6'; mctx.lineWidth=1.6;
+  mctx.beginPath(); mctx.moveTo(mL,mT); mctx.lineTo(mL,H-mB); mctx.lineTo(W-mR,H-mB); mctx.stroke();
+  mctx.textAlign='center'; mctx.fillStyle='#5B6B80'; mctx.font='10px "IBM Plex Sans", sans-serif';
+  for(const n of [1,20,40,60,80,100]) mctx.fillText(n, px(n), H-mB+15);
+  mctx.fillText('número de modelos encadenados', (mL+W-mR)/2, H-3);
+
+  if(puntosTe.size===0 && puntosTr.size===0){
+    mctx.fillStyle='#8FA3B8'; mctx.font='13px "IBM Plex Sans", sans-serif';
+    mctx.fillText('Mueve el deslizador (con el test activado) y la curva se irá dibujando…', (mL+W-mR)/2, (mT+H-mB)/2);
+    return;
+  }
+  function serie(mapa,color){
+    const ns=[...mapa.keys()].sort((a,b)=>a-b);
+    mctx.strokeStyle=color; mctx.lineWidth=2.4; mctx.lineJoin='round';
+    mctx.beginPath();
+    ns.forEach((n,i)=>{ const Y=py(mapa.get(n)); i?mctx.lineTo(px(n),Y):mctx.moveTo(px(n),Y); });
+    if(ns.length>1) mctx.stroke();
+    for(const n of ns){
+      mctx.beginPath(); mctx.arc(px(n), py(mapa.get(n)), 4, 0, Math.PI*2);
+      mctx.fillStyle=color; mctx.fill(); mctx.strokeStyle='#FFF'; mctx.lineWidth=1.4; mctx.stroke();
+    }
+  }
+  serie(puntosTr,'#0F766E');
+  serie(puntosTe,'#E4572E');
+}
+function registrarM(){
+  puntosTr.set(M, accTrain(M));
+  if(testVisible) puntosTe.set(M, accTest(M));
+  dibujarCurvaM();
+}
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>{ dibujar(); dibujarCurvaM(); });
+fijarM(1);
+dibujarCurvaM();
+</script>
+</body>
+</html>
