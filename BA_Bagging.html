@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La sabiduría de muchos árboles — bagging</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --azul:#2274C4;
+    --coral:#E4572E;
+    --naranja:#F07818;
+    --ambar:#D98E04;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --mal:#C0392B;
+    --mal-fondo:#FBEEEC;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:700px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+
+  #plano{width:100%; height:420px; display:block; border-radius:8px;}
+  #curvaN{width:100%; height:220px; display:block; border-radius:8px; margin-top:6px;}
+
+  .leyenda{
+    display:flex; gap:14px; flex-wrap:wrap; justify-content:center;
+    margin-top:8px; font-size:.82rem; color:var(--tinta-suave);
+  }
+  .leyenda span{display:inline-flex; align-items:center; gap:6px;}
+  .pto{width:11px; height:11px; border-radius:50%; display:inline-block;}
+  .cuad{width:11px; height:11px; display:inline-block; border-radius:2px;}
+  .l-fina{width:18px; height:0; border-top:2px solid #9BB0C4; display:inline-block;}
+
+  .fila-n{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:16px;}
+  .valor-n{font-family:'Space Grotesk',sans-serif; font-size:1.5rem; font-weight:700; color:var(--naranja); min-width:150px;}
+  .valor-n small{display:block; font-size:.72rem; color:var(--tinta-suave); font-weight:500;}
+  input[type=range]{flex:1; min-width:140px; accent-color:var(--naranja); height:30px; cursor:pointer;}
+  input[type=range]:focus-visible{outline:3px solid var(--naranja); outline-offset:2px; border-radius:6px;}
+
+  .fila-acciones{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px;}
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.95rem;
+    border:none; border-radius:999px; padding:11px 22px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--tinta); outline-offset:2px;}
+  .btn.coral{background:var(--coral); color:var(--blanco);}
+  .btn.coral:hover{filter:brightness(1.07);}
+  .btn.sec{background:var(--blanco); color:var(--tinta); border:1.5px solid var(--borde); font-weight:500; font-size:.88rem; padding:9px 18px;}
+  .btn.sec:hover{border-color:var(--verde);}
+  .btn.sec.activo{background:var(--verde); color:#fff; border-color:var(--verde);}
+
+  .toggle-arboles{display:flex; align-items:center; gap:8px; font-size:.88rem; color:var(--tinta-suave); margin-left:auto;}
+  .toggle-arboles input{width:18px; height:18px; accent-color:var(--verde); cursor:pointer;}
+
+  .lecturas{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px;}
+  .lectura{background:#F7FAFC; border:1px solid var(--borde); border-radius:10px; padding:9px 12px; text-align:center;}
+  .lectura .nom{font-size:.68rem; letter-spacing:.04em; text-transform:uppercase; color:var(--tinta-suave); font-weight:600;}
+  .lectura .val{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.3rem; font-variant-numeric:tabular-nums;}
+  .lectura.arb .val{color:var(--tinta);}
+  .lectura.tr .val{color:var(--verde);}
+  .lectura.te .val{color:var(--coral);}
+  .lectura.te.oculta .val{color:var(--tinta-suave);}
+
+  .estado{
+    margin-top:12px; border-radius:10px; padding:11px 15px; font-size:.93rem; border-left:5px solid var(--ambar); background:#FDF6E9;
+  }
+  .estado.ok{border-color:var(--ok); background:var(--ok-fondo);}
+  .estado b{font-family:'Space Grotesk',sans-serif;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #plano{height:340px;} .lecturas{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>La sabiduría de muchos árboles</h1>
+    <p class="sub">Un solo árbol de decisión <b>sobreajusta</b>: dibuja una frontera dentada, sensible al ruido de los datos que le tocaron. La idea del <b>bagging</b> (y del
+    <i>random forest</i>) es entrenar <b>muchos</b> árboles, cada uno sobre una muestra distinta de los
+    datos, y hacer que <b>voten</b>. Mueve el número de árboles y mira la frontera combinada suavizarse:
+    los errores de cada árbol van en direcciones distintas y, al promediar, <b>se cancelan</b>.</p>
+  </header>
+
+  <div class="panel">
+    <canvas id="plano" aria-label="Plano con clientes y la frontera de decisión combinada del bosque"></canvas>
+    <div class="leyenda">
+      <span><span class="pto" style="background:#0F766E"></span> clase A (real)</span>
+      <span><span class="pto" style="background:#E4572E"></span> clase B (real)</span>
+      <span><span class="cuad" style="background:rgba(15,118,110,.16); border:1px solid #0F766E"></span> zona A</span>
+      <span><span class="cuad" style="background:rgba(228,87,46,.16); border:1px solid #E4572E"></span> zona B</span>
+      <span id="legArboles" hidden><span class="l-fina"></span> árboles individuales</span>
+    </div>
+
+    <div class="fila-n">
+      <div class="valor-n"><span id="txtN">1</span> árbol<span id="txtNplural"></span><small id="txtNsub">un solo árbol: sobreajusta</small></div>
+      <input type="range" id="sN" min="0" max="13" step="1" value="0" aria-label="Número de árboles del bosque">
+    </div>
+    <div class="fila-acciones">
+      <button class="btn coral" id="btnTest">👁 Ver acierto en test</button>
+      <label class="toggle-arboles"><input type="checkbox" id="chkArboles"> mostrar árboles individuales</label>
+    </div>
+
+    <div class="lecturas">
+      <div class="lectura arb"><div class="nom">Árboles en el bosque</div><div class="val" id="vN">1</div></div>
+      <div class="lectura tr"><div class="nom">Acierto en entrenamiento</div><div class="val" id="vTr">—</div></div>
+      <div class="lectura te oculta" id="cardTe"><div class="nom">Acierto en test</div><div class="val" id="vTe">?</div></div>
+    </div>
+    <div class="estado" id="estado"></div>
+  </div>
+
+  <div class="panel" style="margin-top:18px">
+    <h2>Acierto según el número de árboles <small>se va dibujando a medida que pruebas valores del deslizador (pulsa antes "Ver acierto en test")</small></h2>
+    <canvas id="curvaN" aria-label="Acierto en entrenamiento y test según el número de árboles del bosque"></canvas>
+    <div class="leyenda" style="margin-top:6px">
+      <span style="color:var(--verde)"><span class="cuad" style="background:var(--verde)"></span> entrenamiento</span>
+      <span style="color:var(--coral)"><span class="cuad" style="background:var(--coral)"></span> test</span>
+    </div>
+  </div>
+
+  <details class="nota">
+    <summary>Bootstrap, por qué promediar reduce la varianza y qué es un random forest</summary>
+    <div class="nota-cuerpo">
+      <p><b>El truco del bootstrap:</b> si entrenáramos muchos árboles con los mismos datos, saldrían todos
+      iguales y promediar no serviría de nada. Por eso cada árbol se entrena sobre una <b>muestra bootstrap</b>:
+      una selección al azar de los datos originales <i>con reemplazo</i> (algunos puntos salen repetidos, otros
+      no aparecen). Así cada árbol ve un mundo ligeramente distinto y comete errores distintos.</p>
+      <p><b>Por qué funciona promediar:</b> un árbol profundo tiene poco sesgo (capta bien el patrón) pero mucha
+      <b>varianza</b> (es muy sensible a los datos concretos que vio: de ahí los recovecos). Al promediar muchos
+      árboles, la parte de sus decisiones que es <i>señal real</i> coincide y se refuerza, mientras que los
+      errores, al ir en direcciones aleatorias, <b>se cancelan entre sí</b>. El resultado: se reduce la varianza
+      sin aumentar el sesgo, y la frontera combinada es suave y generaliza mejor que cualquier árbol individual.</p>
+      <p><b>Random forest</b> es bagging de árboles con un ingrediente extra: en cada corte, el árbol solo puede
+      elegir entre un subconjunto aleatorio de las variables. Eso hace los árboles aún más distintos entre sí
+      (menos correlacionados), lo que mejora todavía más el efecto de cancelación. Es uno de los modelos más
+      usados en la práctica precisamente porque funciona muy bien sin apenas ajustes. La contrapartida frente a
+      un árbol único: pierdes la interpretabilidad — ya no hay un diagrama sencillo que leer, sino cientos de
+      árboles votando.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de métodos de conjunto · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+const reducirMovimiento=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= datos: frontera diagonal + ruido ================= */
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15, 1|a);
+    t=t+Math.imul(t^t>>>7, 61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+let seedTrain=75, seedTest=9999;
+function generar(seed,n){
+  const rng=mulberry32(seed);
+  const P=[];
+  for(let i=0;i<n;i++){
+    const x=Math.round(rng()*100)/10, y=Math.round(rng()*100)/10;
+    let c=((x>5)!==(y>5))?1:0;     /* frontera XOR: esquinas opuestas */
+    if(rng()<0.05) c=1-c;          /* 5% ruido */
+    P.push({x,y,c});
+  }
+  return P;
+}
+let TRAIN=generar(seedTrain,80), TEST=generar(seedTest,400);
+const MAXP=3;   /* árboles débiles y diversos: la mejora se reparte y hacen falta muchos para estabilizarse */
+
+/* ================= CART con feature aleatoria por corte (estilo random forest) ================= */
+function gini(pts){
+  if(!pts.length) return 0;
+  const p=pts.filter(q=>q.c===1).length/pts.length;
+  return 1-p*p-(1-p)*(1-p);
+}
+function mejorCorte(pts, feats){
+  if(pts.length<2) return null;
+  let best=null;
+  for(const eje of feats){
+    const vals=[...new Set(pts.map(p=>p[eje]))].sort((a,b)=>a-b);
+    for(let i=0;i<vals.length-1;i++){
+      const u=(vals[i]+vals[i+1])/2;
+      const iz=pts.filter(p=>p[eje]<u), de=pts.filter(p=>p[eje]>=u);
+      if(!iz.length||!de.length) continue;
+      const g=(iz.length*gini(iz)+de.length*gini(de))/pts.length;
+      if(!best||g<best.g) best={eje,umbral:u,g,izq:iz,der:de};
+    }
+  }
+  return best;
+}
+function construir(pts,prof,maxP,rng){
+  const clase=pts.filter(p=>p.c===1).length>=pts.length/2?1:0;
+  const nodo={clase};
+  if(prof>=maxP || gini(pts)===0 || pts.length<2) return nodo;
+  const feats = ['x','y'];   /* CART completo: la diversidad viene solo del bootstrap (bagging puro) */
+  const c=mejorCorte(pts, feats);
+  if(!c) return nodo;
+  nodo.eje=c.eje; nodo.umbral=c.umbral;
+  nodo.izq=construir(c.izq,prof+1,maxP,rng);
+  nodo.der=construir(c.der,prof+1,maxP,rng);
+  return nodo;
+}
+function predecir(n,p){
+  if(n.izq===undefined) return n.clase;
+  return p[n.eje]<n.umbral ? predecir(n.izq,p) : predecir(n.der,p);
+}
+function bootstrap(P,seed){
+  const rng=mulberry32(seed);
+  const m=[];
+  for(let i=0;i<P.length;i++) m.push(P[Math.floor(rng()*P.length)]);
+  return m;
+}
+/* bosque: hasta 100 árboles bootstrap deterministas (se recortan según N) */
+let BOSQUE=[];
+/* cachés de votos: para cada árbol, su predicción (0/1) en cada punto/celda, precalculada una vez */
+const NG=64;                 /* resolución de la rejilla de regiones */
+let votosCelda=[];           /* votosCelda[b] = Int8Array(NG*NG) */
+let votosTrain=[];           /* votosTrain[b] = Int8Array(TRAIN.length) */
+let votosTest=[];            /* votosTest[b]  = Int8Array(TEST.length) */
+let acumCelda=null;          /* acumulado de votos hasta N (se recomputa al mover N) */
+function construirBosque(){
+  BOSQUE=[]; votosCelda=[]; votosTrain=[]; votosTest=[];
+  for(let b=0;b<100;b++){
+    const arb=construir(bootstrap(TRAIN, seedTrain*1000+b*131), 0, MAXP, mulberry32(seedTrain*1000+b*131));
+    BOSQUE.push(arb);
+    /* votos en la rejilla */
+    const vc=new Int8Array(NG*NG);
+    for(let i=0;i<NG;i++) for(let j=0;j<NG;j++){
+      const cx=(i+0.5)/NG*10, cy=(j+0.5)/NG*10;
+      vc[i*NG+j]=predecir(arb,{x:cx,y:cy});
+    }
+    votosCelda.push(vc);
+    /* votos en train y test */
+    const vt=new Int8Array(TRAIN.length);
+    for(let t=0;t<TRAIN.length;t++) vt[t]=predecir(arb,TRAIN[t]);
+    votosTrain.push(vt);
+    const ve=new Int8Array(TEST.length);
+    for(let t=0;t<TEST.length;t++) ve[t]=predecir(arb,TEST[t]);
+    votosTest.push(ve);
+  }
+}
+/* fracción de árboles (de los primeros nArb) que votan clase A(1) en una celda i,j */
+function probCelda(i,j,nArb){
+  let s=0; const idx=i*NG+j;
+  for(let b=0;b<nArb;b++) s+=votosCelda[b][idx];
+  return s/nArb;
+}
+function accTrain(nArb){
+  let ok=0;
+  for(let t=0;t<TRAIN.length;t++){ let s=0; for(let b=0;b<nArb;b++) s+=votosTrain[b][t]; if((s/nArb>=0.5?1:0)===TRAIN[t].c) ok++; }
+  return ok/TRAIN.length;
+}
+function accTest(nArb){
+  let ok=0;
+  for(let t=0;t<TEST.length;t++){ let s=0; for(let b=0;b<nArb;b++) s+=votosTest[b][t]; if((s/nArb>=0.5?1:0)===TEST[t].c) ok++; }
+  return ok/TEST.length;
+}
+
+/* ================= estado ================= */
+let N=1;
+let testVisible=false;
+let mostrarArboles=false;
+let evaluaciones=new Map();
+
+function fmt(v){ return v.toLocaleString('es-ES'); }
+
+/* ================= plano ================= */
+const plano=document.getElementById('plano');
+const pctx=plano.getContext('2d');
+let geom={};
+function prep(){
+  const dpr=window.devicePixelRatio||1;
+  const r=plano.getBoundingClientRect();
+  plano.width=r.width*dpr; plano.height=r.height*dpr;
+  pctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+function dibujar(){
+  const {W,H}=prep();
+  const m=16;
+  const lado=Math.min(W-2*m, H-2*m);
+  const x0=(W-lado)/2, y0=(H-lado)/2;
+  const px=x=>x0+x/10*lado, py=y=>y0+lado-y/10*lado;
+  geom={px,py,x0,y0,lado};
+
+  pctx.clearRect(0,0,W,H);
+  /* regiones combinadas: color por fracción de votos (mezcla suave), usando la caché */
+  const cw=lado/NG;
+  for(let i=0;i<NG;i++) for(let j=0;j<NG;j++){
+    const cx=(i+0.5)/NG*10, cy=(j+0.5)/NG*10;
+    const pa=probCelda(i,j,N);
+    const r=Math.round(228+(15-228)*pa), g=Math.round(87+(118-87)*pa), b=Math.round(46+(110-46)*pa);
+    pctx.fillStyle='rgba('+r+','+g+','+b+',0.16)';
+    pctx.fillRect(px(cx)-cw/2-0.5, py(cy)-cw/2-0.5, cw+1, cw+1);
+  }
+  /* marco */
+  pctx.strokeStyle='#B9C7D6'; pctx.lineWidth=1.6;
+  pctx.strokeRect(x0,y0,lado,lado);
+
+  /* fronteras individuales (contorno de cada árbol) si se pide */
+  if(mostrarArboles && N>1){
+    const M=Math.min(N,24);   /* como mucho 24 contornos para no saturar */
+    for(let b=0;b<M;b++){
+      pctx.strokeStyle='rgba(120,140,165,.30)'; pctx.lineWidth=1;
+      /* contorno: recorrer la rejilla y marcar cambios de clase de ese árbol */
+      const NG2=48, cw2=lado/NG2;
+      for(let i=0;i<NG2;i++) for(let j=0;j<NG2;j++){
+        const cx=(i+0.5)/NG2*10, cy=(j+0.5)/NG2*10;
+        const c0=predecir(BOSQUE[b],{x:cx,y:cy});
+        const cR=predecir(BOSQUE[b],{x:cx+10/NG2,y:cy});
+        const cD=predecir(BOSQUE[b],{x:cx,y:cy+10/NG2});
+        if(c0!==cR){ pctx.beginPath(); pctx.moveTo(px(cx+5/NG2),py(cy-5/NG2)); pctx.lineTo(px(cx+5/NG2),py(cy+5/NG2)); pctx.stroke(); }
+        if(c0!==cD){ pctx.beginPath(); pctx.moveTo(px(cx-5/NG2),py(cy+5/NG2)); pctx.lineTo(px(cx+5/NG2),py(cy+5/NG2)); pctx.stroke(); }
+      }
+    }
+  }
+
+  /* puntos test */
+  if(testVisible){
+    for(const p of TEST){
+      pctx.beginPath(); pctx.arc(px(p.x),py(p.y),3.5,0,Math.PI*2);
+      pctx.fillStyle=p.c===1?'#0F766E':'#E4572E'; pctx.globalAlpha=.5; pctx.fill(); pctx.globalAlpha=1;
+    }
+  }
+  /* puntos train */
+  for(const p of TRAIN){
+    pctx.beginPath(); pctx.arc(px(p.x),py(p.y),6,0,Math.PI*2);
+    pctx.fillStyle=p.c===1?'#0F766E':'#E4572E'; pctx.fill();
+    pctx.strokeStyle='#FFFFFF'; pctx.lineWidth=1.8; pctx.stroke();
+  }
+
+  actualizarPaneles();
+}
+
+/* ================= paneles ================= */
+function actualizarPaneles(){
+  const tr=accTrain(N);
+  document.getElementById('vN').textContent=N;
+  document.getElementById('vTr').textContent=Math.round(tr*100)+'%';
+
+  const e=document.getElementById('estado');
+  if(!testVisible){
+    if(N===1){
+      e.className='estado';
+      e.innerHTML='<b>Un solo árbol.</b> Mira su frontera: dentada, con islas y recovecos que rodean puntos '+
+        'de ruido. Sobreajusta. Sube el número de árboles y observa cómo se suaviza.';
+    } else {
+      e.className='estado';
+      e.innerHTML='<b>'+N+' árboles votando.</b> La frontera es más suave: cada árbol aporta su versión '+
+        '(ligeramente distinta, porque vio una muestra distinta) y el voto mayoritario lima los caprichos '+
+        'individuales. Pulsa <b>"Ver acierto en test"</b> para comprobar que además generaliza mejor.';
+    }
+    return;
+  }
+  const te=accTest(N);
+  document.getElementById('vTe').textContent=Math.round(te*100)+'%';
+  evaluaciones.set(N,{tr,te});
+  const teUno=evaluaciones.has(1)?evaluaciones.get(1).te:null;
+  if(N===1){
+    e.className='estado';
+    e.innerHTML='<b>Punto de partida:</b> el árbol único acierta el '+Math.round(tr*100)+'% en entrenamiento '+
+      'pero solo el '+Math.round(te*100)+'% en test — esa brecha es el sobreajuste. Ahora sube el número de árboles.';
+  } else {
+    const mejora = teUno!==null ? Math.round((te-teUno)*100) : null;
+    e.className='estado ok';
+    e.innerHTML='<b>El bosque gana.</b> Con '+N+' árboles, el test sube al <b>'+Math.round(te*100)+'%</b>'+
+      (mejora!==null && mejora>0 ? ' (+'+mejora+' puntos frente al árbol solo)' : '')+
+      ', mientras el entrenamiento se mantiene ('+Math.round(tr*100)+'%). La frontera suave generaliza mejor '+
+      'que los recovecos de un árbol aislado — y añadir más árboles ya no empeora: la mejora se estabiliza.';
+  }
+}
+
+/* ================= controles ================= */
+/* valores de N que recorre el deslizador: paso fino al principio (donde todo cambia), grueso al final */
+const VALORES_N=[1,2,3,4,5,7,10,15,20,30,40,60,80,100];
+function fijarPorIndice(idx){
+  idx=Math.min(VALORES_N.length-1, Math.max(0, idx));
+  fijarN(VALORES_N[idx]);
+}
+function fijarN(n){
+  N=Math.min(100,Math.max(1,n));
+  /* colocar el slider en el índice correspondiente */
+  const idx=VALORES_N.indexOf(N);
+  if(idx>=0) document.getElementById('sN').value=idx;
+  document.getElementById('txtN').textContent=N;
+  document.getElementById('txtNplural').textContent = N>1?'es':'';
+  document.getElementById('txtNsub').textContent = N===1?'un solo árbol: sobreajusta':
+    (N<10?'pocos árboles: la frontera empieza a suavizarse':'muchos árboles: frontera suave y estable');
+  dibujar();
+  registrarN();
+}
+document.getElementById('sN').addEventListener('input',e=>fijarPorIndice(+e.target.value));
+
+document.getElementById('btnTest').addEventListener('click',()=>{
+  testVisible=true;
+  document.getElementById('cardTe').classList.remove('oculta');
+  dibujar();
+  registrarN();
+});
+document.getElementById('chkArboles').addEventListener('change',e=>{
+  mostrarArboles=e.target.checked;
+  document.getElementById('legArboles').hidden=!mostrarArboles;
+  dibujar();
+});
+
+/* ================= curva acierto vs nº de árboles ================= */
+const curvaN=document.getElementById('curvaN');
+const nctx=curvaN.getContext('2d');
+const puntosTr=new Map();   // N -> acc train
+const puntosTe=new Map();   // N -> acc test
+function dibujarCurvaN(){
+  const dpr=window.devicePixelRatio||1;
+  const r=curvaN.getBoundingClientRect();
+  curvaN.width=r.width*dpr; curvaN.height=r.height*dpr;
+  nctx.setTransform(dpr,0,0,dpr,0,0);
+  const W=r.width, H=r.height;
+  const mL=42, mR=14, mT=14, mB=30;
+  const px=n=>mL+(n-1)/99*(W-mL-mR);
+  const py=v=>H-mB-(v-0.4)/0.62*(H-mT-mB);   /* eje 0,4..1,02 */
+
+  nctx.clearRect(0,0,W,H);
+  nctx.font='11px "IBM Plex Sans", sans-serif'; nctx.textAlign='right';
+  for(let v=0.5;v<=1.001;v+=0.1){
+    nctx.strokeStyle='#EDF1F6'; nctx.lineWidth=1;
+    nctx.beginPath(); nctx.moveTo(mL,py(v)); nctx.lineTo(W-mR,py(v)); nctx.stroke();
+    nctx.fillStyle='#5B6B80'; nctx.fillText(Math.round(v*100)+'%', mL-6, py(v)+4);
+  }
+  nctx.strokeStyle='#B9C7D6'; nctx.lineWidth=1.6;
+  nctx.beginPath(); nctx.moveTo(mL,mT); nctx.lineTo(mL,H-mB); nctx.lineTo(W-mR,H-mB); nctx.stroke();
+  nctx.textAlign='center'; nctx.fillStyle='#5B6B80'; nctx.font='10px "IBM Plex Sans", sans-serif';
+  for(const n of [1,20,40,60,80,100]) nctx.fillText(n, px(n), H-mB+15);
+  nctx.fillText('número de árboles', (mL+W-mR)/2, H-3);
+
+  if(puntosTe.size===0 && puntosTr.size===0){
+    nctx.fillStyle='#8FA3B8'; nctx.font='13px "IBM Plex Sans", sans-serif';
+    nctx.fillText('Mueve el deslizador (con el test activado) y la curva se irá dibujando…', (mL+W-mR)/2, (mT+H-mB)/2);
+    return;
+  }
+  function serie(mapa,color){
+    const ns=[...mapa.keys()].sort((a,b)=>a-b);
+    nctx.strokeStyle=color; nctx.lineWidth=2.4; nctx.lineJoin='round';
+    nctx.beginPath();
+    ns.forEach((n,i)=>{ const Y=py(mapa.get(n)); i?nctx.lineTo(px(n),Y):nctx.moveTo(px(n),Y); });
+    if(ns.length>1) nctx.stroke();
+    for(const n of ns){
+      nctx.beginPath(); nctx.arc(px(n), py(mapa.get(n)), 4, 0, Math.PI*2);
+      nctx.fillStyle=color; nctx.fill(); nctx.strokeStyle='#FFF'; nctx.lineWidth=1.4; nctx.stroke();
+    }
+  }
+  serie(puntosTr,'#0F766E');
+  serie(puntosTe,'#E4572E');
+}
+function registrarN(){
+  puntosTr.set(N, accTrain(N));
+  if(testVisible) puntosTe.set(N, accTest(N));
+  dibujarCurvaN();
+}
+
+/* ================= arranque ================= */
+window.addEventListener('resize',()=>{ dibujar(); dibujarCurvaN(); });
+construirBosque();
+fijarN(1);
+dibujarCurvaN();
+</script>
+</body>
+</html>
