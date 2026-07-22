@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recorre la curva ROC — el corte y sus consecuencias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#EEF2F6;
+    --tinta:#1B2A41;
+    --tinta-suave:#5B6B80;
+    --cuadricula:#C9D6E3;
+    --verde:#0F766E;
+    --azul:#2274C4;
+    --coral:#E4572E;
+    --naranja:#F07818;
+    --ambar:#D98E04;
+    --blanco:#FFFFFF;
+    --borde:#D7E0EA;
+    --ok:#1B7F4B;
+    --ok-fondo:#EAF6EF;
+    --radio:12px;
+    --sombra:0 1px 2px rgba(27,42,65,.06), 0 6px 18px rgba(27,42,65,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    background:var(--papel);
+    background-image:
+      linear-gradient(var(--cuadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--tinta);
+    line-height:1.55;
+    padding-bottom:64px;
+  }
+  .contenedor{max-width:980px; margin:0 auto; padding:0 20px;}
+
+  header{padding:48px 0 20px;}
+  .eyebrow{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--verde); font-weight:700;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight:700; line-height:1.12; margin-top:8px;
+  }
+  header p.sub{margin-top:12px; max-width:720px; color:var(--tinta-suave); font-size:1.02rem;}
+
+  .panel{
+    background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); padding:18px 20px; box-shadow:var(--sombra);
+  }
+  .layout{display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start;}
+  @media (max-width:820px){ .layout{grid-template-columns:1fr;} }
+
+  h2{font-family:'Space Grotesk', sans-serif; font-size:1rem; font-weight:700; margin-bottom:6px;}
+  h2 small{color:var(--tinta-suave); font-size:.85rem; display:block; font-weight:400;}
+
+  #roc{width:100%; height:380px; display:block; border-radius:8px;}
+  .auc{text-align:center; margin-top:6px; font-size:.9rem; color:var(--tinta-suave);}
+  .auc b{font-family:'Space Grotesk',sans-serif; color:var(--azul); font-size:1.05rem;}
+
+  .fila-corte{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:14px;}
+  .valor-corte{font-family:'Space Grotesk',sans-serif; font-size:1.4rem; font-weight:700; color:var(--naranja); min-width:130px;}
+  .valor-corte small{display:block; font-size:.72rem; color:var(--tinta-suave); font-weight:500;}
+  input[type=range]{flex:1; min-width:140px; accent-color:var(--naranja); height:30px; cursor:pointer;}
+  input[type=range]:focus-visible{outline:3px solid var(--naranja); outline-offset:2px; border-radius:6px;}
+  .atajos{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .chip{
+    font-family:'Space Grotesk',sans-serif; font-size:.8rem; font-weight:500;
+    border:1.5px solid var(--borde); background:var(--blanco); color:var(--tinta);
+    border-radius:999px; padding:6px 13px; cursor:pointer; transition:border-color .15s;
+  }
+  .chip:hover{border-color:var(--verde);}
+  .chip:focus-visible{outline:2px solid var(--tinta); outline-offset:2px;}
+
+  /* matriz de confusión */
+  .matriz{margin-top:4px;}
+  .matriz table{border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums;}
+  .matriz caption{font-size:.82rem; color:var(--tinta-suave); margin-bottom:8px; text-align:left;}
+  .matriz th, .matriz td{border:1px solid var(--borde); padding:0; text-align:center;}
+  .matriz .esq{background:#F7FAFC; font-size:.72rem; color:var(--tinta-suave); font-weight:600; padding:6px;}
+  .matriz .cab{background:#F0F4F8; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.82rem; padding:8px 6px;}
+  .celda{height:74px; position:relative;}
+  .celda .num{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.7rem;}
+  .celda .et{font-size:.66rem; position:absolute; top:6px; left:0; right:0; text-align:center; letter-spacing:.03em; text-transform:uppercase;}
+  .celda.tp{background:rgba(15,118,110,.16);} .celda.tp .et{color:var(--verde);}
+  .celda.tn{background:rgba(34,116,196,.14);} .celda.tn .et{color:var(--azul);}
+  .celda.fp{background:rgba(228,87,46,.14);} .celda.fp .et{color:var(--coral);}
+  .celda.fn{background:rgba(217,142,4,.16);} .celda.fn .et{color:var(--ambar);}
+
+  /* métricas */
+  .metricas{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px;}
+  .metrica{border:1px solid var(--borde); border-radius:10px; padding:11px 10px; text-align:center; background:#FAFCFE;}
+  .metrica .nom{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.82rem;}
+  .metrica .val{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.8rem; font-variant-numeric:tabular-nums; margin-top:2px;}
+  .metrica .formula{font-size:.68rem; color:var(--tinta-suave); margin-top:3px;}
+  .metrica.acc .val{color:var(--tinta);}
+  .metrica.sens .val{color:var(--verde);}
+  .metrica.spec .val{color:var(--azul);}
+  .metrica .barra{height:5px; border-radius:3px; background:#E3E9F0; margin-top:8px; overflow:hidden;}
+  .metrica .barra i{display:block; height:100%; border-radius:3px;}
+  .metrica.acc .barra i{background:var(--tinta);}
+  .metrica.sens .barra i{background:var(--verde);}
+  .metrica.spec .barra i{background:var(--azul);}
+
+  .nota-corte{margin-top:14px; font-size:.9rem; color:var(--tinta-suave); background:#F7FAFC; border-left:4px solid var(--ambar); padding:9px 13px; border-radius:0 8px 8px 0;}
+
+  details.nota{
+    margin-top:28px; background:var(--blanco); border:1px solid var(--borde);
+    border-radius:var(--radio); box-shadow:var(--sombra);
+  }
+  details.nota summary{
+    cursor:pointer; padding:14px 18px; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:.98rem; list-style:none; display:flex; align-items:center; gap:10px;
+  }
+  details.nota summary::-webkit-details-marker{display:none;}
+  details.nota summary::before{content:'▸'; color:var(--verde); transition:transform .15s;}
+  details.nota[open] summary::before{transform:rotate(90deg);}
+  .nota-cuerpo{padding:0 18px 16px; font-size:.94rem; max-width:760px;}
+  .nota-cuerpo p{margin-top:8px;}
+
+  footer{margin-top:48px; font-size:.85rem; color:var(--tinta-suave); text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:600px){ #roc{height:320px;} .metricas{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div class="eyebrow">Laboratorio de Business Analytics</div>
+    <h1>Recorre la curva ROC</h1>
+    <p class="sub">Un modelo ha dado a cada cliente una <b>probabilidad de impago</b>. Para decidir a quién
+    marcar como moroso hace falta un <b>corte</b>: por encima, "impago"; por debajo, "pago". La <b>curva ROC</b>
+    dibuja lo que ocurre con <i>todos</i> los cortes posibles a la vez. Arrastra el punto por la curva y mira a
+    la derecha cómo cambian el corte, la matriz de confusión y las métricas. Cada punto de la curva <b>es</b> un
+    corte distinto.</p>
+  </header>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>La curva ROC <small>cada punto es un corte · eje X: falsos positivos · eje Y: verdaderos positivos</small></h2>
+      <canvas id="roc" aria-label="Curva ROC con el punto de operación correspondiente al corte elegido"></canvas>
+      <div class="auc">Área bajo la curva (AUC): <b id="auc">—</b> · <span id="aucTxt"></span></div>
+
+      <div class="fila-corte">
+        <div class="valor-corte">corte = <span id="txtCorte">0,50</span><small>marca "impago" si prob ≥ corte</small></div>
+        <input type="range" id="sCorte" min="0" max="100" step="1" value="50" aria-label="Valor de corte">
+      </div>
+      <div class="atajos">
+        <button class="chip" data-c="0">Todo impago (corte 0)</button>
+        <button class="chip" data-c="50">Corte 0,50</button>
+        <button class="chip" data-c="100">Todo pago (corte 1)</button>
+        <button class="chip" id="chipJ">Mejor equilibrio</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Matriz de confusión <small>con este corte, sobre los 40 clientes</small></h2>
+      <div class="matriz">
+        <table>
+          <tr><td class="esq" colspan="2" rowspan="2"></td><td class="cab" colspan="2">Realidad</td></tr>
+          <tr><td class="cab">Impaga</td><td class="cab">Paga</td></tr>
+          <tr>
+            <td class="cab" rowspan="2" style="writing-mode:vertical-rl; transform:rotate(180deg); padding:4px;">Predicción</td>
+            <td class="cab">Impago</td>
+            <td class="celda tp"><div class="et">Aciertos +</div><div class="num" id="cTP">0</div></td>
+            <td class="celda fp"><div class="et">Falsa alarma</div><div class="num" id="cFP">0</div></td>
+          </tr>
+          <tr>
+            <td class="cab">Pago</td>
+            <td class="celda fn"><div class="et">Se escapa</div><div class="num" id="cFN">0</div></td>
+            <td class="celda tn"><div class="et">Aciertos −</div><div class="num" id="cTN">0</div></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="metricas">
+        <div class="metrica acc">
+          <div class="nom">Accuracy</div>
+          <div class="val" id="mAcc">—</div>
+          <div class="formula">aciertos / total</div>
+          <div class="barra"><i id="bAcc"></i></div>
+        </div>
+        <div class="metrica sens">
+          <div class="nom">Sensitivity</div>
+          <div class="val" id="mSens">—</div>
+          <div class="formula">morosos detectados</div>
+          <div class="barra"><i id="bSens"></i></div>
+        </div>
+        <div class="metrica spec">
+          <div class="nom">Specificity</div>
+          <div class="val" id="mSpec">—</div>
+          <div class="formula">pagadores respetados</div>
+          <div class="barra"><i id="bSpec"></i></div>
+        </div>
+      </div>
+
+      <div class="nota-corte" id="notaCorte"></div>
+    </div>
+  </div>
+
+  <details class="nota">
+    <summary>Qué es la ROC, por qué existe el AUC y cómo elegir el corte</summary>
+    <div class="nota-cuerpo">
+      <p><b>De un corte a la curva entera.</b> Con un corte fijo tienes una única matriz de confusión y un único
+      par de valores: cuántos morosos detectas (la <b>sensibilidad</b>, o tasa de verdaderos positivos) y a
+      cuántos pagadores acusas por error (uno menos la <b>especificidad</b>, la tasa de falsos positivos). La
+      curva ROC recorre <i>todos</i> los cortes de golpe y dibuja cada uno como un punto (falsos positivos en el
+      eje X, verdaderos positivos en el eje Y). Al mover el corte de alto a bajo, el punto viaja desde la esquina
+      inferior izquierda —no marcas a nadie: cero aciertos, cero falsas alarmas— hasta la superior derecha
+      —marcas a todos: los detectas a todos, pero también acusas a todos los inocentes—.</p>
+      <p><b>El AUC</b> (área bajo la curva) resume la calidad del modelo <i>independientemente del corte</i>: es
+      la probabilidad de que, tomados un moroso y un pagador al azar, el modelo le asigne más riesgo al moroso.
+      Vale 0,5 para un modelo que no distingue nada (la diagonal) y 1 para uno perfecto (que sube pegado a la
+      esquina superior izquierda). Cuanto más se abombe la curva hacia esa esquina, mejor separa el modelo las
+      dos clases. Ojo: el AUC mide el modelo, no la decisión — para actuar sigues necesitando elegir un corte.</p>
+      <p><b>Elegir el corte es una decisión de negocio, no estadística.</b> No existe un corte "correcto": subirlo
+      te da más especificidad (molestas a menos pagadores) a costa de sensibilidad (se te escapan morosos), y
+      bajarlo hace lo contrario. La elección depende de qué error es más caro. Si un impago no detectado cuesta
+      mucho más que una falsa alarma, priorizas sensibilidad (corte bajo); si acosar a un buen cliente es lo
+      grave, priorizas especificidad (corte alto). El atajo "mejor equilibrio" marca el punto más alejado de la
+      diagonal (índice de Youden), un criterio habitual cuando ambos errores pesan parecido — pero es solo un
+      punto de partida razonable, no una verdad.</p>
+    </div>
+  </details>
+
+  <footer>Demo interactiva de evaluación de modelos · funciona sin conexión una vez cargada</footer>
+</div>
+
+<script>
+"use strict";
+/* ================= datos (probabilidad de impago + clase real), deterministas y verificados ================= */
+const SCORES=[0.53,0.22,0.64,0.58,0.61,0.57,0.49,0.37,0.33,0.37,0.37,0.55,0.36,0.48,0.36,0.38,0.28,0.5,0.53,0.23,0.71,0.24,0.52,0.26,0.3,0.49,0.66,0.48,0.61,0.49,0.4,0.23,0.62,0.34,0.41,0.72,0.51,0.26,0.58,0.62];
+const CLASES=[0,0,1,1,1,1,1,1,1,0,0,1,0,0,0,1,0,0,1,0,1,0,0,0,0,0,1,1,1,1,0,0,1,0,1,1,1,0,1,1];
+const DATOS=SCORES.map((s,i)=>({s, c:CLASES[i]}));
+const N=DATOS.length;
+const POS=DATOS.filter(d=>d.c===1).length;   /* impagos reales */
+const NEG=N-POS;                              /* pagadores reales */
+
+function fmt(v){ return v.toLocaleString('es-ES',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+function pct(v){ return Math.round(v*100)+'%'; }
+
+/* ================= matriz y métricas para un corte ================= */
+function evaluar(corte){
+  let TP=0,FP=0,TN=0,FN=0;
+  for(const d of DATOS){
+    const pred = d.s>=corte ? 1 : 0;
+    if(pred===1 && d.c===1) TP++;
+    else if(pred===1 && d.c===0) FP++;
+    else if(pred===0 && d.c===0) TN++;
+    else FN++;
+  }
+  const sens=POS? TP/POS : 0;         /* = TP/(TP+FN) */
+  const spec=NEG? TN/NEG : 0;         /* = TN/(TN+FP) */
+  const acc=(TP+TN)/N;
+  return {TP,FP,TN,FN,sens,spec,acc, tpr:sens, fpr:1-spec};
+}
+
+/* ================= curva ROC (puntos ordenados) ================= */
+const CORTES=(()=>{
+  const cs=[...new Set(SCORES)].sort((a,b)=>b-a);
+  return [1.01, ...cs, -0.01];
+})();
+const PUNTOS=CORTES.map(t=>{ const m=evaluar(t); return {t, fpr:m.fpr, tpr:m.tpr}; });
+const AUC=(()=>{
+  let a=0;
+  for(let i=1;i<PUNTOS.length;i++) a+=(PUNTOS[i].fpr-PUNTOS[i-1].fpr)*(PUNTOS[i].tpr+PUNTOS[i-1].tpr)/2;
+  return a;
+})();
+/* corte de Youden (máx tpr - fpr) */
+const YOUDEN=(()=>{
+  let best=PUNTOS[0], bj=-1;
+  for(const p of PUNTOS){ const j=p.tpr-p.fpr; if(j>bj){bj=j; best=p;} }
+  /* traducir a un corte "bonito" 0..1 */
+  return Math.max(0, Math.min(1, best.t<0?0:best.t>1?1:best.t));
+})();
+
+let corte=0.5;
+
+/* ================= ROC canvas ================= */
+const roc=document.getElementById('roc');
+const rctx=roc.getContext('2d');
+let geom={};
+function prep(){
+  const dpr=window.devicePixelRatio||1;
+  const r=roc.getBoundingClientRect();
+  roc.width=r.width*dpr; roc.height=r.height*dpr;
+  rctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:r.width, H:r.height};
+}
+function dibujarROC(){
+  const {W,H}=prep();
+  const m=44, mR=18, mT=14, mB=40;
+  const lado=Math.min(W-m-mR, H-mT-mB);
+  const x0=m, y0=mT+ (H-mT-mB-lado>0?(H-mT-mB-lado):0);
+  const px=fpr=>x0+fpr*lado, py=tpr=>y0+lado-tpr*lado;
+  geom={px,py,x0,y0,lado};
+
+  rctx.clearRect(0,0,W,H);
+  /* rejilla */
+  rctx.strokeStyle='#EDF1F6'; rctx.lineWidth=1; rctx.fillStyle='#5B6B80';
+  rctx.font='10px "IBM Plex Sans", sans-serif';
+  for(let v=0;v<=1.001;v+=0.25){
+    rctx.beginPath(); rctx.moveTo(px(v),py(0)); rctx.lineTo(px(v),py(1)); rctx.stroke();
+    rctx.beginPath(); rctx.moveTo(px(0),py(v)); rctx.lineTo(px(1),py(v)); rctx.stroke();
+    rctx.textAlign='center'; rctx.fillText(fmt(v), px(v), py(0)+16);
+    rctx.textAlign='right'; rctx.fillText(fmt(v), px(0)-6, py(v)+3);
+  }
+  /* diagonal (modelo que no distingue) */
+  rctx.strokeStyle='#C9D6E3'; rctx.lineWidth=1.5; rctx.setLineDash([6,5]);
+  rctx.beginPath(); rctx.moveTo(px(0),py(0)); rctx.lineTo(px(1),py(1)); rctx.stroke(); rctx.setLineDash([]);
+
+  /* área bajo la curva (relleno) */
+  rctx.beginPath(); rctx.moveTo(px(0),py(0));
+  for(const p of PUNTOS) rctx.lineTo(px(p.fpr), py(p.tpr));
+  rctx.lineTo(px(1),py(0)); rctx.closePath();
+  rctx.fillStyle='rgba(34,116,196,.09)'; rctx.fill();
+
+  /* curva ROC (escalonada por los puntos reales) */
+  rctx.strokeStyle='#2274C4'; rctx.lineWidth=2.6; rctx.lineJoin='round';
+  rctx.beginPath();
+  PUNTOS.forEach((p,i)=>{ i?rctx.lineTo(px(p.fpr),py(p.tpr)):rctx.moveTo(px(p.fpr),py(p.tpr)); });
+  rctx.stroke();
+
+  /* punto de operación del corte actual */
+  const m2=evaluar(corte);
+  const ox=px(m2.fpr), oy=py(m2.tpr);
+  /* guías al punto */
+  rctx.strokeStyle='rgba(240,120,24,.5)'; rctx.lineWidth=1.2; rctx.setLineDash([4,4]);
+  rctx.beginPath(); rctx.moveTo(px(0),oy); rctx.lineTo(ox,oy); rctx.lineTo(ox,py(0)); rctx.stroke(); rctx.setLineDash([]);
+  rctx.beginPath(); rctx.arc(ox,oy,8,0,Math.PI*2);
+  rctx.fillStyle='#F07818'; rctx.fill(); rctx.strokeStyle='#FFF'; rctx.lineWidth=2.5; rctx.stroke();
+
+  /* ejes: títulos */
+  rctx.fillStyle='#1B2A41'; rctx.font='600 11px "Space Grotesk", sans-serif';
+  rctx.textAlign='center';
+  rctx.fillText('Falsos positivos (1 − especificidad)', (px(0)+px(1))/2, H-6);
+  rctx.save(); rctx.translate(12, (py(0)+py(1))/2); rctx.rotate(-Math.PI/2);
+  rctx.fillText('Verdaderos positivos (sensibilidad)', 0, 0); rctx.restore();
+}
+
+/* ================= panel derecho ================= */
+function actualizarPanel(){
+  const m=evaluar(corte);
+  document.getElementById('cTP').textContent=m.TP;
+  document.getElementById('cFP').textContent=m.FP;
+  document.getElementById('cTN').textContent=m.TN;
+  document.getElementById('cFN').textContent=m.FN;
+  document.getElementById('mAcc').textContent=pct(m.acc);
+  document.getElementById('mSens').textContent=pct(m.sens);
+  document.getElementById('mSpec').textContent=pct(m.spec);
+  document.getElementById('bAcc').style.width=pct(m.acc);
+  document.getElementById('bSens').style.width=pct(m.sens);
+  document.getElementById('bSpec').style.width=pct(m.spec);
+
+  const n=document.getElementById('notaCorte');
+  if(m.TP+m.FP===0){
+    n.innerHTML='Corte muy alto: no marcas a <b>nadie</b> como impago. No te equivocas con ningún pagador '+
+      '(especificidad 100%), pero <b>se te escapan todos los morosos</b>. Es la esquina inferior izquierda de la ROC.';
+  } else if(m.TN+m.FN===0){
+    n.innerHTML='Corte muy bajo: marcas a <b>todos</b> como impago. Detectas a todos los morosos (sensibilidad '+
+      '100%) pero <b>acusas a todos los pagadores</b>. Es la esquina superior derecha de la ROC.';
+  } else if(m.sens>m.spec+0.15){
+    n.innerHTML='Corte bajo: priorizas <b>cazar morosos</b> (sensibilidad alta) a costa de más falsas alarmas '+
+      'sobre buenos pagadores. Útil si un impago no detectado sale muy caro.';
+  } else if(m.spec>m.sens+0.15){
+    n.innerHTML='Corte alto: priorizas <b>no molestar a los buenos pagadores</b> (especificidad alta) a costa '+
+      'de que se escapen más morosos. Útil si una falsa alarma es lo caro.';
+  } else {
+    n.innerHTML='Corte equilibrado: sensibilidad y especificidad parecidas. Recuerda que el mejor corte depende '+
+      'de <b>qué error te cuesta más dinero</b>, no de la estadística.';
+  }
+}
+
+/* ================= controles ================= */
+function fijarCorte(v){
+  corte=Math.max(0, Math.min(1, v));
+  document.getElementById('sCorte').value=Math.round(corte*100);
+  document.getElementById('txtCorte').textContent=fmt(corte);
+  dibujarROC();
+  actualizarPanel();
+}
+document.getElementById('sCorte').addEventListener('input',e=>fijarCorte(+e.target.value/100));
+document.querySelectorAll('.chip[data-c]').forEach(b=>{
+  b.addEventListener('click',()=>fijarCorte(+b.dataset.c/100));
+});
+document.getElementById('chipJ').addEventListener('click',()=>fijarCorte(YOUDEN));
+
+/* permitir arrastrar el punto sobre la ROC: al pulsar, buscar el corte cuyo punto está más cerca del ratón */
+function corteDesdePunto(mx,my){
+  const {px,py}=geom;
+  let best=corte, bd=Infinity;
+  for(const p of PUNTOS){
+    const dx=px(p.fpr)-mx, dy=py(p.tpr)-my, d=dx*dx+dy*dy;
+    if(d<bd){ bd=d; best=p.t; }
+  }
+  return Math.max(0, Math.min(1, best<0?0:best>1?1:best));
+}
+let arrastrando=false;
+function xyEvento(e){
+  const r=roc.getBoundingClientRect();
+  const cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+  const cy=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+  return {mx:cx, my:cy};
+}
+roc.addEventListener('pointerdown',e=>{ arrastrando=true; const {mx,my}=xyEvento(e); fijarCorte(corteDesdePunto(mx,my)); });
+roc.addEventListener('pointermove',e=>{ if(!arrastrando)return; const {mx,my}=xyEvento(e); fijarCorte(corteDesdePunto(mx,my)); });
+window.addEventListener('pointerup',()=>{ arrastrando=false; });
+
+/* ================= arranque ================= */
+document.getElementById('auc').textContent=fmt(AUC);
+document.getElementById('aucTxt').textContent = AUC>0.9?'el modelo separa muy bien las dos clases'
+  : AUC>0.8?'el modelo separa bien las dos clases' : AUC>0.7?'separación aceptable' : 'separación pobre';
+window.addEventListener('resize',dibujarROC);
+fijarCorte(0.5);
+</script>
+</body>
+</html>
