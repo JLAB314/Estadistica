@@ -529,14 +529,14 @@ footer img.logo{height:56px;display:block;margin:0 auto 8px}
     <div class="fb" id="exS1Fb"></div>
   </div>
 
-  <div class="card" id="exS2" hidden>
+  <div class="card" id="exS2">
     <h3>Paso 2 · Plantea las hipótesis</h3>
     <p class="small">Elige la pareja bien planteada para la pregunta del enunciado.</p>
     <div class="gopts" id="exHypBox"></div>
     <div class="fb" id="exS2Fb"></div>
   </div>
 
-  <div class="card" id="exS3" hidden>
+  <div class="card" id="exS3">
     <h3>Paso 3 · Calcula el estadístico observado</h3>
     <p class="small">Hazlo a mano o con R y escribe aquí el valor (usa coma o punto decimal; respeta el signo).</p>
     <details class="det"><summary>¿Necesitas la fórmula?</summary><div class="formula" id="exFormula"></div></details>
@@ -547,7 +547,7 @@ footer img.logo{height:56px;display:block;margin:0 auto 8px}
     <div class="fb" id="exS3Fb"></div>
   </div>
 
-  <div class="card" id="exS4" hidden>
+  <div class="card" id="exS4">
     <h3>Paso 4 · Pinta el mapa de zonas</h3>
     <div class="segbtns" id="exBrush" style="margin:10px 0">
       <button class="seg on" data-val="rej"><span class="chip rej"></span>Zona de rechazo</button>
@@ -567,7 +567,7 @@ footer img.logo{height:56px;display:block;margin:0 auto 8px}
     <div class="fb" id="exS4Fb"></div>
   </div>
 
-  <div class="card" id="exS5" hidden>
+  <div class="card" id="exS5">
     <h3>Paso 5 · Decide</h3>
     <div class="gamebar">
       <button class="btn" id="exRej">Rechazo H₀: hay evidencia</button>
@@ -1890,8 +1890,9 @@ function exNewEx(){
   $('exS1Fb').innerHTML='';$('exS2Fb').innerHTML='';$('exS3Fb').innerHTML='';$('exS4Fb').innerHTML='';$('exS5Fb').innerHTML='';
   $('exStatIn').value='';
   $('exFormula').textContent=EX.sc.formula;
-  $('exS2').hidden=true;$('exS3').hidden=true;$('exS4').hidden=true;$('exS5').hidden=true;$('exEndBar').hidden=true;
+  $('exEndBar').hidden=true;
   exRenderHyp();
+exRenderPlot();
   exScoreTxt();
 }
 function initEx(){
@@ -2100,12 +2101,13 @@ if(typeof document!=='undefined'){
   else init();
 }
 </script>
-  
 <script
   data-goatcounter="https://jlab.goatcounter.com/count"
   async
   src="//gc.zgo.at/count.js">
 </script>
 
+
 </body>
 </html>
+
