@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tema 5 · Regresión lineal múltiple</title>
+<style>
+:root{
+  --teal:#156082; --orange:#E97132; --navy:#0E2841; --red:#D64545;
+  --green:#2E7D32; --gold:#D4A017; --muted:#55606A; --bg:#eef3f6;
+  --tintT:#e9f1f5; --tintO:#fcece1; --tintG:#e8f3e9;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Segoe,Tahoma,Geneva,Verdana,sans-serif;background:var(--bg);color:#22303a;line-height:1.5}
+header{background:var(--navy);color:#fff;padding:26px 20px 16px}
+.hwrap{max-width:1120px;margin:0 auto}
+.eyebrow{color:var(--gold);font-weight:700;letter-spacing:2px;font-size:.8rem;text-transform:uppercase}
+header h1{margin:6px 0 4px;font-size:1.9rem;font-weight:700}
+header .sub{color:#c8d6e0;font-size:.95rem}
+nav.tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;max-width:1120px;margin:16px auto 0}
+nav.tabs button{background:rgba(255,255,255,.08);color:#dfe9f0;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:9px 8px;font:inherit;font-size:.9rem;cursor:pointer;text-align:center}
+nav.tabs button:hover{background:rgba(255,255,255,.16)}
+nav.tabs button.on{background:var(--teal);color:#fff;border-color:var(--teal);font-weight:700}
+main{max-width:1120px;margin:0 auto;padding:20px 16px 30px}
+.panel{display:none}
+.panel.on{display:block}
+.card{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(14,40,65,.08);padding:18px 22px;margin:0 0 16px}
+.card h3{margin:0 0 10px;color:var(--navy);font-size:1.12rem}
+.note{border-radius:10px;padding:10px 14px;font-size:.95rem;margin:10px 0}
+.note.t{background:var(--tintT);border-left:4px solid var(--teal)}
+.note.o{background:var(--tintO);border-left:4px solid var(--orange)}
+.note.g{background:var(--tintG);border-left:4px solid var(--green)}
+.small{font-size:.86rem;color:var(--muted)}
+.steps .step{display:flex;gap:12px;align-items:flex-start;margin:12px 0}
+.stepnum{flex:0 0 34px;width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.step b{color:var(--navy)}
+.formula{background:#f6fafc;border:1px solid #dbe4ea;border-radius:10px;padding:10px 14px;margin:8px 0;font-size:1rem}
+.formula b{color:var(--navy)}
+.h0h1{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0}
+.h0h1 .box{border-radius:12px;padding:14px}
+.h0h1 .box.h0{background:var(--tintT);border:1px solid #cfe0ea}
+.h0h1 .box.h1{background:var(--tintO);border:1px solid #f2d4bf}
+.h0h1 .signs{font-size:1.7rem;font-weight:700;color:var(--navy);letter-spacing:6px}
+.ctrls{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin:8px 0}
+.ctrl{display:flex;flex-direction:column;gap:4px;min-width:180px;flex:1}
+.ctrl label{font-size:.84rem;font-weight:700;color:var(--navy)}
+.ctrl output{font-size:.95rem;color:var(--teal);font-weight:700}
+input[type=range]{accent-color:var(--teal);width:100%}
+.ctrl.is-inactive{opacity:.46}
+.ctrl.is-inactive input[type=range]{cursor:not-allowed}
+.segbtns{display:flex;gap:6px;flex-wrap:wrap}
+button.seg,button.btn{border:1px solid #c9d6de;background:#fff;border-radius:9px;padding:7px 12px;cursor:pointer;font:inherit;font-size:.9rem;color:#22303a}
+button.seg:hover,button.btn:hover{border-color:var(--teal)}
+button.seg.on{background:var(--teal);color:#fff;border-color:var(--teal);font-weight:700}
+button.btnP{background:var(--teal);color:#fff;border:1px solid var(--teal);border-radius:9px;padding:8px 16px;cursor:pointer;font:inherit;font-weight:700}
+button.btnP:hover{background:#114e6a}
+.decision{background:var(--orange);color:#fff;font-weight:700;border-radius:12px;padding:12px 16px;font-size:1.02rem;margin:10px 0 6px}
+.hyp{background:#f6fafc;border:1px solid #dbe4ea;border-radius:10px;padding:8px 14px;margin:8px 0;font-weight:600;color:var(--navy)}
+svg.plot{width:100%;height:auto;display:block}
+svg .tk{font-size:11px;fill:#55606A}
+svg .lbl{font-size:12px;font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0 2px;font-size:.85rem;color:var(--muted);align-items:center}
+.legend .chip{display:inline-block;width:16px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.chip.rej{background:rgba(214,69,69,.4)}
+.chip.acc{background:rgba(46,125,50,.22)}
+.chip.pv{background:repeating-linear-gradient(45deg,rgba(21,96,130,.75) 0 2px,rgba(21,96,130,.08) 2px 6px)}
+.chip.lcrit{background:none;border-top:2px dashed var(--red);height:0;width:18px;border-radius:0}
+.chip.lobs{background:none;border-top:3px solid var(--navy);height:0;width:18px;border-radius:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0}
+.kpi{border-radius:12px;padding:10px 14px;color:#fff}
+.kpi .v{font-size:1.4rem;font-weight:700}
+.kpi .l{font-size:.8rem;opacity:.92}
+.kpi.red{background:var(--red)}
+.kpi.or{background:var(--orange)}
+.kpi.gr{background:var(--green)}
+table.t22{border-collapse:collapse;width:100%;font-size:.9rem;margin:8px 0}
+.t22 th,.t22 td{border:1px solid #dbe4ea;padding:8px 10px;text-align:center}
+.t22 th{background:var(--tintT);color:var(--navy)}
+.t22 td.err{background:#fdeaea;color:var(--red);font-weight:600}
+.t22 td.okc{background:var(--tintG);color:var(--green);font-weight:600}
+details.det{background:#fff;border:1px solid #e3eaef;border-radius:12px;padding:10px 14px;margin:8px 0}
+details.det summary{cursor:pointer;font-weight:600;color:var(--navy)}
+details.det .ver{margin-top:8px;border-radius:8px;padding:8px 12px;font-size:.93rem}
+details.det .ver.ok{background:var(--tintG)}
+details.det .ver.ko{background:#fdeaea}
+.gq{border:1px solid #e3eaef;border-radius:12px;padding:12px 14px;margin:10px 0}
+.gq .qt{font-weight:600;color:var(--navy);margin-bottom:8px}
+.gopts{display:grid;gap:8px}
+.gopts button{text-align:left}
+.gopts button.correct{background:var(--tintG);border-color:var(--green);font-weight:600}
+.gopts button.wrong{background:#fdeaea;border-color:var(--red)}
+.expl{margin-top:8px;font-size:.92rem;background:var(--tintT);border-radius:8px;padding:8px 10px;display:none}
+.score{font-weight:700;color:var(--teal);margin:4px 0 10px}
+.band{cursor:pointer}
+.band:hover{fill:rgba(14,40,65,.06)}
+.fb{margin-top:8px;font-size:.95rem}
+.fb .ok{color:var(--green);font-weight:700}
+.fb .ko{color:var(--red);font-weight:700}
+.gamebar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px}
+.crumb{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.crumb span{background:var(--tintT);border-radius:20px;padding:3px 12px;font-size:.85rem;color:var(--navy)}
+.fiche{border:1px solid #dbe4ea;border-radius:12px;padding:14px 16px;background:#fbfdfe}
+.fiche h4{margin:0 0 8px;color:var(--teal)}
+.fiche .row{margin:6px 0;font-size:.95rem}
+.fiche .row b{color:var(--navy)}
+.rcode{font-family:Consolas,Monaco,monospace;font-size:.88rem;background:#eef3f6;border-radius:6px;padding:2px 7px}
+.plotrow{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.plotrow>.card{margin:0}
+@media (max-width:820px){.plotrow{grid-template-columns:1fr}}
+.togglebar{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.toolbtn{margin-top:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#dfe9f0;border-radius:9px;padding:9px 15px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit}
+.toolbtn:hover{background:rgba(255,255,255,.2)}
+.modalbg{position:fixed;inset:0;background:rgba(14,40,65,.55);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:24px;overflow-y:auto}
+.modalbg.open{display:flex}
+.modalbox{background:#fff;border-radius:16px;max-width:760px;width:100%;padding:22px 24px;margin:auto;box-shadow:0 10px 40px rgba(14,40,65,.3)}
+.modalbox h3{margin:0 0 8px;color:var(--navy)}
+.modalhead{display:flex;justify-content:space-between;align-items:center}
+.modalclose{border:0;background:#eef3f6;border-radius:8px;width:34px;height:34px;font-size:1.2rem;cursor:pointer;color:var(--muted);line-height:1}
+.modalclose:hover{background:#dde7ee}
+.toggle{border:1px solid #c9d6de;background:#fff;border-radius:9px;padding:7px 12px;cursor:pointer;font:inherit;font-size:.9rem;display:flex;align-items:center;gap:7px}
+.toggle .sw{width:34px;height:18px;border-radius:10px;background:#c9d6de;position:relative;transition:background .15s}
+.toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .15s}
+.toggle.on .sw::after{left:18px}
+.toggle.on.h0 .sw{background:var(--navy)}
+.toggle.on.h1 .sw{background:var(--teal)}
+.toggle .dot{width:12px;height:12px;border-radius:50%}
+.datos{background:#EAF1F4;border:1px solid #cfe0ea;border-radius:10px;padding:10px 14px;margin:10px 0;font-size:.95rem;line-height:1.7}
+.datos b{color:var(--navy)}
+input.exnum{font:inherit;padding:7px 10px;border:1px solid #c9d6de;border-radius:9px;width:140px}
+footer{text-align:center;padding:22px 10px 30px;color:var(--muted);font-size:.85rem}
+footer .logo{display:block;margin:0 auto 10px;max-width:200px;height:auto;opacity:.9}
+footer img.logo{height:56px;display:block;margin:0 auto 8px}
+@media (max-width:640px){
+  .h0h1{grid-template-columns:1fr}
+  .card{padding:14px 16px}
+}
+/* Tema 5: ajustes visuales sobre el estilo del Tema 4 */
+.mathline{font-size:1.04rem;line-height:1.85;overflow-wrap:anywhere}
+.card h4{color:var(--navy);font-size:.98rem;margin:0 0 6px}
+.card.inner{border:1px solid #e5edf1;background:#fbfdfe;box-shadow:none;padding:12px;margin:6px 0 8px}
+.card.inner h4{margin:0}
+.inner .plot{margin-top:4px}
+.readout{background:#f6fafc;border:1px solid #dbe4ea;border-radius:10px;padding:11px 14px;margin:10px 0;font-size:.94rem}
+.coefs{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0}
+.coef{display:flex;flex-direction:column;gap:6px;background:#f6fafc;border:1px solid #dbe4ea;padding:12px 14px;border-radius:12px}
+.coef b{font-size:1.04rem;color:var(--navy)}
+.coef span{font-size:.87rem;color:var(--muted)}
+.kpis .kpi.blue{background:var(--teal)}
+.kpis .kpi.navy{background:var(--navy)}
+.kpis .kpi .v{font-variant-numeric:tabular-nums}
+.plotrow{align-items:stretch}
+.plotrow .inner{height:100%}
+.plotrow>.card{min-width:0}
+svg .drag-point{cursor:move;touch-action:none}
+svg .lnHit{cursor:ns-resize;touch-action:none}
+svg .lnH{cursor:grab;touch-action:none}
+svg .seriesLine{fill:none;stroke-linejoin:round;stroke-linecap:round}
+#regPlot .lnHit,#plot2d .lnHit{cursor:ns-resize;touch-action:none}
+#regPlot .lnH,#plot2d .lnH{cursor:grab;touch-action:none}
+.diagopts{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:14px}
+.diagopts button{white-space:normal;min-height:48px}
+.gq .gopts button{padding:10px 12px}
+.gq .expl{display:block}
+button:focus-visible,input:focus-visible{outline:3px solid #D4A017;outline-offset:2px}
+@media(max-width:640px){.diagopts{grid-template-columns:1fr}.mathline{font-size:.92rem}header h1{font-size:1.55rem}.readout{font-size:.9rem}}
+
+
+/* Tema 5: observaciones coordinadas, repaso y gráficos revisados. */
+.intro-steps{margin:12px 0 14px}
+.intro-steps button{flex:1 1 155px}
+.intro-purposes .coef{border-top:3px solid var(--teal)}
+#introPlot,#plot3d{min-width:0}
+#introPredict{margin-top:8px}
+.linked-pt{cursor:pointer;touch-action:manipulation}
+.linked-pt:focus{stroke:#D4A017;stroke-width:3px;outline:none}
+.intro-pt{cursor:pointer;touch-action:manipulation}
+.intro-pt:focus{stroke:#D4A017;stroke-width:3px;outline:none}
+.mr-dual>.inner{min-width:0}
+.mr-dual .plot{max-height:none}
+.selected-obs{border-left:4px solid #D64545}
+.plane-plot{max-height:510px}
+.plane-scroller{overflow-x:auto;overflow-y:hidden}
+.plane-hint{display:none}
+@media(max-width:640px){.intro-steps button{flex:1 1 140px}.mr-dual>.inner{overflow-x:auto}.mr-dual svg.plot{width:520px;min-width:520px;max-width:none;max-height:none}.plane-hint{display:block}}
+.a5-point{cursor:pointer;touch-action:manipulation}
+.a5-point:focus{outline:none;stroke:#0E2841;stroke-width:3px}
+.a5-sample-info{border-left:4px solid #156082}
+.plotmeta{font-size:.78rem;color:#667682;text-align:right;margin:3px 2px 5px;line-height:1.4}
+.exo-models{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.exo-model{background:#fbfdfe;border:1px solid #dbe4ea;border-radius:12px;padding:13px 15px;min-width:0}
+.exo-model.simple{border-top:3px solid #D64545}
+.exo-model.multiple{border-top:3px solid #156082}
+.exo-model-title{font-weight:700;color:#0E2841;margin-bottom:6px}
+.exo-model-eq{font-size:1.01rem;line-height:1.8;overflow-wrap:anywhere;color:#22303a}
+.exo-model .small{margin-top:5px}
+@media(max-width:680px){.exo-models{grid-template-columns:1fr}}
+
+/* Modelo poblacional y estimacion: vivienda */
+.hx-equation{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 8px;line-height:2;letter-spacing:0;background:#f6fafc;border:1px solid #dbe4ea;border-radius:12px;padding:13px 15px;margin:10px 0}
+.hx-product{display:inline-flex;white-space:nowrap;align-items:baseline;gap:4px}
+.hx-symbol{font:inherit;font-weight:650;background:transparent;border:0;border-bottom:2px dotted #7c9ba9;color:#156082;cursor:pointer;padding:1px 3px 0;line-height:1.6;border-radius:4px}
+.hx-symbol.beta{color:#AD5D1E;border-bottom-color:#c58a5f}
+.hx-symbol.error{color:#495b67;border-bottom-color:#7e929d}
+.hx-symbol:hover,.hx-symbol.is-active{background:#e3eff4;border-bottom-style:solid}
+.hx-symbol.beta:hover,.hx-symbol.beta.is-active{background:#ffeedf}
+.hx-symbol sub{font-size:.7em}
+.hx-equation>span,.hx-product>span{color:#425361}
+.hx-term-card{display:grid;grid-template-columns:minmax(120px,.9fr) minmax(0,3fr);gap:15px;align-items:start;border-left:4px solid #156082;background:#f1f6f9;border-radius:9px;padding:13px 15px;margin-top:12px;min-height:100px}
+.hx-term-card strong{color:#0E2841}
+.hx-term-card .hx-unit{font-size:.86rem;color:#4c6574;margin-top:5px;font-weight:600}
+.hx-alias{font-size:.86rem;color:#38546a;margin-top:8px}
+.hx-legend-inline{display:flex;flex-wrap:wrap;align-items:center;gap:8px 15px;margin:8px 0;font-size:.84rem;color:#55606A}
+.hx-legend-inline b{font-weight:650;color:#0E2841}
+.hx-legend-chip{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px;background:#156082}
+.hx-legend-chip.beta{background:#E97132}
+.hx-legend-chip.error{background:#7d91a0}
+.hx-micro-note{font-size:.86rem;color:#54616d;line-height:1.6}
+.hx-actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:12px 0}
+.hx-action-group{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.hx-action-label{font-size:.86rem;font-weight:650;color:#0E2841}
+.hx-data-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:15px;align-items:start}
+.hx-data-grid .card.inner{height:100%;min-width:0}
+.hx-fitted{background:#f6fafc;border:1px solid #dbe4ea;border-radius:10px;padding:10px 12px;line-height:2;margin:9px 0;overflow-wrap:anywhere}
+.hx-fitted .hx-product{margin:0 3px}
+.hx-num{color:#AD5D1E;font:inherit;font-weight:700;cursor:pointer;border:0;border-bottom:1px dotted #AD5D1E;background:transparent;padding:0 2px;border-radius:3px}
+.hx-num:hover,.hx-num.is-active{background:#ffeedf;border-bottom-style:solid}
+.hx-coefs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0}
+.hx-coef{background:#eff5f8;border-radius:8px;padding:9px 9px 7px}
+.hx-coef b{display:flex;gap:4px;align-items:center;color:#0E2841;font-size:.98rem;font-weight:700;min-height:26px}
+.hx-coef span:not(.hx-mathhat){font-size:.78rem;color:#55606A}
+.hx-small-details{margin-top:10px}
+.hx-small-details[hidden]{display:none}
+.hx-size button{min-width:42px}
+.hx-symbolic{margin-bottom:10px}
+.hx-transition{border-left:3px solid #156082;padding:8px 12px;margin:12px 0 0;background:#f1f6f9;color:#345064;font-size:.89rem;border-radius:7px}
+/* MathML coloca el sombrero encima de beta, en vez de usar un caracter superpuesto. */
+math.hx-mathhat{font-family:"Cambria Math","STIX Two Math","DejaVu Serif",serif;font-size:1.3em;vertical-align:-.14em;line-height:1.2;white-space:nowrap;color:inherit}
+.hx-symbol math.hx-mathhat{color:#AD5D1E}
+.hx-notation{display:inline-flex;align-items:center;white-space:nowrap;gap:3px}
+.hx-inference-flow{display:grid;grid-template-columns:minmax(0,1fr) 25px minmax(0,1fr) 25px minmax(0,1fr);align-items:stretch;gap:8px;margin:14px 0 8px}
+.hx-flow-card{background:#f7fafc;border:1px solid #dbe4ea;border-radius:11px;padding:11px 12px;min-width:0}
+.hx-flow-card strong{color:#0E2841;font-size:.92rem;display:block}
+.hx-flow-card .hx-flow-meta{color:#5f707a;font-size:.79rem;line-height:1.4;min-height:20px}
+.hx-flow-card svg{display:block;width:100%;height:100px;margin-top:5px}
+.hx-flow-arrow{align-self:center;color:#156082;text-align:center;font-size:1.55rem;font-weight:700}
+.hx-flow-foot{color:#667682;font-size:.79rem;margin:6px 0 0}
+.hx-preview-note{background:#f1f6f9;padding:9px 12px;border-radius:8px;font-size:.88rem;color:#395468;margin:10px 0}
+.hx-coef-value{display:inline-flex;align-items:center;white-space:nowrap;gap:3px}
+@media(max-width:800px){.hx-data-grid{grid-template-columns:1fr}.hx-term-card{grid-template-columns:1fr;gap:3px}.hx-coefs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:640px){.hx-inference-flow{grid-template-columns:1fr;gap:5px}.hx-flow-arrow{transform:rotate(90deg);font-size:1.4rem;height:18px;line-height:18px}.hx-flow-card svg{height:85px}}
+@media(max-width:460px){.hx-equation{font-size:.91rem;gap:4px 6px;padding:10px 9px}.hx-product{gap:2px}.hx-coefs{grid-template-columns:repeat(2,minmax(0,1fr))}.hx-fitted{font-size:.88rem;padding:9px}}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <div class="eyebrow">Inferencia · Tema 5</div>
+    <h1>Regresión lineal múltiple</h1>
+    <div class="sub">Inference and Regression Models for Business · Material interactivo</div>
+  </div>
+  <nav class="tabs" id="tabs" aria-label="Secciones del tema">
+    <button data-tab="tab1" class="on">1 · Regresión simple</button>
+    <button data-tab="tab2">2 · Ajuste del modelo</button>
+    <button data-tab="tabHousing">3 · Modelo y estimación</button>
+    <button data-tab="tab4">4 · Supuestos</button>
+    <button data-tab="tab5">5 · Diagnóstico</button>
+    <button data-tab="tab6">6 · Preguntas de repaso</button>
+  </nav>
+</header>
+<main>
+<!-- ==================== TAB 1 · repaso de regresión simple ==================== -->
+<section id="tab1" class="panel on">
+  <div class="card">
+    <h3>Regresión lineal: conceptos básicos</h3>
+    <p>La regresión lineal relaciona una <b>variable dependiente (Y)</b> con una o varias <b>variables explicativas (X)</b>. Permite describir asociaciones y realizar predicciones. Primero repasamos el modelo con una sola X.</p>
+    <div class="coefs intro-purposes">
+      <div class="coef"><b>Explicar</b><span>Relación entre inversión publicitaria y ventas.</span></div>
+      <div class="coef"><b>Predecir</b><span>Ventas previstas para una inversión determinada.</span></div>
+      <div class="coef"><b>Simular</b><span>Cambio en la predicción al variar el gasto, sin modificar el modelo.</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Datos, recta estimada y residuo</h3>
+    <p>Ejemplo con datos simulados de <b>inversión en publicidad</b> (miles de €) y <b>ventas mensuales</b> (miles de unidades). Selecciona los pasos para explorar la relación.</p>
+    <p class="small">En los pasos con recta, selecciona un punto para consultar su predicción y residuo. «Nueva muestra» genera otros datos.</p>
+    <div class="segbtns intro-steps" id="introSteps" aria-label="Paso de la explicación">
+      <button class="seg on" data-val="datos">1. Los datos</button>
+      <button class="seg" data-val="recta">2. La recta estimada</button>
+      <button class="seg" data-val="residuo">3. Un residuo</button>
+      <button class="seg" data-val="negativa">4. Pendiente negativa</button>
+      <button class="seg" data-val="cero">5. Pendiente nula</button>
+    </div>
+    <div class="ctrls" id="introPredict"><div class="ctrl"><label for="introX">Invierte esta cantidad en publicidad (miles de €)</label><input type="range" id="introX" min="0" max="13" step="0.5" value="6"><output id="introXV">6,0 miles de €</output></div></div>
+    <div class="gamebar"><button class="btn" id="introNew">Nueva muestra ↻</button></div>
+    <svg class="plot" id="introPlot" role="img" aria-label="Relación interactiva entre inversión publicitaria y ventas"></svg>
+    <div class="plotmeta">n = 34 observaciones</div>
+    <div class="legend" id="introLegend"></div>
+    <div class="readout" id="introFormula"></div>
+    <div class="note t" id="introLook"></div>
+  </div>
+  <div class="card">
+    <h3>Predicción y residuo</h3>
+    <p>En regresión simple, <b>Ŷ = β̂₀ + β̂₁X</b>. Los <b>β̂</b> son coeficientes estimados y los <b>β</b>, parámetros poblacionales. El intercepto indica la predicción para X = 0 y la pendiente, el cambio esperado de Y por unidad de X. El <b>residuo</b> es <b>eᵢ = Yᵢ − Ŷᵢ</b>.</p>
+    <div class="formula mathline"><b>Mínimos cuadrados ordinarios (MCO):</b> estima los coeficientes minimizando <b>Σ(Yᵢ − Ŷᵢ)²</b>.</div>
+    <div class="note o">MCO minimiza las distancias <b>verticales al cuadrado</b>, no las perpendiculares a la recta. Puedes verlas en la pestaña 2.</div>
+  </div>
+  <div class="card">
+    <h3>De la regresión simple a la múltiple</h3>
+    <p>El consumo eléctrico puede relacionarse con la temperatura exterior y con el número de electrodomésticos en uso. La regresión múltiple permite incorporar ambas variables.</p>
+    <div class="h0h1">
+      <div class="box h0"><b>Regresión simple</b><div class="formula mathline">Ŷ = β̂₀ + β̂₁X₁</div><div class="small">Una variable explicativa. En dos dimensiones representamos una recta.</div></div>
+      <div class="box h1"><b>Regresión múltiple</b><div class="formula mathline">Ŷ = β̂₀ + β̂₁X₁ + β̂₂X₂</div><div class="small">Dos variables explicativas. La predicción se representa mediante un plano.</div></div>
+    </div>
+    <p>En regresión múltiple, cada coeficiente se interpreta <b>manteniendo constantes las demás variables explicativas</b>.</p>
+    <div class="note g"><b>Variables del ejemplo:</b> Y = consumo eléctrico (kWh); X₁ = temperatura exterior (°C); X₂ = electrodomésticos en uso.</div>
+  </div>
+</section>
+
+<!-- ==================== TAB 2 · ajuste simple y múltiple ==================== -->
+<section id="tab2" class="panel">
+  <div class="card">
+    <h3>Regresión simple: ajuste de la recta</h3>
+    <p>Los puntos representan datos simulados de <b>consumo eléctrico (kWh)</b> y <b>temperatura exterior (°C)</b>. Modifica la recta naranja con las barras deslizantes o arrástrala en el gráfico. Los círculos naranjas permiten cambiar la pendiente. También puedes mover las observaciones.</p>
+    <div class="ctrls">
+      <div class="ctrl"><label for="rgB1">Intercepto de tu recta (β̂₀)</label><input type="range" id="rgB1" min="-10" max="70" step="0.5" value="25"><output id="rgB1V"></output></div>
+      <div class="ctrl"><label for="rgB2">Pendiente de tu recta (β̂₁)</label><input type="range" id="rgB2" min="-1" max="3" step="0.05" value="1"><output id="rgB2V"></output></div>
+    </div>
+    <div class="togglebar">
+      <button class="toggle" id="rgTSq" aria-pressed="false"><span class="sw"></span>Mostrar cuadrados de los residuos</button>
+      <button class="toggle" id="rgTOls" aria-pressed="false"><span class="sw"></span>Mostrar recta MCO</button>
+    </div>
+    <svg class="plot" id="regPlot" role="img" aria-label="Gráfico interactivo de consumo eléctrico y temperatura exterior, con recta de regresión arrastrable"></svg>
+    <div class="plotmeta">n = 19 observaciones</div>
+    <div class="legend">
+      <span><span class="chip" style="background:#E97132;height:3px"></span>tu recta</span>
+      <span><span class="chip" style="background:#156082;height:3px"></span>recta MCO (al activarla)</span>
+      <span><span class="chip" style="background:#70818f"></span>puntos arrastrables</span>
+    </div>
+    <div class="kpis" id="rgKpis"></div>
+    <div class="readout" id="rgResid" aria-live="polite">Haz clic en una observación para calcular su residuo respecto a tu recta.</div>
+    <div class="note t" id="rgLook"></div>
+    <div class="gamebar"><button class="btnP" id="rgNew">Nueva muestra ↻</button><button class="btn" id="rgBest">Igualar la recta MCO</button><button class="btn" id="rgReset">Reiniciar tu recta</button></div>
+  </div>
+  <div class="card">
+    <h3>Actividades de exploración</h3>
+    <ol>
+      <li>Activa los <b>cuadrados de los residuos</b> e identifica qué observaciones contribuyen más a la suma.</li>
+      <li>Modifica el intercepto y después la pendiente. Compara sus efectos sobre la recta.</li>
+      <li>Activa la <b>recta MCO</b> y compara las sumas de cuadrados con las mismas observaciones.</li>
+      <li>Desplaza una observación lejos de la nube y observa cómo cambia la recta MCO.</li>
+    </ol>
+  </div>
+<!-- ==================== Segunda actividad de la pestaña 2: regresión múltiple ==================== -->
+  <div class="card">
+    <h3>Regresión múltiple: ajuste del plano</h3>
+    <p>El modelo incorpora <b>consumo eléctrico (Y)</b>, <b>temperatura exterior (X₁)</b> y <b>electrodomésticos en uso (X₂)</b>. Se utiliza una nueva muestra simulada.</p>
+    <div class="formula mathline" id="mrEq"></div>
+  </div>
+  <div class="card">
+    <h3>Representación 2D y 3D del modelo</h3>
+    <p>La vista 2D muestra un <b>corte del plano</b> para un número fijo de electrodomésticos. Modifica la temperatura o los electrodomésticos con las barras: la predicción se actualiza en ambos gráficos. También puedes arrastrar la recta naranja de la vista 2D.</p>
+    <div class="ctrls">
+      <div class="ctrl"><label for="mrRam">Temperatura exterior elegida (°C)</label><input type="range" id="mrRam" min="10" max="32" step="1" value="22"><output id="mrRamV">22 °C</output></div>
+      <div class="ctrl"><label for="mrBat">Electrodomésticos en uso</label><input type="range" id="mrBat" min="1" max="10" step="1" value="5"><output id="mrBatV">5 aparatos</output></div>
+    </div>
+    <div class="kpis" id="mrKpis"></div>
+    <div class="gamebar"><button class="btn" id="mrNew">Nueva muestra ↻</button></div>
+    <div class="plotrow mr-dual">
+      <div class="card inner">
+        <h4>Vista 2D: corte con X₂ fija</h4>
+        <p class="small">Cada punto es un hogar. El color indica cuántos aparatos utiliza.</p>
+        <svg class="plot" id="plot2d" role="img" aria-label="Vista 2D de consumo y temperatura con recta arrastrable para un número fijo de electrodomésticos"></svg>
+        <div class="plotmeta">n = 74 hogares</div>
+        <div class="legend"><span><span class="chip" style="background:#E97132;height:3px"></span>recta del modelo múltiple para los aparatos seleccionados</span></div>
+      </div>
+      <div class="card inner">
+        <h4>Vista 3D: plano estimado</h4>
+        <p class="small">El eje vertical indica el consumo predicho; los ejes de la base, temperatura y electrodomésticos.</p>
+        <svg class="plot plane-plot" id="plot3d" role="img" aria-label="Plano tridimensional de temperatura, electrodomésticos y consumo"></svg>
+        <div class="plotmeta">n = 74 hogares</div>
+        <div class="legend"><span><span class="chip" style="background:rgba(233,113,50,.38)"></span>plano estimado</span><span><span class="chip" style="background:#156082"></span>observaciones</span><span><span class="chip" style="background:#D64545"></span>predicción elegida</span></div>
+      </div>
+    </div>
+    <p class="small plane-hint">En pantallas pequeñas, desliza cada gráfico horizontalmente para ver todos sus detalles.</p>
+    <div class="note t" id="mrLook"></div>
+  </div>
+  <div class="card">
+    <h3>Predicciones a igual temperatura</h3>
+    <p>Compara el consumo predicho para dos hogares con la misma temperatura y distinto número de electrodomésticos.</p>
+    <svg class="plot" id="mrTwins" role="img" aria-label="Predicciones para dos hogares a igual temperatura con distintos electrodomésticos"></svg>
+    <div class="plotmeta">Modelo ajustado con n = 74 hogares</div>
+    <div class="readout" id="mrTwinsOut"></div>
+    <div class="note o">Modifica una barra cada vez para observar el cambio en la predicción. La comparación no demuestra causalidad.</div>
+  </div>
+</section>
+<!-- ==================== TAB 3 · modelo poblacional y estimación ==================== -->
+<section id="tabHousing" class="panel">
+  <div class="card">
+    <h3>Del modelo poblacional a la estimaci&oacute;n</h3>
+    <p>Ejemplo: <b>precio de una vivienda</b> en funci&oacute;n de su superficie, planta, zona, habitaciones y antig&uuml;edad. Selecciona una variable o un coeficiente para consultar su significado, sus unidades y otras denominaciones habituales.</p>
+    <h4>1. Modelo poblacional</h4>
+    <div class="hx-equation" id="hxPopulationEq" aria-label="Ecuacion poblacional con elementos seleccionables">
+      <button class="hx-symbol" type="button" data-hx="y">Precio<sub>i</sub></button><span>=</span>
+      <button class="hx-symbol beta" type="button" data-hx="b0">&beta;<sub>0</sub></button>
+      <span class="hx-product"><span>+</span><button class="hx-symbol beta" type="button" data-hx="b1">&beta;<sub>1</sub></button><span>&middot;</span><button class="hx-symbol" type="button" data-hx="x1">Superficie<sub>i</sub></button></span>
+      <span class="hx-product"><span>+</span><button class="hx-symbol beta" type="button" data-hx="b2">&beta;<sub>2</sub></button><span>&middot;</span><button class="hx-symbol" type="button" data-hx="x2">Planta<sub>i</sub></button></span>
+      <span class="hx-product"><span>+</span><button class="hx-symbol beta" type="button" data-hx="b3">&beta;<sub>3</sub></button><span>&middot;</span><button class="hx-symbol" type="button" data-hx="x3">Zona<sub>i</sub></button></span>
+      <span class="hx-product"><span>+</span><button class="hx-symbol beta" type="button" data-hx="b4">&beta;<sub>4</sub></button><span>&middot;</span><button class="hx-symbol" type="button" data-hx="x4">Habitaciones<sub>i</sub></button></span>
+      <span class="hx-product"><span>+</span><button class="hx-symbol beta" type="button" data-hx="b5">&beta;<sub>5</sub></button><span>&middot;</span><button class="hx-symbol" type="button" data-hx="x5">Antig&uuml;edad<sub>i</sub></button></span>
+      <span class="hx-product"><span>+</span><button class="hx-symbol error" type="button" data-hx="u">u<sub>i</sub></button></span>
+    </div>
+    <div class="hx-legend-inline"><span><span class="hx-legend-chip"></span>Variables</span><span><span class="hx-legend-chip beta"></span>Par&aacute;metros &beta;</span><span><span class="hx-legend-chip error"></span>Perturbaci&oacute;n aleatoria</span></div>
+    <div class="hx-term-card" id="hxTermInfo" aria-live="polite"></div>
+    <p class="hx-micro-note">Los par&aacute;metros poblacionales son fijos, pero sus valores se desconocen. La perturbaci&oacute;n aleatoria <i>u<sub>i</sub></i> recoge factores no incluidos en el modelo.</p>
+  </div>
+  <div class="card">
+    <h4>2. De la poblaci&oacute;n a una muestra</h4>
+    <p>Como en los temas anteriores de <b>inferencia estad&iacute;stica</b>, utilizamos una muestra para estimar par&aacute;metros desconocidos de una poblaci&oacute;n. En este caso, queremos estimar los coeficientes de la regresi&oacute;n.</p>
+    <div class="hx-inference-flow" id="hxFlow" aria-label="Poblacion, extraccion de muestra y estimacion de un modelo"></div>
+    <p class="hx-flow-foot">Esquema de la inferencia. La recta del dibujo es una simplificaci&oacute;n visual; la regresi&oacute;n de viviendas incorpora cinco variables explicativas.</p>
+  </div>
+  <div class="card">
+    <h4>3. Ecuaci&oacute;n estimada</h4>
+    <p>A partir de la muestra estimamos los par&aacute;metros poblacionales <b>&beta;</b>. Los coeficientes estimados se representan mediante <math class="hx-mathhat" aria-label="beta estimada"><mover accent="true"><mi>&beta;</mi><mo stretchy="false">^</mo></mover></math> o <i>b</i>. Primero observa la ecuaci&oacute;n sin valores num&eacute;ricos.</p>
+    <div class="hx-equation hx-symbolic" id="hxSymbolicEq" aria-label="Ecuacion estimada simbolica, sin coeficientes numericos"></div>
+    <div class="hx-transition" id="hxEstimatedInfo">Selecciona un coeficiente con sombrero para consultar su significado. La ecuaci&oacute;n estimada incorpora el residuo <i>e<sub>i</sub></i> de cada vivienda.</div>
+    <p class="hx-micro-note">En el modelo poblacional aparece la perturbaci&oacute;n aleatoria <i>u<sub>i</sub></i>; en la ecuaci&oacute;n estimada aparece el <b>residuo</b> <i>e<sub>i</sub> = Y<sub>i</sub> &minus; &#374;<sub>i</sub></i>, que es la diferencia entre el precio observado y el predicho.</p>
+  </div>
+  <div class="card">
+    <h4>4. Estimaci&oacute;n con datos simulados</h4>
+    <p>Se simula una poblaci&oacute;n fija de <b>1.000 viviendas</b>. Extrae una muestra aleatoria sin reemplazo y observa los valores estimados. Al seleccionar otra muestra, los coeficientes pueden cambiar.</p>
+    <div class="hx-actions">
+      <div class="hx-action-group"><span class="hx-action-label">Tama&ntilde;o de la muestra:</span><div class="segbtns hx-size" id="hxSizes" role="group" aria-label="Numero de observaciones de la muestra"><button class="seg" data-hx-size="40">40</button><button class="seg on" data-hx-size="80">80</button><button class="seg" data-hx-size="120">120</button></div></div>
+      <button class="btnP" type="button" id="hxNewSample">Extraer otra muestra &#8635;</button>
+    </div>
+    <div class="hx-data-grid">
+      <div class="card inner">
+        <h4>Poblaci&oacute;n y muestra</h4>
+        <p class="small">Cada punto representa una vivienda. Selecciona uno naranja para consultar sus datos.</p>
+        <svg class="plot" id="hxPlot" role="img" aria-label="Precio y superficie de las viviendas; puntos naranjas de la muestra"></svg>
+        <div class="plotmeta" id="hxPlotMeta">Poblaci&oacute;n: N = 1.000 viviendas &middot; Muestra: n = 80 observaciones</div>
+        <div class="legend"><span><span class="chip" style="background:#98a8b3"></span>Poblaci&oacute;n</span><span><span class="chip" style="background:#E97132"></span>Muestra seleccionada</span></div>
+        <div class="readout" id="hxObservation" aria-live="polite">Selecciona una vivienda naranja para ver sus caracter&iacute;sticas.</div>
+      </div>
+      <div class="card inner">
+        <h4>Ecuaci&oacute;n estimada con la muestra</h4>
+        <p class="small">Ahora los coeficientes estimados tienen valores num&eacute;ricos. Se utilizan las cinco variables explicativas.</p>
+        <div class="hx-fitted" id="hxFitEquation" aria-live="polite"></div>
+        <div class="hx-coefs" id="hxEstimates"></div>
+        <p class="small" id="hxSampleNote">Cada muestra produce sus propias estimaciones.</p>
+        <div class="hx-preview-note" id="hxNumericInfo">Selecciona un coeficiente num&eacute;rico para consultar su interpretaci&oacute;n.</div>
+        <button class="btn" id="hxShowTrue" type="button" aria-expanded="false">Mostrar par&aacute;metros de la simulaci&oacute;n</button>
+        <div class="hx-small-details" id="hxTruePanel" hidden></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TAB 4 · supuestos ==================== -->
+<section id="tab4" class="panel">
+  <div class="card">
+    <h3>Algunos supuestos del modelo de regresión</h3>
+    <p>Los supuestos permiten evaluar las propiedades de los estimadores y la validez de los contrastes. Un buen ajuste de los datos no garantiza que se cumplan.</p>
+    <table class="t22"><tr><th>Supuesto o condición</th><th>Qué buscamos</th><th>Qué ocurre si falla</th></tr>
+      <tr><td>Linealidad de la media condicional en el modelo especificado</td><td>El modelo captura la forma relevante de E(Y|X)</td><td>Patrones curvos en los residuos</td></tr>
+      <tr><td>Exogeneidad, E(u|X) = 0</td><td>Los factores omitidos no desplazan sistemáticamente el error con X</td><td>Los coeficientes pueden estar sesgados</td></tr>
+      <tr><td>Homocedasticidad</td><td>Var(u|X) constante</td><td>Los errores estándar clásicos pueden fallar</td></tr>
+      <tr><td>Sin correlación entre errores de distintas observaciones</td><td>Los errores no presentan dependencia serial</td><td>La inferencia clásica puede ser incorrecta</td></tr>
+      <tr><td>Normalidad de los errores</td><td>Distribución normal condicionada, cuando se exige inferencia exacta en muestras pequeñas</td><td>Las pruebas exactas clásicas pueden dejar de ser válidas</td></tr>
+      <tr><td>Sin multicolinealidad perfecta</td><td>Los predictores aportan información distinguible</td><td>No se pueden identificar todos los coeficientes si es perfecta</td></tr>
+    </table>
+    <div class="note t">Cada actividad utiliza una simulación diferente. No corresponde comparar numéricamente los coeficientes entre ellas.</div>
+  </div>
+  <div class="card">
+    <h3>A7 · Linealidad</h3>
+    <p>Compara una relación lineal con otra curva. En ambos casos se ajusta una recta y se examinan los residuos.</p>
+    <div class="ctrls"><div class="ctrl" style="flex:0 1 auto"><label>Escenario</label><div class="segbtns" id="a1Sel"><button class="seg on" data-val="ok">Relación lineal</button><button class="seg" data-val="bad">Relación curva</button></div></div><div class="ctrl" style="flex:0 1 auto"><label>&nbsp;</label><button class="btn" id="a1New">Nueva muestra ↻</button></div></div>
+    <div class="plotrow"><div class="card inner"><h4>Relación observada</h4><svg class="plot" id="a1L"></svg><div class="plotmeta">n = 96 observaciones</div></div><div class="card inner"><h4>Residuos frente a X</h4><svg class="plot" id="a1R"></svg><div class="plotmeta">n = 96 observaciones</div></div></div>
+    <div class="readout selected-obs" id="a1Selected"></div>
+    <div class="formula" id="a1Model"></div>
+    <div class="note t" id="a1Look"></div>
+  </div>
+  <div class="card">
+    <h3>A2 · Homocedasticidad y heterocedasticidad</h3>
+    <p>El tamaño de las empresas clientes puede afectar a la dispersión de los pedidos, aunque el promedio siga una relación lineal.</p>
+    <div class="ctrls">
+      <div class="ctrl" style="flex:0 1 auto"><label>Escenario</label><div class="segbtns" id="a2Sel"><button class="seg on" data-val="ok">Varianza constante</button><button class="seg" data-val="bad">Varianza creciente</button></div></div>
+      <div class="ctrl"><label for="a2K">Intensidad del embudo</label><input type="range" id="a2K" min="1" max="5" step="0.1" value="4"><output id="a2KV"></output></div>
+      <div class="ctrl" style="flex:0 1 auto"><label>&nbsp;</label><button class="btn" id="a2New">Nueva muestra ↻</button></div>
+    </div>
+    <div class="plotrow"><div class="card inner"><h4>Pedidos de los clientes</h4><svg class="plot" id="a2L"></svg><div class="plotmeta">n = 110 observaciones</div></div><div class="card inner"><h4>Residuos frente al tamaño</h4><svg class="plot" id="a2R"></svg><div class="plotmeta">n = 110 observaciones</div></div></div>
+    <div class="readout selected-obs" id="a2Selected"></div>
+    <div class="legend"><span><span class="chip" style="background:rgba(21,96,130,.18)"></span>anchura esperada de la nube de residuos</span></div>
+    <div class="readout" id="a2Out"></div>
+    <div class="note t" id="a2Look"></div>
+  </div>
+  <div class="card">
+    <h3>A3 · No autocorrelación de los errores</h3>
+    <p>En datos ordenados en el tiempo, los errores correlacionados pueden mantener desviaciones del mismo signo durante varios periodos.</p>
+    <div class="ctrls"><div class="ctrl" style="flex:0 1 auto"><label>Escenario</label><div class="segbtns" id="a3Sel"><button class="seg on" data-val="ok">Errores independientes</button><button class="seg" data-val="bad">Dependencia temporal</button></div></div><div class="ctrl"><label for="a3Rho">Persistencia temporal (φ)</label><input type="range" id="a3Rho" min="0.3" max="0.95" step="0.05" value="0.8"><output id="a3RhoV"></output></div><div class="ctrl" style="flex:0 1 auto"><label>&nbsp;</label><button class="btn" id="a3New">Nueva muestra ↻</button></div></div>
+    <div class="plotrow"><div class="card inner"><h4>Serie observada</h4><svg class="plot" id="a3L"></svg><div class="plotmeta">n = 100 periodos</div></div><div class="card inner"><h4>Residuos en orden temporal</h4><svg class="plot" id="a3R"></svg><div class="plotmeta">n = 100 periodos</div></div></div>
+    <div class="readout selected-obs" id="a3Selected"></div>
+    <div class="readout" id="a3Out"></div><div class="note t" id="a3Look"></div>
+  </div>
+  <div class="card">
+    <h3>Normalidad de los errores</h3>
+    <p>Compara residuos generados con errores normales y asimétricos. El histograma muestra su distribución y el gráfico Q-Q la compara con una normal.</p>
+    <div class="ctrls"><div class="ctrl" style="flex:0 1 auto"><label>Escenario</label><div class="segbtns" id="a4Sel"><button class="seg on" data-val="ok">Errores normales</button><button class="seg" data-val="bad">Errores asimétricos</button></div></div><div class="ctrl" style="flex:0 1 auto"><label>&nbsp;</label><button class="btn" id="a4New">Nueva muestra ↻</button></div></div>
+    <div class="plotrow"><div class="card inner"><h4>Histograma de residuos tipificados</h4><svg class="plot" id="a4Plot"></svg><div class="plotmeta">n = 260 residuos</div><div class="legend"><span><span class="chip" style="background:rgba(21,96,130,.55)"></span>densidad observada</span><span><span class="chip" style="background:#E97132;height:3px"></span>densidad normal de referencia</span></div></div><div class="card inner"><h4>Gráfico Q-Q frente a la normal</h4><svg class="plot" id="a4QQ"></svg><div class="plotmeta">n = 260 residuos</div><div class="legend"><span><span class="chip" style="background:#156082"></span>cuantiles de los residuos</span><span><span class="chip" style="background:#E97132;height:3px"></span>línea de referencia</span></div></div></div>
+    <div class="note t" id="a4Look"></div>
+  </div>
+  <div class="card">
+    <h3>A5 · Multicolinealidad</h3>
+    <p>Se simulan <b>80 muestras de 100 observaciones por escenario</b>: uno con correlación baja y otro con la correlación elegida entre X₁ y X₂. Los parámetros poblacionales son los mismos.</p>
+    <div class="formula mathline"><b>Modelo poblacional:</b> Yᵢ = β₀ + β₁X₁ᵢ + β₂X₂ᵢ + uᵢ &nbsp;·&nbsp; β₀ = 4; β₁ = 2,3; β₂ = -1,4</div>
+    <p class="small">Cada punto representa una estimación. Selecciona uno para identificar los coeficientes β̂₁ y β̂₂ de la misma muestra. Una mayor dispersión entre muestras indica menor precisión, no necesariamente sesgo.</p>
+    <div class="ctrls"><div class="ctrl"><label for="a5Rho">Correlación simulada entre X₁ y X₂ (ρ)</label><input type="range" id="a5Rho" min="0" max="0.98" step="0.01" value="0.4"><output id="a5RhoV"></output></div><div class="ctrl" style="flex:0 1 auto"><label>&nbsp;</label><button class="btn" id="a5New">Nueva muestra ↻</button></div></div>
+    <div class="card inner" style="max-width:560px"><h4>Relación entre los dos predictores</h4><svg class="plot" id="a5Plot"></svg><div class="plotmeta">n = 100 observaciones</div></div>
+    <div class="plotrow" style="margin-top:12px">
+      <div class="card inner"><h4>Estimaciones de β̂₁ entre muestras</h4><svg class="plot" id="a5Coef" aria-label="Estimaciones de beta uno: selecciona un punto para resaltar la misma muestra en el segundo gráfico"></svg><div class="plotmeta">80 muestras por escenario · n = 100 observaciones por muestra</div><div class="legend"><span><span class="chip" style="background:none;border-top:2px dashed #7b8d9a;height:0;width:18px;border-radius:0"></span>valor verdadero β₁ = 2,3</span></div></div>
+      <div class="card inner"><h4>Estimaciones de β̂₂ entre muestras</h4><svg class="plot" id="a5Coef2" aria-label="Estimaciones de beta dos: selecciona un punto para resaltar la misma muestra en el primer gráfico"></svg><div class="plotmeta">80 muestras por escenario · n = 100 observaciones por muestra</div><div class="legend"><span><span class="chip" style="background:none;border-top:2px dashed #7b8d9a;height:0;width:18px;border-radius:0"></span>valor verdadero β₂ = -1,4</span></div></div>
+    </div>
+    <p class="small">Las líneas grises discontinuas indican los valores verdaderos de los coeficientes.</p>
+    <div class="readout" id="a5Selected" aria-live="polite">Selecciona una estimación en cualquiera de los dos gráficos para ver su pareja.</div>
+    <div class="readout" id="a5Out"></div><div class="note t" id="a5Look"></div>
+  </div>
+  <div class="card">
+    <h3>Alcance de los gráficos</h3>
+    <div class="note o">Los gráficos pueden sugerir incumplimientos, pero <b>no son pruebas formales</b>. Los contrastes correspondientes se estudiarán más adelante.</div>
+    <div class="note t">Estos ejemplos utilizan una sola X. En regresión múltiple, los residuos se calculan con <b>todos los predictores incluidos</b> y los patrones pueden cambiar al incorporar otras variables.</div>
+  </div>
+  <div class="card">
+    <h3>A4 · Endogeneidad por variable omitida</h3>
+    <p>Se estiman dos modelos con los mismos hogares: uno utiliza solo temperatura exterior y el otro incorpora también electrodomésticos. La comparación permite estudiar el coeficiente de temperatura al controlar por la segunda variable.</p>
+    <div class="exo-models" aria-label="Comparación de ecuaciones de regresión estimadas">
+      <div class="exo-model simple">
+        <div class="exo-model-title">Modelo simple (omite X₂)</div>
+        <div class="exo-model-eq" id="exoEqSimple">Ŷ = β̂₀ + β̂₁X₁</div>
+        <div class="small">X₁: temperatura exterior</div>
+      </div>
+      <div class="exo-model multiple">
+        <div class="exo-model-title">Modelo múltiple (incluye X₁ y X₂)</div>
+        <div class="exo-model-eq" id="exoEqMultiple">Ŷ = β̂₀ + β̂₁X₁ + β̂₂X₂</div>
+        <div class="small">X₁: temperatura exterior · X₂: electrodomésticos</div>
+      </div>
+    </div>
+    <p class="small">El modelo simple no controla por electrodomésticos; el múltiple sí. Como los datos son simulados, conocemos el verdadero coeficiente poblacional de temperatura.</p>
+    <div class="ctrls">
+      <div class="ctrl"><label for="exoEffect">Efecto real de un electrodoméstico adicional (kWh)</label><input type="range" id="exoEffect" min="0" max="8" step="0.5" value="6"><output id="exoEffectV"></output></div>
+      <div class="ctrl" style="flex:0 1 auto"><label>&nbsp;</label><button class="btn" id="exoNew">Nueva muestra ↻</button></div>
+    </div>
+    <div class="plotrow">
+      <div class="card inner"><h4>Relación entre los predictores</h4><svg class="plot" id="exoXY" aria-label="Relación moderada entre temperatura y electrodomésticos"></svg><div class="plotmeta">n = 250 hogares</div></div>
+      <div class="card inner"><h4>Coeficiente estimado de temperatura</h4><svg class="plot" id="exoBeta" aria-label="Comparación del coeficiente de temperatura en modelos simple y múltiple"></svg><div class="plotmeta">Modelos estimados con n = 250 hogares</div></div>
+    </div>
+    <div class="legend"><span><span class="chip" style="background:#D64545;height:3px"></span>modelo que omite aparatos</span><span><span class="chip" style="background:#156082;height:3px"></span>modelo completo</span><span><span class="chip" style="background:#0E2841;height:3px"></span>coeficiente poblacional</span></div>
+    <div class="readout" id="exoOut"></div>
+    <div class="note t" id="exoLook"></div>
+    <div class="note o"><b>Precisión y sesgo:</b> la multicolinealidad reduce la precisión. Omitir un predictor relevante correlacionado con otro puede sesgar el coeficiente del predictor incluido. Una diferencia entre dos estimaciones no demuestra, por sí sola, la existencia de sesgo.</div>
+  </div>
+
+</section>
+<!-- ==================== TAB 5 · diagnóstico ==================== -->
+<section id="tab5" class="panel">
+  <div class="card"><h3>Análisis gráfico de los residuos</h3>
+    <p>Cada caso utiliza una nueva muestra y una recta ajustada. Examina los residuos frente a la predicción y al orden de observación; después selecciona el patrón correspondiente.</p>
+    <div class="score" id="dgScore">Aciertos: 0 de 0</div>
+    <div class="plotrow"><div class="card inner"><h4>Residuos vs. predicción</h4><svg class="plot" id="dgL"></svg><div class="plotmeta">n = 110 observaciones</div></div><div class="card inner"><h4>Residuos vs. orden</h4><svg class="plot" id="dgR"></svg><div class="plotmeta">n = 110 observaciones</div></div></div>
+    <div class="gopts diagopts" id="dgOpts">
+      <button class="seg" data-val="ok">Sin patrón evidente</button>
+      <button class="seg" data-val="curve">Posible falta de linealidad</button>
+      <button class="seg" data-val="hetero">Posible heterocedasticidad</button>
+      <button class="seg" data-val="auto">Posible autocorrelación</button>
+    </div>
+    <div class="gamebar"><button class="btn" id="dgNew">Otro caso ↻</button></div><div class="fb" id="dgFb" aria-live="polite"></div>
+  </div>
+  <div class="card"><h3>Patrones habituales en los residuos</h3>
+    <div class="coefs">
+      <div class="coef"><b>Curvatura</b><span>Un patrón curvo en los residuos puede indicar que la recta no describe bien la relación.</span></div>
+      <div class="coef"><b>Embudo</b><span>Una dispersión creciente o decreciente de los residuos puede indicar heterocedasticidad.</span></div>
+      <div class="coef"><b>Rachas temporales</b><span>Secuencias prolongadas de residuos del mismo signo pueden indicar autocorrelación.</span></div>
+    </div><div class="note t">Estos gráficos permiten identificar posibles patrones, pero <b>no sustituyen los contrastes formales</b>, que se estudiarán más adelante. En regresión múltiple, los residuos dependen de todos los predictores incluidos.</div>
+  </div>
+</section>
+<!-- ==================== TAB 6 · reto final ==================== -->
+<section id="tab6" class="panel">
+  <div class="card"><h3>Preguntas de repaso</h3><p>Seis preguntas sobre interpretación, MCO y supuestos. Cada respuesta incluye una explicación.</p><div class="score" id="quizScore">Aciertos: 0 de 0</div><div class="gamebar"><button class="btnP" id="quizReset">Reiniciar preguntas ↻</button></div></div>
+  <div class="card"><div id="quizBox"></div></div>
+</section>
+</main>
+<footer>
+  <img class="logo" src="data:image/png;base64,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3x//yKoPP+p78UrAZrWiS52Av98/M0ZkSsm61au59+4/xJSS5AD2XyK55NJLueraa/teaIdcZAK3fvs7MSIT4I/HisgEmhsb+dPv72JjVKS/BCZPmcy3fvADcvPyYqyPAHowSOnOnbS2tDB3wQIQAil1dm7bzvARI3BFJcRHSvx+P/f89nd89MEHEVkKsrOzueb665l/0okRixxqjorIlBK3201leTl7SkupramhtbmFYDCAzW4nMyubwuIixk+cSHKUL6seDFJfW8vO7dsp27uP+vp63O4ekEapzty8YRQWFVEydiwZWZkDis2GujqWL1tGbXUNxSUlnHL6aThczphfjB4M8u7bb7Njy1aCwQAXfPGLjCwqiujT0tTEy8+/QGdHB2aziWkzZzFv0UIQgq7OTpa++io1oVRhJWNGc9b558cVjvW1tTzzxJMAJCUnseCEEyg5gOpPUuq89drr7Ni2HbPFzIzZs5k9b97gowRS0trSwqZPPmHntu3U1dWi6zpOp5PcYcMoKCxi9LixZGRlxYjrQ8qREplDIt6TcwDCROuxT7hkOZz7eyi3cwDXYkjEewMemwzyq1UcLwQCAVZ+8OGAgTvxbkMRp11KeP2VV42I4AP69hAkJSfzlSuuICeUwNtoBZ/PFyEwB+L9994bMHAnej9722LbBW8uWYI/ENjv/g86V8r99TjmSUxKYs68uTG1wwWwdfMW/v3oo2zfsgWvx2Mcb2jq6GhnxTvv8OQjj7C9V0hLSWVZOU899hjPP/00ba2xHwIWi4XEpKQY0Wq12bDZ7RFtnwWk1GlsaOC1l1/mHw88wMMPPsRLzz7He8uW8f57y3l76Rv854knePqxx9lTWhp2P0mCgQCrPvyQhx/6O/944G+88MwzfPDee6z7eDXrVq9mxbvv8sy/n+Khv97Pk488ysZ16/F5I0t69lJXU8NbS9/gzaVLeen55418t9G3rpQ0NTaybOkbLH39dd5cupTNn3wSc493d3Xx/vLlvLV0KcvefIs9pbv6hKHX42HNqo95a+lS3lq6lE2ffDKgaOzo6Ojr9/57y6mrrRuwbwTSsJZ3tLXz9BNP8ubSpbzx2uuseOddmpuaontH0NTYyMsvvMA/7n+AV156idUrV7H249WsePc9nn3qaf5+//28+J//DPiM+WwyhHPei4j/RD026d3Xw72/h3I7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" alt="Cátedra Analytics for Education · Comillas ICADE · Santalucía Seguros" style="max-width:100%;height:56px;margin-bottom:10px">
+  © Cátedra Santalucía de Analytics for Education - Todos los derechos reservados
+</footer>
+<script>
+"use strict";
+/* ==================== utilidades ==================== */
+var $=function(id){return document.getElementById(id);};
+var LOOK='<b>Observación:</b> ';
+function fmt(x,d){return (isFinite(x)?(Math.abs(x)<0.5*Math.pow(10,-d)?0:Number(x)).toFixed(d):'n/d').replace('.',',');}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function ones(n){return Array(n).fill(1);}
+function mean(a){return a.reduce(function(s,x){return s+x;},0)/a.length;}
+function sdv(a){if(a.length<2)return 0;var m=mean(a);return Math.sqrt(a.reduce(function(s,x){return s+(x-m)*(x-m);},0)/(a.length-1));}
+function corr(a,b){if(a.length<3)return 0;var am=mean(a),bm=mean(b),num=0,da=0,db=0;for(var i=0;i<a.length;i++){var x=a[i]-am,y=b[i]-bm;num+=x*y;da+=x*x;db+=y*y;}return da*db?num/Math.sqrt(da*db):0;}
+function mkRng(seed){var st=seed>>>0,spare=null;return {u:function(){st=(Math.imul(1664525,st)+1013904223)>>>0;return (st+0.5)/4294967296;},n:function(){if(spare!==null){var v=spare;spare=null;return v;}var r=Math.sqrt(-2*Math.log(this.u())),t=2*Math.PI*this.u();spare=r*Math.sin(t);return r*Math.cos(t);}};}
+function invert(a){var n=a.length,z=[],i,j,k;for(i=0;i<n;i++){z[i]=a[i].slice();for(j=0;j<n;j++)z[i].push(i===j?1:0);}for(i=0;i<n;i++){var row=i;for(k=i+1;k<n;k++)if(Math.abs(z[k][i])>Math.abs(z[row][i]))row=k;if(Math.abs(z[row][i])<1e-12)throw new Error('Matriz singular en MCO');var sw=z[i];z[i]=z[row];z[row]=sw;var v=z[i][i];for(j=0;j<2*n;j++)z[i][j]/=v;for(k=0;k<n;k++)if(k!==i){var c=z[k][i];for(j=0;j<2*n;j++)z[k][j]-=c*z[i][j];}}return z.map(function(row){return row.slice(n);});}
+function ols(cols,y){var p=cols.length,n=y.length,xx=[],xy=[],i,j,k;for(i=0;i<p;i++){xx[i]=[];xy[i]=0;for(j=0;j<p;j++){var s=0;for(k=0;k<n;k++)s+=cols[i][k]*cols[j][k];xx[i][j]=s;}for(k=0;k<n;k++)xy[i]+=cols[i][k]*y[k];}var inv=invert(xx),b=xy.map(function(_,i){return inv[i].reduce(function(s,c,j){return s+c*xy[j];},0);});var fit=y.map(function(_,k){return b.reduce(function(s,c,j){return s+c*cols[j][k];},0);});var res=y.map(function(v,k){return v-fit[k];});var av=mean(y),sse=res.reduce(function(s,v){return s+v*v;},0),sst=y.reduce(function(s,v){return s+(v-av)*(v-av);},0),mse=sse/Math.max(1,n-p),se=inv.map(function(row,i){return Math.sqrt(Math.max(0,row[i]*mse));});return {b:b,fit:fit,res:res,sse:sse,sst:sst,r2:sst>1e-10?1-sse/sst:1,mse:mse,se:se,inv:inv};}
+var SVGNS='http://www.w3.org/2000/svg',PLOTSEQ=0;
+function mkPlot(svg,opt){var w=opt.w||520,h=opt.h||330,ml=opt.ml||66,mr=opt.mr||18,mt=opt.mt||22,mb=opt.mb||55,xd=opt.xd,yd=opt.yd,pw=w-ml-mr,ph=h-mt-mb;svg.replaceChildren();svg.setAttribute('viewBox','0 0 '+w+' '+h);svg.setAttribute('preserveAspectRatio','xMidYMid meet');var el=function(tag,at,parent){var z=document.createElementNS(SVGNS,tag);Object.keys(at||{}).forEach(function(k){if(k==='text')z.textContent=at[k];else z.setAttribute(k,String(at[k]));});(parent||svg).appendChild(z);return z;};var X=function(x){return ml+(x-xd[0])*pw/(xd[1]-xd[0]);},Y=function(y){return mt+ph-(y-yd[0])*ph/(yd[1]-yd[0]);};var defs=el('defs',{}),cid='cplot'+(++PLOTSEQ),clip=el('clipPath',{id:cid},defs);el('rect',{x:ml,y:mt,width:pw,height:ph},clip);el('rect',{x:ml,y:mt,width:pw,height:ph,fill:'#fff',stroke:'#dce6eb'},svg);var num=opt.ticks||5;for(var i=0;i<=num;i++){var xx=xd[0]+i*(xd[1]-xd[0])/num,yy=yd[0]+i*(yd[1]-yd[0])/num;el('line',{x1:X(xx),x2:X(xx),y1:mt,y2:mt+ph,stroke:'#eaf0f3','stroke-width':1},svg);el('line',{x1:ml,x2:ml+pw,y1:Y(yy),y2:Y(yy),stroke:'#eaf0f3','stroke-width':1},svg);if(!opt.hideXTicks)el('text',{x:X(xx),y:mt+ph+19,'text-anchor':'middle','class':'tk',text:fmt(xx,Math.abs(xd[1]-xd[0])<=5?1:0)},svg);if(!opt.hideYTicks)el('text',{x:ml-10,y:Y(yy)+4,'text-anchor':'end','class':'tk',text:fmt(yy,Math.abs(yd[1]-yd[0])<=5?1:0)},svg);}var g=el('g',{'clip-path':'url(#'+cid+')'}),labX=opt.xlab||'',labY=opt.ylab||'';if(labX)el('text',{x:ml+pw/2,y:h-10,'text-anchor':'middle','class':'lbl',fill:'#0E2841',text:labX},svg);if(labY)el('text',{x:16,y:mt+ph/2,'text-anchor':'middle',transform:'rotate(-90 16 '+(mt+ph/2)+')','class':'lbl',fill:'#0E2841',text:labY},svg);return {svg:svg,g:g,el:el,X:X,Y:Y,ix:function(px){return xd[0]+(px-ml)*(xd[1]-xd[0])/pw;},iy:function(py){return yd[0]+(mt+ph-py)*(yd[1]-yd[0])/ph;},xd:xd,yd:yd,ml:ml,mr:mr,mt:mt,mb:mb,pw:pw,ph:ph};}
+function drawPts(p,x,y,opt){opt=opt||{};var arr=[];for(var i=0;i<x.length;i++)arr.push(p.el('circle',{cx:p.X(x[i]),cy:p.Y(y[i]),r:opt.r||3.8,fill:typeof opt.color==='function'?opt.color(i):opt.color||'#156082',opacity:opt.opacity||0.76,stroke:opt.stroke||'none','stroke-width':opt.sw||0},p.g));return arr;}
+function drawFn(p,fn,a,b,opt){opt=opt||{};var d='',m=opt.steps||130;for(var i=0;i<=m;i++){var x=a+(b-a)*i/m,y=fn(x);if(isFinite(y))d+=(d?' L':'M')+p.X(x).toFixed(2)+' '+p.Y(y).toFixed(2);}return p.el('path',{d:d,fill:'none',stroke:opt.color||'#E97132','stroke-width':opt.w||2.5,'stroke-dasharray':opt.dash||'none','stroke-linecap':'round',opacity:opt.opacity||1},p.g);}
+function hline(p,y,opt){opt=opt||{};return p.el('line',{x1:p.X(p.xd[0]),y1:p.Y(y),x2:p.X(p.xd[1]),y2:p.Y(y),stroke:opt.color||'#7b8d9a','stroke-width':opt.w||1.3,'stroke-dasharray':opt.dash||'none'},p.g);}
+function svgPt(svg,e){var point=svg.createSVGPoint();point.x=e.clientX;point.y=e.clientY;var mat=svg.getScreenCTM();return mat?point.matrixTransform(mat.inverse()):{x:0,y:0};}
+function setToggle(id,on){var b=$(id);b.classList.toggle('on',!!on);b.setAttribute('aria-pressed',on?'true':'false');}
+function bindToggle(id,cb){$(id).addEventListener('click',function(){var on=!this.classList.contains('on');setToggle(id,on);cb(on);});}
+function bindSlider(id,out,cb,display){var el=$(id),f=display||function(v){return fmt(v,1);};function change(){var v=Number(el.value);$(out).textContent=f(v);cb(v);}el.addEventListener('input',change);$(out).textContent=f(Number(el.value));}
+function bindSeg(id,cb){$(id).querySelectorAll('button[data-val]').forEach(function(b){b.addEventListener('click',function(){$(id).querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});cb(b.dataset.val);});});}
+function kpiHtml(items){return items.map(function(z){return '<div class="kpi '+(z.color||'blue')+'"><div class="v">'+z.val+'</div><div class="l">'+z.label+'</div></div>';}).join('');}
+function caption(p,x,y,t,color,size){p.el('text',{x:p.X(x),y:p.Y(y),'font-size':size||12,fill:color||'#0E2841','font-weight':'600',text:t},p.svg);}
+/* ==================== navegación ==================== */
+$('tabs').querySelectorAll('button[data-tab]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#tabs button').forEach(function(t){t.classList.toggle('on',t===b);});document.querySelectorAll('main .panel').forEach(function(p){p.classList.toggle('on',p.id===b.dataset.tab);});});});
+/* ==================== TAB 1 · repaso guiado ==================== */
+var INTRO={rng:mkRng(1703),stage:'datos',x0:6,x:[],y:[],neg:[],flat:[],f:null,fn:null,sel:-1};
+function introSample(){
+ INTRO.x=[];INTRO.y=[];INTRO.neg=[];INTRO.flat=[];INTRO.sel=-1;
+ for(var i=0;i<34;i++){
+  var x=.65+10.25*INTRO.rng.u(),e=2.4*INTRO.rng.n();
+  INTRO.x.push(x);INTRO.y.push(5.91+1.79*x+e);
+  INTRO.neg.push(30-2.5*x+2.3*INTRO.rng.n());
+  INTRO.flat.push(15+2.6*INTRO.rng.n());
+ }
+ INTRO.f=ols([ones(INTRO.x.length),INTRO.x],INTRO.y);
+ INTRO.fn=ols([ones(INTRO.x.length),INTRO.x],INTRO.neg);
+}
+function introStage(v){
+ INTRO.stage=v;
+ $('introSteps').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.val===v);});
+ introDraw();
+}
+function introDraw(){
+ var stage=INTRO.stage,x=INTRO.x,negative=stage==='negativa',zero=stage==='cero',y=negative?INTRO.neg:zero?INTRO.flat:INTRO.y;
+ var b=negative?INTRO.fn.b:zero?[mean(INTRO.flat),0]:INTRO.f.b,ff=function(z){return b[0]+b[1]*z;};
+ var p=mkPlot($('introPlot'),{w:1060,h:390,xd:[0,13],yd:[0,34],ml:68,mb:61,xlab:'Gasto en publicidad (miles de €)',ylab:'Ventas mensuales (miles de unidades)'});
+ var showLine=stage!=='datos';
+ if(showLine)drawFn(p,ff,0,13,{color:'#E97132',w:3.2,dash:'6 4'});
+ if(stage==='recta'||stage==='residuo'){
+  var px=INTRO.x0,py=ff(px);
+  p.el('line',{x1:p.X(px),y1:p.Y(0),x2:p.X(px),y2:p.Y(py),stroke:'#E97132','stroke-dasharray':'4 4','stroke-width':2},p.g);
+  p.el('circle',{cx:p.X(px),cy:p.Y(py),r:8,fill:'#E97132',stroke:'#fff','stroke-width':2.5},p.g);
+ }
+ var sel=INTRO.sel;
+ if(sel>=0&&showLine){
+  var sy=y[sel],yhat=ff(x[sel]);
+  p.el('line',{x1:p.X(x[sel]),x2:p.X(x[sel]),y1:p.Y(sy),y2:p.Y(yhat),stroke:'#D64545','stroke-width':3,'stroke-dasharray':'5 3'},p.g);
+  p.el('circle',{cx:p.X(x[sel]),cy:p.Y(yhat),r:6,fill:'#fff',stroke:'#D64545','stroke-width':2.5},p.g);
+ }
+ x.forEach(function(v,i){
+  var chosen=i===sel;
+  p.el('circle',{cx:p.X(v),cy:p.Y(y[i]),r:chosen?8.7:5.4,fill:chosen?'#D64545':negative?'#D64545':'#156082',opacity:.94,stroke:'#fff','stroke-width':chosen?2.5:1.0,'class':'intro-pt','data-intro-i':i,role:'button',tabindex:'0','aria-label':'Seleccionar observación '+(i+1)},p.g);
+  // Zona de clic mayor que el punto visible, especialmente en pantallas táctiles.
+  p.el('circle',{cx:p.X(v),cy:p.Y(y[i]),r:11,fill:'transparent','data-intro-i':i,'class':'intro-pt','pointer-events':'all'},p.g);
+ });
+ var slope=b[1],eq=fmt(b[0],2)+(slope>=0?' + ':' − ')+fmt(Math.abs(slope),2)+' X',h='',exp='',lg='<span><span class="chip" style="background:#156082"></span>observaciones</span>';
+ if(stage==='datos'){
+  h='<b>Datos simulados de X e Y.</b> Cada punto representa una observación. La recta aparecerá en el paso 2.';
+  exp='Las ventas tienden a aumentar con la inversión publicitaria, aunque los puntos no siguen exactamente una recta.';
+ }
+ if(stage==='recta'){
+  h='<b>Recta estimada por MCO:</b> Ŷ = '+eq+'. Para X = '+fmt(INTRO.x0,1)+', Ŷ = <b>'+fmt(ff(INTRO.x0),2)+'</b> miles de unidades.';
+  exp='La pendiente estimada indica cuánto cambian las ventas esperadas por cada 1.000 € adicionales de publicidad. Mueve la barra para simular otra predicción o selecciona cualquier punto para ver su residuo.';
+ }
+ if(stage==='residuo'){
+  h='<b>La misma recta estimada:</b> Ŷ = '+eq+'. Para X = '+fmt(INTRO.x0,1)+', Ŷ = <b>'+fmt(ff(INTRO.x0),2)+'</b>. Selecciona una observación para calcular su residuo.';
+  exp='Los datos y la recta no cambian respecto al paso 2. Selecciona una observación para ver la diferencia entre su valor observado y el predicho.';
+ }
+ if(negative){h='<b>Ejemplo hipotético de pendiente negativa:</b> Ŷ = '+eq+'.';exp='Al aumentar X, el valor predicho de Y disminuye. Puedes seleccionar una observación y medir su residuo respecto a esta recta.';}
+ if(zero){h='<b>Ejemplo hipotético de pendiente nula:</b> Ŷ = '+eq+'.';exp='La predicción es constante cuando cambia X; eso no descarta otras formas de relación.';}
+ if(showLine&&sel>=0){
+  var yhat=ff(x[sel]),res=y[sel]-yhat;
+  h+='<div class="rescalc"><b>Observación '+(sel+1)+'</b>: X = '+fmt(x[sel],2)+' · Y observada = '+fmt(y[sel],2)+' · Ŷ = '+fmt(yhat,2)+'.<br><b>Residuo e = Y − Ŷ = '+fmt(y[sel],2)+' − '+fmt(yhat,2)+' = <span style="color:#D64545">'+(res>0?'+':'')+fmt(res,2)+'</span></b> miles de unidades.</div>';
+ }
+ if(showLine)lg+='<span><span class="chip" style="background:#E97132;height:3px"></span>recta</span>';
+ if(showLine&&sel>=0)lg+='<span><span class="chip" style="background:#D64545;height:3px"></span>residuo de la observación seleccionada</span>';
+ $('introFormula').innerHTML=h;$('introLook').textContent=exp;$('introLegend').innerHTML=lg;
+ $('introPredict').style.display=(stage==='recta'||stage==='residuo')?'flex':'none';
+}
+function initIntro(){
+ introSample();
+ bindSeg('introSteps',function(v){INTRO.stage=v;introDraw();});
+ bindSlider('introX','introXV',function(v){INTRO.x0=v;introDraw();},function(v){return fmt(v,1)+' miles de €';});
+ $('introNew').addEventListener('click',function(){introSample();introDraw();});
+ function choose(e){
+  if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ')return;
+  var i=e.target.getAttribute?e.target.getAttribute('data-intro-i'):null;
+  if(i===null)return;
+  e.preventDefault();INTRO.sel=Number(i);
+  if(INTRO.stage==='datos')introStage('residuo');else introDraw();
+ }
+ $('introPlot').addEventListener('click',choose);
+ $('introPlot').addEventListener('keydown',choose);
+ introDraw();
+}
+
+/* ==================== TAB 2 · regresión simple ==================== */
+var RG={rng:mkRng(2026),n:19,x:[],y:[],b1:25,b2:1,sq:false,ols:false,sel:-1,hover:-1,mode:null,moved:false,p:null};
+function rgSample(){RG.x=[];RG.y=[];for(var i=0;i<RG.n;i++){var x=10+22*RG.rng.u();RG.x.push(x);RG.y.push(clamp(44+2.35*x+9*RG.rng.n(),1,149));}RG.sel=-1;RG.hover=-1;}
+function rgResidue(){
+ var i=RG.hover>=0?RG.hover:RG.sel,box=$('rgResid');
+ if(i<0){box.textContent='Haz clic en una observación para calcular su residuo respecto a tu recta. También puedes arrastrar los puntos.';return;}
+ var x=RG.x[i],y=RG.y[i],pred=RG.b1+RG.b2*x,res=y-pred;
+ box.innerHTML='<b>Observación '+(i+1)+'</b>: temperatura = '+fmt(x,2)+' °C, consumo observado = '+fmt(y,2)+' kWh, consumo predicho = '+fmt(pred,2)+' kWh.<br><b>Residuo eᵢ = Yᵢ − Ŷᵢ = '+fmt(y,2)+' − ('+fmt(pred,2)+') = <span style="color:#D64545">'+(res>0?'+':'')+fmt(res,2)+' kWh</span>.</b>';
+}
+function rgDraw(){
+ var f=ols([ones(RG.n),RG.x],RG.y),p=mkPlot($('regPlot'),{w:1000,h:390,xd:[8,34],yd:[0,150],ml:72,mb:58,xlab:'Temperatura exterior (°C)',ylab:'Consumo eléctrico (kWh)'});RG.p=p;var g=p.g,i;
+ if(RG.ols)drawFn(p,function(x){return f.b[0]+f.b[1]*x;},8,34,{color:'#156082',w:3,dash:'6 4'});
+ var ss=0;
+ for(i=0;i<RG.n;i++){
+  var ey=RG.y[i]-(RG.b1+RG.b2*RG.x[i]);ss+=ey*ey;
+  if(RG.sq){var a=p.Y(RG.y[i]),b=p.Y(RG.b1+RG.b2*RG.x[i]),sz=Math.abs(a-b);p.el('rect',{x:p.X(RG.x[i])-sz/2,y:Math.min(a,b),width:sz,height:sz,fill:'rgba(233,113,50,.12)',stroke:'rgba(233,113,50,.36)','stroke-width':.75},g);}
+  p.el('line',{x1:p.X(RG.x[i]),y1:p.Y(RG.y[i]),x2:p.X(RG.x[i]),y2:p.Y(RG.b1+RG.b2*RG.x[i]),stroke:'rgba(233,113,50,.45)','stroke-width':1},g);
+ }
+ drawFn(p,function(x){return RG.b1+RG.b2*x;},8,34,{color:'#E97132',w:3.5});
+ p.el('line',{x1:p.X(8),y1:p.Y(RG.b1+8*RG.b2),x2:p.X(34),y2:p.Y(RG.b1+34*RG.b2),stroke:'rgba(0,0,0,0)','stroke-width':18,'pointer-events':'stroke','class':'lnHit','data-ln':'1'},g);
+ if(RG.sel>=0){var sx=RG.x[RG.sel],sy=RG.y[RG.sel],sp=RG.b1+RG.b2*sx;
+  p.el('line',{x1:p.X(sx),x2:p.X(sx),y1:p.Y(sy),y2:p.Y(sp),stroke:'#D64545','stroke-width':2.5,'stroke-dasharray':'4 3','pointer-events':'none'},g);
+  p.el('circle',{cx:p.X(sx),cy:p.Y(sp),r:5,fill:'#fff',stroke:'#D64545','stroke-width':2,'pointer-events':'none'},g);}
+ for(i=0;i<RG.n;i++){p.el('circle',{cx:p.X(RG.x[i]),cy:p.Y(RG.y[i]),r:RG.sel===i?8:6,fill:RG.sel===i?'#D64545':'#70818f',stroke:'#fff','stroke-width':RG.sel===i?2.5:1.3,'class':'pt drag-point','data-i':i,role:'button',tabindex:'0','aria-label':'Observación '+(i+1)+'. Seleccionar para ver residuo'},g);}
+ [12,30].forEach(function(hx,k){p.el('circle',{cx:p.X(hx),cy:p.Y(RG.b1+RG.b2*hx),r:8,fill:'#E97132',stroke:'#fff','stroke-width':2.5,'class':'lnH','data-h':k},g);});
+ $('rgKpis').innerHTML=kpiHtml([{val:fmt(ss,0)+' kWh²',label:'Suma de cuadrados de tu recta',color:'or'},{val:fmt(f.sse,0)+' kWh²',label:'Suma de cuadrados mínima (MCO)',color:'blue'}]);
+ $('rgLook').innerHTML='<b>Tu recta: Ŷ = '+fmt(RG.b1,2)+(RG.b2<0?' − ':' + ')+fmt(Math.abs(RG.b2),2)+' × Temperatura.</b> '+LOOK+'al mover los puntos cambia la recta MCO; para esta muestra, la suma de cuadrados de los residuos de tu recta supera el mínimo en '+fmt(Math.max(0,ss-f.sse),1)+' kWh².';
+ rgResidue();
+}
+function rgSetLine(b1,b2){RG.b2=clamp(b2,-1,3);RG.b1=clamp(b1,-10,70);$('rgB1').value=RG.b1;$('rgB2').value=RG.b2;$('rgB1V').textContent=fmt(RG.b1,1);$('rgB2V').textContent=fmt(RG.b2,2);}
+function initRg(){
+ rgSample();
+ bindSlider('rgB1','rgB1V',function(v){RG.b1=v;rgDraw();},function(v){return fmt(v,1);});
+ bindSlider('rgB2','rgB2V',function(v){RG.b2=v;rgDraw();},function(v){return fmt(v,2);});
+ bindToggle('rgTSq',function(on){RG.sq=on;rgDraw();});
+ bindToggle('rgTOls',function(on){RG.ols=on;rgDraw();});
+ $('rgNew').addEventListener('click',function(){rgSample();rgDraw();});
+ $('rgBest').addEventListener('click',function(){var f=ols([ones(RG.n),RG.x],RG.y);rgSetLine(f.b[0],f.b[1]);rgDraw();});
+ $('rgReset').addEventListener('click',function(){rgSetLine(25,1);rgDraw();});
+ var svg=$('regPlot');
+ svg.addEventListener('pointerdown',function(e){
+  var t=e.target,ga=function(a){return t.getAttribute?t.getAttribute(a):null;};
+  var di=ga('data-i'),dh=ga('data-h'),dl=ga('data-ln');
+  if(di===null&&dh===null&&dl===null)return;
+  var q=svgPt(svg,e);
+  if(di!==null){RG.mode='pt';RG.di=parseInt(di,10);RG.hover=-1;}
+  else if(dh!==null){RG.mode='h'+dh;}
+  else{RG.mode='ln';RG.y0=RG.p.iy(q.y);RG.b10=RG.b1;}
+  RG.moved=false;RG.sx=e.clientX;RG.sy=e.clientY;
+  try{svg.setPointerCapture(e.pointerId);}catch(err){}
+  e.preventDefault();
+ });
+ svg.addEventListener('pointermove',function(e){
+  if(!RG.mode)return;
+  if(!RG.moved&&Math.abs(e.clientX-RG.sx)+Math.abs(e.clientY-RG.sy)<4)return;
+  RG.moved=true;
+  var q=svgPt(svg,e),yy=RG.p.iy(q.y);
+  if(RG.mode==='pt'){RG.x[RG.di]=clamp(RG.p.ix(q.x),8.5,33.5);RG.y[RG.di]=clamp(yy,1,149);RG.sel=RG.di;}
+  else if(RG.mode==='ln'){rgSetLine(RG.b10+(yy-RG.y0),RG.b2);}
+  else{var hx=RG.mode==='h0'?12:30,ox=RG.mode==='h0'?30:12,oy=RG.b1+RG.b2*ox,b2=clamp((yy-oy)/(hx-ox),-1,3);rgSetLine(oy-b2*ox,b2);}
+  rgDraw();
+ });
+ function end(){if(!RG.mode)return;if(RG.mode==='pt'&&!RG.moved)RG.sel=(RG.sel===RG.di)?-1:RG.di;RG.mode=null;rgDraw();}
+ svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
+ svg.addEventListener('pointerover',function(e){if(RG.mode)return;var v=e.target.getAttribute&&e.target.getAttribute('data-i');if(v===null||v===undefined)return;RG.hover=Number(v);rgResidue();});
+ svg.addEventListener('pointerout',function(e){if(RG.mode)return;var v=e.target.getAttribute&&e.target.getAttribute('data-i');if(v===null||v===undefined)return;RG.hover=-1;rgResidue();});
+ svg.addEventListener('keydown',function(e){if(e.key!=='Enter'&&e.key!==' ')return;var v=e.target.getAttribute&&e.target.getAttribute('data-i');if(v===null||v===undefined)return;e.preventDefault();RG.hover=-1;RG.sel=RG.sel===Number(v)?-1:Number(v);rgDraw();});
+ rgDraw();
+}
+/* ==================== TAB 3 · regresión múltiple: hogares ==================== */
+var MR={rng:mkRng(885),n:74,x:[],bat:[],y:[],f:null,ram0:22,bat0:5,p2:null,bdr:false};
+function mrSample(){
+ MR.x=[];MR.bat=[];MR.y=[];
+ for(var i=0;i<MR.n;i++){
+  var t=10+22*MR.rng.u(),a=Math.round(clamp(5+0.075*(t-21)+2.6*MR.rng.n(),1,10));
+  MR.x.push(t);MR.bat.push(a);MR.y.push(10+2.35*t+6.8*a+6*MR.rng.n());
+ }
+ MR.f=ols([ones(MR.n),MR.x,MR.bat],MR.y);
+}
+function batColor(a){var t=clamp((a-1)/9,0,1),lo=[187,216,229],hi=[14,75,107];return 'rgb('+lo.map(function(v,i){return Math.round(v+(hi[i]-v)*t);}).join(',')+')';}
+function mrPred(t,a){var b=MR.f.b;return b[0]+b[1]*t+b[2]*a;}
+function mrOutputs(){
+ var b=MR.f.b,pred=mrPred(MR.ram0,MR.bat0);
+ $('mrEq').innerHTML='<b>Modelo estimado:</b> Ŷ = β̂₀ + β̂₁X₁ + β̂₂X₂ = '+fmt(b[0],2)+' '+(b[1]<0?'− ':'+ ')+fmt(Math.abs(b[1]),2)+' × Temperatura '+(b[2]<0?'− ':'+ ')+fmt(Math.abs(b[2]),2)+' × Electrodomésticos.';
+ $('mrKpis').innerHTML=kpiHtml([{val:fmt(pred,1)+' kWh',label:'Predicción a '+fmt(MR.ram0,0)+' °C y '+fmt(MR.bat0,0)+' aparatos',color:'or'}]);
+ $('mrLook').innerHTML='<b>Interpretación:</b> manteniendo fijo el número de electrodomésticos, un grado más se asocia con '+fmt(b[1],2)+' kWh de cambio esperado. Manteniendo fija la temperatura, un aparato adicional se asocia con '+fmt(b[2],2)+' kWh de cambio esperado. Son asociaciones de datos simulados, no efectos causales demostrados.';
+}
+function mr2d(){
+ var p=mkPlot($('plot2d'),{w:520,h:385,xd:[8,34],yd:[0,175],ml:68,mb:62,xlab:'Temperatura exterior (°C)',ylab:'Consumo (kWh)'});MR.p2=p;
+ drawPts(p,MR.x,MR.y,{color:function(i){return batColor(MR.bat[i]);},r:4.2,stroke:'#fff',sw:.8,opacity:1});
+ drawFn(p,function(t){return mrPred(t,MR.bat0);},8,34,{color:'#E97132',w:3.8});
+ p.el('line',{x1:p.X(8),y1:p.Y(mrPred(8,MR.bat0)),x2:p.X(34),y2:p.Y(mrPred(34,MR.bat0)),stroke:'rgba(0,0,0,0)','stroke-width':22,'pointer-events':'stroke','class':'lnHit','data-bat':'1'},p.g);
+ p.el('circle',{cx:p.X(29),cy:p.Y(mrPred(29,MR.bat0)),r:8,fill:'#E97132',stroke:'#fff','stroke-width':2.5,'class':'lnH','data-bat':'1'},p.g);
+ var yy=mrPred(MR.ram0,MR.bat0);
+ p.el('line',{x1:p.X(MR.ram0),y1:p.Y(0),x2:p.X(MR.ram0),y2:p.Y(yy),stroke:'#E97132','stroke-dasharray':'5 5','stroke-width':1.7,opacity:.7},p.g);
+ p.el('circle',{cx:p.X(MR.ram0),cy:p.Y(yy),r:7,fill:'#fff',stroke:'#D64545','stroke-width':2.8},p.g);
+}
+function mr3d(){
+ var svg=$('plot3d');svg.replaceChildren();svg.setAttribute('viewBox','0 0 520 385');svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+ function el(t,a){var z=document.createElementNS(SVGNS,t);Object.keys(a||{}).forEach(function(k){if(k==='text')z.textContent=a[k];else z.setAttribute(k,String(a[k]));});svg.appendChild(z);return z;}
+ function pr(t,a,cons){var u=(t-8)/26,v=(a-1)/9,h=cons/180;return {x:93+265*u+95*v,y:312+17*u-62*v-195*h};}
+ function polygon(points,color,stroke,w){el('polygon',{points:points.map(function(v){return v.x.toFixed(1)+','+v.y.toFixed(1);}).join(' '),fill:color,stroke:stroke||'none','stroke-width':w||1});}
+ function line(a,b,color,width,dash){el('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:color||'#9fb4bf','stroke-width':width||1,'stroke-dasharray':dash||'none'});}
+ function txt(x,y,val,size,anchor,color){el('text',{x:x,y:y,text:String(val),'font-size':size||12,'text-anchor':anchor||'middle',fill:color||'#0E2841','font-family':'Segoe UI, sans-serif'});}
+ var base=pr(8,1,0),bx=pr(34,1,0),bz=pr(8,10,0),far=pr(34,10,0),by=pr(8,1,180);
+ polygon([base,bx,far,bz],'#f5f9fb','#dce6eb',1.2);
+ [8,14.5,21,27.5,34].forEach(function(t){line(pr(t,1,0),pr(t,10,0),'#d5e3e9',1);});
+ [1,3.25,5.5,7.75,10].forEach(function(a){line(pr(8,a,0),pr(34,a,0),'#d5e3e9',1);});
+ var p00=pr(8,1,mrPred(8,1)),p10=pr(34,1,mrPred(34,1)),p11=pr(34,10,mrPred(34,10)),p01=pr(8,10,mrPred(8,10));
+ polygon([p00,p10,p11,p01],'rgba(233,113,50,0.23)','#E97132',2.3);
+ [8,16.7,25.3,34].forEach(function(t){line(pr(t,1,mrPred(t,1)),pr(t,10,mrPred(t,10)),'rgba(233,113,50,.39)',1);});
+ [1,4,7,10].forEach(function(a){line(pr(8,a,mrPred(8,a)),pr(34,a,mrPred(34,a)),'rgba(233,113,50,.39)',1);});
+ MR.x.forEach(function(t,i){var v=pr(t,MR.bat[i],MR.y[i]);el('circle',{cx:v.x,cy:v.y,r:3.1,fill:'#156082',stroke:'#fff','stroke-width':.5,opacity:.76});});
+ line(base,bx,'#0E2841',1.8);line(base,bz,'#0E2841',1.8);line(base,by,'#0E2841',1.8);
+ [8,21,34].forEach(function(t){var v=pr(t,1,0);txt(v.x,v.y+18,fmt(t,0),11);});
+ [1,5,10].forEach(function(a){var v=pr(8,a,0);txt(v.x-12,v.y-8,fmt(a,0),11);});
+ [0,60,120,180].forEach(function(c){var v=pr(8,1,c);txt(v.x-8,v.y+4,fmt(c,0),11,'end');});
+ txt(344,380,'X₁: Temperatura (°C)',12);txt(90,367,'X₂: Electrodomésticos (eje oblicuo)',11,'start');txt(36,60,'Y: Consumo',12);txt(36,77,'(kWh)',12);
+ var pred=mrPred(MR.ram0,MR.bat0),ground=pr(MR.ram0,MR.bat0,0),chosen=pr(MR.ram0,MR.bat0,pred);
+ line(ground,chosen,'#D64545',2.3,'5 4');
+ el('circle',{cx:chosen.x,cy:chosen.y,r:11,fill:'rgba(214,69,69,.13)',stroke:'#D64545','stroke-width':1.2});
+ el('circle',{cx:chosen.x,cy:chosen.y,r:6.5,fill:'#D64545',stroke:'#fff','stroke-width':2.2});
+ txt(509,29,fmt(MR.ram0,0)+' °C, '+fmt(MR.bat0,0)+' aparatos',13,'end','#D64545');
+ txt(509,46,fmt(pred,1)+' kWh',12,'end','#D64545');
+}
+function mrTwins(){
+ var ya=mrPred(MR.ram0,2),yb=mrPred(MR.ram0,8),p=mkPlot($('mrTwins'),{w:1060,h:255,xd:[0,10],yd:[0,175],ml:70,mb:55,hideXTicks:true,ylab:'Consumo predicho (kWh)'});
+ [[2,ya,'#156082'],[8,yb,'#E97132']].forEach(function(o){var xx=p.X(o[0]),yy=p.Y(o[1]),ww=132;p.el('rect',{x:xx-ww/2,y:yy,width:ww,height:p.Y(0)-yy,rx:5,fill:o[2],opacity:.82},p.g);p.el('text',{x:xx,y:yy-11,'text-anchor':'middle','font-size':18,'font-weight':'700',fill:o[2],text:fmt(o[1],1)+' kWh'},p.svg);p.el('text',{x:xx,y:p.Y(0)+32,'text-anchor':'middle','font-size':15,fill:'#0E2841',text:o[0]+' aparatos'},p.svg);});
+ $('mrTwinsOut').innerHTML='A igual temperatura, pasar de 2 a 8 aparatos (+6) cambia la predicción en <b>'+fmt(yb-ya,1)+' kWh</b>. Corresponde a <b>6 × '+fmt(MR.f.b[2],2)+' kWh por electrodoméstico</b>.';
+}
+function mrDrawAll(){mrOutputs();mr2d();mr3d();mrTwins();}
+function mrAll(){mrSample();mrDrawAll();}
+function initMr(){
+ bindSlider('mrRam','mrRamV',function(v){MR.ram0=v;mrDrawAll();},function(v){return fmt(v,0)+' °C';});
+ bindSlider('mrBat','mrBatV',function(v){MR.bat0=v;mrDrawAll();},function(v){return fmt(v,0)+' aparatos';});
+ $('mrNew').addEventListener('click',mrAll);
+ var s2=$('plot2d');
+ function apFromPoint(e){var q=svgPt(s2,e),x=clamp(MR.p2.ix(q.x),8,34),y=MR.p2.iy(q.y),b=MR.f.b;if(Math.abs(b[2])<.0001)return;var ap=Math.round(clamp((y-b[0]-b[1]*x)/b[2],1,10));if(ap!==MR.bat0){MR.bat0=ap;$('mrBat').value=ap;$('mrBatV').textContent=fmt(ap,0)+' aparatos';mrDrawAll();}}
+ s2.addEventListener('pointerdown',function(e){if(!e.target.getAttribute||e.target.getAttribute('data-bat')===null)return;MR.bdr=true;try{s2.setPointerCapture(e.pointerId);}catch(err){}e.preventDefault();});
+ s2.addEventListener('pointermove',function(e){if(MR.bdr)apFromPoint(e);});
+ ['pointerup','pointercancel'].forEach(function(ev){s2.addEventListener(ev,function(){MR.bdr=false;});});
+ mrAll();
+}
+
+/* ==================== TAB 4 · supuestos ==================== */
+/* Selección coordinada de observaciones en los gráficos de datos y residuos. */
+function linkedPair(p,q,x,y,res,sel,fit){
+ var n=x.length;
+ for(var i=0;i<n;i++){
+  var selected=i===sel,attrs={r:selected?8:4.6,fill:selected?'#D64545':'#156082',opacity:selected?1:.79,stroke:selected?'#fff':'none','stroke-width':selected?2.8:0,'class':'linked-pt','data-i':i,role:'button',tabindex:'0','aria-label':'Observación '+(i+1)};
+  p.el('circle',Object.assign({cx:p.X(x[i]),cy:p.Y(y[i])},attrs),p.g);
+  q.el('circle',Object.assign({cx:q.X(x[i]),cy:q.Y(res[i])},attrs),q.g);
+ }
+ if(sel>=0&&sel<n){
+  p.el('line',{x1:p.X(x[sel]),x2:p.X(x[sel]),y1:p.Y(y[sel]),y2:p.Y(fit[sel]),stroke:'#D64545','stroke-dasharray':'3 3','stroke-width':2.5,'pointer-events':'none'},p.g);
+  p.el('circle',{cx:p.X(x[sel]),cy:p.Y(y[sel]),r:8,fill:'#D64545',stroke:'#fff','stroke-width':2.3,'pointer-events':'none'},p.g);
+  p.el('circle',{cx:p.X(x[sel]),cy:p.Y(fit[sel]),r:5,fill:'#fff',stroke:'#D64545','stroke-width':2,'pointer-events':'none'},p.g);
+  q.el('line',{x1:q.X(x[sel]),x2:q.X(x[sel]),y1:q.Y(0),y2:q.Y(res[sel]),stroke:'#D64545','stroke-dasharray':'3 3','stroke-width':2.5,'pointer-events':'none'},q.g);
+  q.el('circle',{cx:q.X(x[sel]),cy:q.Y(res[sel]),r:9,fill:'none',stroke:'#D64545','stroke-width':2.3,'pointer-events':'none'},q.g);
+ }
+}
+function selectedText(id,x,y,f,sel,xunit,yunit){
+ $(id).innerHTML=sel<0?'Haz clic en <b>cualquier punto</b>, tanto en el gráfico de observaciones como en el de residuos, para resaltar la misma observación en ambos.':
+ 'Observación <b>'+fmt(sel+1,0)+'</b>: '+xunit+' = <b>'+fmt(x[sel],1)+'</b> · '+yunit+' observada = <b>'+fmt(y[sel],2)+'</b> · predicción = <b>'+fmt(f.fit[sel],2)+'</b> · residuo = <b>'+fmt(f.res[sel],2)+'</b>.';
+}
+function bindLinkedObs(){
+ [['a1L','a1R',A1,a1Draw],['a2L','a2R',A2,a2Draw],['a3L','a3R',A3,a3Draw]].forEach(function(row){
+  row.slice(0,2).forEach(function(id){var svg=$(id);function action(e){var target=e.target,idx=target.getAttribute?target.getAttribute('data-i'):null;if(idx===null)return;if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ')return;e.preventDefault();var j=Number(idx);row[2].sel=row[2].sel===j?-1:j;row[3]();}
+  svg.addEventListener('click',action);svg.addEventListener('keydown',action);});
+ });
+}
+/* A1 · linealidad */
+var A1={rng:mkRng(199),st:'ok',n:96,x:[],e:[],sel:-1};
+function a1New(){A1.x=[];A1.e=[];A1.sel=-1;for(var i=0;i<A1.n;i++){A1.x.push(100*A1.rng.u());A1.e.push(4.1*A1.rng.n());}}
+function a1Draw(){
+ var x=A1.x,y=x.map(function(v,i){return 6+0.39*v+(A1.st==='bad'?0.012*(v-50)*(v-50):0)+A1.e[i];});
+ var f=ols([ones(A1.n),x],y),fitfn=function(v){return f.b[0]+f.b[1]*v;};
+ var p=mkPlot($('a1L'),{w:520,h:330,xd:[0,100],yd:[0,85],xlab:'Publicidad (miles €)',ylab:'Ventas (miles €)'});
+ drawFn(p,fitfn,0,100,{color:'#E97132',w:3});
+ var q=mkPlot($('a1R'),{w:520,h:330,xd:[0,100],yd:[-35,35],xlab:'Publicidad (miles €)',ylab:'Residuo (miles €)'});
+ hline(q,0,{});linkedPair(p,q,x,y,f.res,A1.sel,f.fit);
+ selectedText('a1Selected',x,y,f,A1.sel,'Publicidad','Ventas');
+ $('a1Model').innerHTML='Recta estimada: <b>Ŷ = '+fmt(f.b[0],2)+(f.b[1]<0?' − ':' + ')+fmt(Math.abs(f.b[1]),2)+'X</b>.';
+ $('a1Look').innerHTML=LOOK+(A1.st==='ok'?'los residuos no muestran un patrón sistemático claro.':'el patrón curvo en los residuos sugiere que la recta no recoge toda la relación.');
+}
+/* A2 · heterocedasticidad */
+var A2={rng:mkRng(37),st:'ok',k:4,n:110,x:[],e:[],sel:-1};
+function a2New(){A2.x=[];A2.e=[];A2.sel=-1;for(var i=0;i<A2.n;i++){A2.x.push(10+190*A2.rng.u());A2.e.push(A2.rng.n());}}
+function a2Sig(x,k){return k===0?2.2:0.25+0.95*k*(x-10)/190;}
+function a2Draw(){
+ var k=A2.st==='ok'?0:A2.k,i,y=A2.x.map(function(x,j){return 8+0.08*x+a2Sig(x,k)*A2.e[j];}),f=ols([ones(A2.n),A2.x],y);
+ var p=mkPlot($('a2L'),{w:520,h:330,xd:[0,210],yd:[0,40],xlab:'Empleados de la empresa cliente',ylab:'Valor del pedido (miles €)'});
+ drawFn(p,function(x){return f.b[0]+f.b[1]*x;},0,210,{color:'#E97132',w:3});
+ var q=mkPlot($('a2R'),{w:520,h:330,xd:[0,210],yd:[-15,15],xlab:'Empleados de la empresa cliente',ylab:'Residuo (miles €)'}),up='',dn='';
+ for(i=0;i<=40;i++){var xx=10+190*i/40,s2=2*a2Sig(xx,k);up+=(i?' L':'M')+q.X(xx).toFixed(1)+' '+q.Y(s2).toFixed(1);dn=' L'+q.X(xx).toFixed(1)+' '+q.Y(-s2).toFixed(1)+dn;}
+ q.el('path',{d:up+dn+' Z',fill:'rgba(21,96,130,0.13)',stroke:'none'},q.g);hline(q,0,{color:'#55606A',w:1.3});
+ linkedPair(p,q,A2.x,y,f.res,A2.sel,f.fit);selectedText('a2Selected',A2.x,y,f,A2.sel,'Empleados','Pedido');
+ var lo=[],hi=[];A2.x.forEach(function(x,j){if(x<73.3)lo.push(f.res[j]);else if(x>136.7)hi.push(f.res[j]);});
+ $('a2Out').innerHTML='Desviación de los residuos en empresas pequeñas: <b>'+fmt(sdv(lo),1)+'</b> · en empresas grandes: <b>'+fmt(sdv(hi),1)+'</b>';
+ $('a2Look').innerHTML=LOOK+(A2.st==='ok'?'la dispersión de los residuos es aproximadamente constante.':'la dispersión de los residuos aumenta con el tamaño del cliente; la varianza no es constante.');
+}
+/* A3 · no autocorrelación */
+var A3={rng:mkRng(672),st:'ok',phi:.8,n:100,z:[],sel:-1};
+function a3New(){A3.z=[];A3.sel=-1;for(var i=0;i<A3.n;i++)A3.z.push(A3.rng.n());}
+function a3Draw(){
+ var phi=A3.st==='ok'?0:A3.phi,xx=[],y=[],err=0;
+ for(var i=0;i<A3.n;i++){err=phi*err+3*Math.sqrt(1-phi*phi)*A3.z[i];xx.push(i+1);y.push(20+.26*(i+1)+err);}
+ var f=ols([ones(A3.n),xx],y),p=mkPlot($('a3L'),{w:520,h:330,xd:[0,105],yd:[10,60],xlab:'Periodo',ylab:'Ventas (índice)'});
+ drawFn(p,function(t){return f.b[0]+f.b[1]*t;},0,105,{color:'#E97132',w:3});
+ var q=mkPlot($('a3R'),{w:520,h:330,xd:[0,105],yd:[-11,11],xlab:'Periodo',ylab:'Residuo'});hline(q,0,{});
+ var path='';for(i=0;i<A3.n;i++)path+=(i?' L':'M')+q.X(xx[i]).toFixed(1)+' '+q.Y(f.res[i]).toFixed(1);
+ q.el('path',{d:path,fill:'none',stroke:'rgba(21,96,130,.43)','stroke-width':1.6},q.g);
+ linkedPair(p,q,xx,y,f.res,A3.sel,f.fit);selectedText('a3Selected',xx,y,f,A3.sel,'Periodo','Ventas');
+ var r1=corr(f.res.slice(1),f.res.slice(0,-1));$('a3Out').innerHTML='Correlación muestral entre residuos consecutivos: <b>'+fmt(r1,2)+'</b>';
+ $('a3Look').innerHTML=LOOK+(A3.st==='ok'?'no se aprecian rachas prolongadas. Esto es compatible con errores no autocorrelacionados, aunque no lo demuestra.':'aparecen rachas prolongadas de residuos del mismo signo, compatibles con autocorrelación.');
+}
+/* A4 · histograma de densidad y gráfico Q-Q correctamente escalados */
+var A4={rng:mkRng(499),st:'ok',n:260,x:[],z:[],u:[]};
+function a4New(){A4.x=[];A4.z=[];A4.u=[];for(var i=0;i<A4.n;i++){A4.x.push(100*A4.rng.u());A4.z.push(A4.rng.n());A4.u.push(A4.rng.u());}}
+function normInv(p){
+ // Aproximación de Acklam para cuantiles de N(0,1).
+ var a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.3577518672690,-30.66479806614716,2.506628277459239],
+ b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572],
+ c=[-.007784894002430293,-.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783],
+ d=[.007784695709041462,.3224671290700398,2.445134137142996,3.754408661907416];
+ var q,r;
+ if(p<.02425){q=Math.sqrt(-2*Math.log(p));return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+ if(p>.97575){q=Math.sqrt(-2*Math.log(1-p));return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+ q=p-.5;r=q*q;
+ return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+function a4Draw(){
+ var yy=A4.x.map(function(x,i){return 20+.27*x+(A4.st==='ok'?4*A4.z[i]:4*(-Math.log(A4.u[i])-1));}),f=ols([ones(A4.n),A4.x],yy),r=f.res,m=mean(r),sd=sdv(r),std=r.map(function(v){return (v-m)/sd;});
+ var lo=Math.floor(Math.min(-3.8,Math.min.apply(null,std)-.3)*2)/2,hi=Math.ceil(Math.max(3.8,Math.max.apply(null,std)+.3)*2)/2,bins=Math.ceil((hi-lo)/.44),bw=(hi-lo)/bins,c=Array(bins).fill(0);
+ std.forEach(function(v){var k=Math.floor((v-lo)/bw);if(k>=0&&k<bins)c[k]++;});
+ var dens=c.map(function(n){return n/(std.length*bw);}),up=Math.max(.58,Math.ceil(Math.max.apply(null,dens)*10)/10+.04);
+ var p=mkPlot($('a4Plot'),{w:520,h:340,xd:[lo,hi],yd:[0,up],ml:71,mb:62,xlab:'Residuo tipificado',ylab:'Densidad'});
+ for(var j=0;j<bins;j++){
+  var x0=p.X(lo+j*bw),x1=p.X(lo+(j+1)*bw),height=p.Y(0)-p.Y(dens[j]);
+  p.el('rect',{x:x0+1,y:p.Y(dens[j]),width:Math.max(0,x1-x0-2),height:Math.max(0,height),fill:'rgba(21,96,130,.56)',stroke:'#fff','stroke-width':.5},p.g);
+ }
+ drawFn(p,function(v){return Math.exp(-.5*v*v)/Math.sqrt(2*Math.PI);},lo,hi,{color:'#E97132',w:3});
+ var sorted=std.slice().sort(function(a,b){return a-b;}),ext=Math.max(3.8,Math.ceil(Math.max(Math.abs(sorted[0]),Math.abs(sorted[sorted.length-1]))*2)/2+.2),q=mkPlot($('a4QQ'),{w:520,h:340,xd:[-3.1,3.1],yd:[-Math.max(3.8,Math.abs(sorted[0])+.3),Math.max(3.8,sorted[sorted.length-1]+.3)],ml:68,mb:62,xlab:'Cuantiles teóricos normales',ylab:'Cuantiles observados'});
+ drawFn(q,function(v){return v;},-3.1,3.1,{color:'#E97132',w:2.8,dash:'6 4'});
+ for(j=0;j<sorted.length;j++){
+  var theor=normInv((j+.5)/sorted.length);
+  q.el('circle',{cx:q.X(theor),cy:q.Y(sorted[j]),r:2.9,fill:'#156082',opacity:.78},q.g);
+ }
+ var skew=std.reduce(function(s,v){return s+v*v*v;},0)/std.length;
+ $('a4Look').innerHTML=LOOK+'asimetría de los residuos: <b>'+fmt(skew,2)+'</b>. '+(A4.st==='ok'?'El histograma se aproxima a una campana y los puntos del gráfico Q-Q siguen aproximadamente la diagonal.':'El histograma presenta asimetría y los puntos del gráfico Q-Q se separan de la diagonal.')+' La normalidad no es necesaria para calcular los coeficientes MCO.';
+}
+/* A5 · estimaciones vinculadas por muestra; nunca correlación perfecta */
+var A5={rng:mkRng(995),n:100,rho:.4,reps:80,x:[],z:[],repX:[],repZ:[],repNoise:[],selected:null,est:null};
+function a5New(){
+ A5.x=[];A5.z=[];A5.repX=[];A5.repZ=[];A5.repNoise=[];A5.selected=null;
+ for(var i=0;i<A5.n;i++){A5.x.push(A5.rng.n());A5.z.push(A5.rng.n());}
+ for(var j=0;j<A5.reps;j++){
+  var xx=[],zz=[],ee=[];
+  for(i=0;i<A5.n;i++){xx.push(A5.rng.n());zz.push(A5.rng.n());ee.push(A5.rng.n());}
+  A5.repX.push(xx);A5.repZ.push(zz);A5.repNoise.push(ee);
+ }
+}
+function drawEstimateSpread(id,low,chosen,symbol,trueBeta){
+ var all=low.concat(chosen,[trueBeta]),vmin=Math.min.apply(null,all),vmax=Math.max.apply(null,all),pad=Math.max(.35,(vmax-vmin)*.12);
+ var p=mkPlot($(id),{w:520,h:340,xd:[-.5,1.5],yd:[vmin-pad,vmax+pad],ml:76,mb:65,hideXTicks:true,ylab:'Coeficiente estimado '+symbol});
+ hline(p,trueBeta,{color:'#7b8d9a',w:2,dash:'6 5'});
+ [low,chosen].forEach(function(arr,j){
+  var group=j===0?'low':'chosen';
+  p.el('text',{x:p.X(j),y:p.Y(p.yd[0])+24,'text-anchor':'middle','font-size':12,'font-weight':'600',fill:'#0E2841',text:j===0?'Correlación baja':'Correlación elegida'},p.svg);
+  arr.forEach(function(v,k){
+   var jitter=.21*Math.sin((k+1)*2.41+j*1.7),sel=A5.selected&&A5.selected.group===group&&A5.selected.index===k;
+   p.el('circle',{cx:p.X(j+jitter),cy:p.Y(v),r:sel?7:4.1,fill:sel?'#E97132':'#156082',opacity:sel?1:.72,stroke:sel?'#0E2841':'none','stroke-width':sel?2.4:0,'class':'a5-point','data-group':group,'data-sample':k,tabindex:0,role:'button','aria-label':'Muestra '+(k+1)+' en '+(group==='low'?'correlación baja':'correlación elegida')+'; coeficiente '+symbol+' '+fmt(v,2)},p.g);
+  });
+ });
+ // Etiqueta pequeña para la estimación seleccionada, dentro del área del gráfico.
+ if(A5.selected){
+  var j=A5.selected.group==='low'?0:1,k=A5.selected.index,vals=j===0?low:chosen,v=vals[k];
+  if(v!==undefined){
+   var jitter=.21*Math.sin((k+1)*2.41+j*1.7),px=p.X(j+jitter),py=p.Y(v);
+   var label=symbol+' = '+fmt(v,2),bw=118,bh=25;
+   var lx=clamp(px+(j===0?14:-bw-14),p.ml+5,p.ml+p.pw-bw-5);
+   var ly=clamp(py-34,p.mt+5,p.mt+p.ph-bh-5);
+   p.el('rect',{x:lx,y:ly,width:bw,height:bh,rx:6,fill:'#fff7f1',stroke:'#E97132','stroke-width':1.4},p.svg);
+   p.el('text',{x:lx+8,y:ly+17,'font-size':12,'font-weight':'700',fill:'#0E2841',text:label},p.svg);
+  }
+ }
+}
+function a5ShowSelection(){
+ var out=$('a5Selected'),s=A5.selected;
+ if(!s||!A5.est){out.innerHTML='Selecciona un punto en cualquiera de los dos gráficos para ver los coeficientes de esa misma muestra.';out.classList.remove('a5-sample-info');return;}
+ var b=A5.est[s.group][s.index];
+ if(!b){out.textContent='No se encontró la muestra seleccionada.';return;}
+ var tag=s.group==='low'?'correlación baja':'correlación elegida';
+ out.classList.add('a5-sample-info');
+ out.innerHTML='<b>Muestra '+(s.index+1)+' de '+A5.reps+' ('+tag+')</b>: β̂₁ = <b>'+fmt(b[1],2)+'</b> · β̂₂ = <b>'+fmt(b[2],2)+'</b>.<br><b>Modelo estimado (β̂₀, β̂₁ y β̂₂) para esta muestra:</b> Ŷ = '+fmt(b[0],2)+' '+(b[1]<0?'− ':'+ ')+fmt(Math.abs(b[1]),2)+' X₁ '+(b[2]<0?'− ':'+ ')+fmt(Math.abs(b[2]),2)+' X₂.';
+}
+function a5DrawCoefficientPlots(){
+ var lo=A5.est.low,hi=A5.est.chosen;
+ drawEstimateSpread('a5Coef',lo.map(function(b){return b[1];}),hi.map(function(b){return b[1];}),'β̂₁',2.3);
+ drawEstimateSpread('a5Coef2',lo.map(function(b){return b[2];}),hi.map(function(b){return b[2];}),'β̂₂',-1.4);
+}
+function a5Draw(){
+ A5.rho=clamp(A5.rho,0,.98);
+ var x=A5.x,lowrho=.10,z=x.map(function(v,i){return A5.rho*v+Math.sqrt(1-A5.rho*A5.rho)*A5.z[i];});
+ var p=mkPlot($('a5Plot'),{w:520,h:315,xd:[-3.4,3.4],yd:[-3.4,3.4],ticks:6,ml:70,mb:60,xlab:'Predictor X₁ (tipificado)',ylab:'Predictor X₂ (tipificado)'});
+ hline(p,0,{color:'#c6d8e0',w:1});drawPts(p,x,z,{r:4.2});
+ var low=[],chosen=[];
+ A5.repNoise.forEach(function(e,j){
+  var xr=A5.repX[j],zr=A5.repZ[j];
+  var zl=xr.map(function(v,i){return lowrho*v+Math.sqrt(1-lowrho*lowrho)*zr[i];});
+  var zh=xr.map(function(v,i){return A5.rho*v+Math.sqrt(1-A5.rho*A5.rho)*zr[i];});
+  var y0=xr.map(function(v,i){return 4+2.3*v-1.4*zl[i]+2.8*e[i];});
+  var y1=xr.map(function(v,i){return 4+2.3*v-1.4*zh[i]+2.8*e[i];});
+  low.push(ols([ones(A5.n),xr,zl],y0).b);
+  chosen.push(ols([ones(A5.n),xr,zh],y1).b);
+ });
+ A5.est={low:low,chosen:chosen};
+ a5DrawCoefficientPlots();
+ var r=corr(x,z);
+ $('a5Out').innerHTML='Correlación observada entre las X: <b>'+fmt(r,2)+'</b>.';
+ $('a5Look').innerHTML=LOOK+'cada gráfico compara estimaciones con correlación baja (izquierda) y con la correlación seleccionada (derecha). Al seleccionar un punto se marca la estimación de la misma muestra en el otro gráfico. '+(A5.rho<.7?'Las estimaciones suelen agruparse cerca del valor verdadero.':'Con correlación alta, las estimaciones pueden dispersarse más respecto al valor verdadero.')+' Esto indica menor precisión, no necesariamente sesgo.';
+ a5ShowSelection();
+}
+function a5Choose(e){
+ var t=e.target;
+ if(!t||!t.getAttribute||t.getAttribute('data-sample')===null)return;
+ var group=t.getAttribute('data-group'),index=Number(t.getAttribute('data-sample'));
+ if(!Number.isInteger(index)||index<0||index>=A5.reps||(group!=='low'&&group!=='chosen'))return;
+ A5.selected={group:group,index:index};
+ a5DrawCoefficientPlots();
+ a5ShowSelection();
+}
+function a5BindSelection(){
+ ['a5Coef','a5Coef2'].forEach(function(id){
+  $(id).addEventListener('click',a5Choose);
+  $(id).addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){if(e.target&&e.target.getAttribute('data-sample')!==null){e.preventDefault();a5Choose(e);}}});
+ });
+}
+function syncA2Slider(reset){
+ var inactive=A2.st==='ok',el=$('a2K');
+ if(inactive&&reset){A2.k=4;el.value='4';$('a2KV').textContent=fmt(A2.k,1);}
+ el.disabled=inactive;
+ el.parentElement.classList.toggle('is-inactive',inactive);
+}
+function syncA3Slider(reset){
+ var inactive=A3.st==='ok',el=$('a3Rho');
+ if(inactive&&reset){A3.phi=.8;el.value='0.8';$('a3RhoV').textContent=fmt(A3.phi,2);}
+ el.disabled=inactive;
+ el.parentElement.classList.toggle('is-inactive',inactive);
+}
+function initAssumptions(){
+ a1New();a1Draw();bindSeg('a1Sel',function(v){A1.st=v;a1Draw();});$('a1New').addEventListener('click',function(){a1New();a1Draw();});
+ a2New();a2Draw();bindSeg('a2Sel',function(v){A2.st=v;syncA2Slider(true);a2Draw();});bindSlider('a2K','a2KV',function(v){A2.k=v;a2Draw();},function(v){return fmt(v,1);});syncA2Slider(false);$('a2New').addEventListener('click',function(){a2New();a2Draw();});
+ a3New();a3Draw();bindSeg('a3Sel',function(v){A3.st=v;syncA3Slider(true);a3Draw();});bindSlider('a3Rho','a3RhoV',function(v){A3.phi=v;a3Draw();},function(v){return fmt(v,2);});syncA3Slider(false);$('a3New').addEventListener('click',function(){a3New();a3Draw();});
+ a4New();a4Draw();bindSeg('a4Sel',function(v){A4.st=v;a4Draw();});$('a4New').addEventListener('click',function(){a4New();a4Draw();});
+ a5New();a5BindSelection();a5Draw();bindSlider('a5Rho','a5RhoV',function(v){A5.rho=v;a5Draw();},function(v){return fmt(v,2);});$('a5New').addEventListener('click',function(){a5New();a5Draw();});
+ bindLinkedObs();
+ initExo();
+}
+/* Actividad final: omisión de una variable relevante y endogeneidad. */
+var EXO={rng:mkRng(6819),n:250,rho:.40,effect:6,x:[],z:[],w:[],eps:[],beta1:1.45};
+function exoNew(){
+ EXO.x=[];EXO.z=[];EXO.w=[];EXO.eps=[];
+ for(var i=0;i<EXO.n;i++){
+  var v=EXO.rng.n();EXO.x.push(21+4.7*v);EXO.z.push(v);
+  EXO.w.push(EXO.rng.n());EXO.eps.push(4*EXO.rng.n());
+ }
+}
+function exoDraw(){
+ var n=EXO.n,rho=EXO.rho,a=EXO.z.map(function(v,i){return Math.round(clamp(5.5+1.8*(rho*v+Math.sqrt(1-rho*rho)*EXO.w[i]),1,10));});
+ var y=EXO.x.map(function(t,i){return 14+EXO.beta1*t+EXO.effect*a[i]+EXO.eps[i];});
+ var simple=ols([ones(n),EXO.x],y),full=ols([ones(n),EXO.x,a],y),aux=ols([ones(n),EXO.x],a),sampleR=corr(EXO.x,a);
+ var p=mkPlot($('exoXY'),{w:520,h:335,xd:[6,37],yd:[0,11],ml:69,mb:59,xlab:'Temperatura (°C)',ylab:'Electrodomésticos en uso'});
+ drawPts(p,EXO.x,a,{r:3.4,opacity:.6});
+ var b1=simple.b[1],b2=full.b[1],truth=EXO.beta1,ciS=[b1-1.97*simple.se[1],b1+1.97*simple.se[1]],ciF=[b2-1.97*full.se[1],b2+1.97*full.se[1]];
+ var lo=Math.min(truth,b1,b2,ciS[0],ciF[0])-0.65,hi=Math.max(truth,b1,b2,ciS[1],ciF[1])+0.65;
+ if(hi-lo<2){lo=truth-1;hi=truth+1;}
+ var q=mkPlot($('exoBeta'),{w:520,h:335,xd:[lo,hi],yd:[0,3.3],ml:105,mb:61,hideYTicks:true,xlab:'Coeficiente de temperatura (kWh por °C)'});
+ q.el('line',{x1:q.X(truth),x2:q.X(truth),y1:q.Y(3),y2:q.Y(.3),stroke:'#0E2841','stroke-width':2.2,'stroke-dasharray':'5 5'},q.g);
+ [[b1,ciS,2.25,'#D64545','Simple'],[b2,ciF,1.0,'#156082','Múltiple']].forEach(function(row){
+  q.el('line',{x1:q.X(row[1][0]),x2:q.X(row[1][1]),y1:q.Y(row[2]),y2:q.Y(row[2]),stroke:row[3],'stroke-width':6,'stroke-linecap':'round',opacity:.55},q.g);
+  q.el('circle',{cx:q.X(row[0]),cy:q.Y(row[2]),r:6,fill:row[3],stroke:'#fff','stroke-width':1.5},q.g);
+  q.el('text',{x:9,y:q.Y(row[2])+4,'font-size':13,'font-weight':'700',fill:row[3],text:row[4]},q.svg);
+ });
+ q.el('text',{x:q.X(truth)+5,y:q.Y(2.95),'font-size':11,fill:'#0E2841',text:'β₁: '+fmt(truth,2)},q.g);
+ $('exoEqSimple').innerHTML='Ŷ = β̂₀ + β̂₁X₁<br><b>Ŷ = '+fmt(simple.b[0],2)+(b1<0?' − ':' + ')+fmt(Math.abs(b1),2)+' X₁</b>';
+ $('exoEqMultiple').innerHTML='Ŷ = β̂₀ + β̂₁X₁ + β̂₂X₂<br><b>Ŷ = '+fmt(full.b[0],2)+(b2<0?' − ':' + ')+fmt(Math.abs(b2),2)+' X₁'+(full.b[2]<0?' − ':' + ')+fmt(Math.abs(full.b[2]),2)+' X₂</b>';
+ $('exoOut').innerHTML='<b>β₁ poblacional (temperatura): '+fmt(truth,2)+'</b> · <b>β̂₁ del modelo simple:</b> '+fmt(b1,2)+' (sin controlar por aparatos) · <b>β̂₁ del modelo múltiple:</b> '+fmt(b2,2)+' (controlando por aparatos). Las barras muestran intervalos de confianza aproximados del 95 %.';
+ var strength=Math.abs(sampleR),nonzero=Math.abs(EXO.effect)>.01;
+ if(!nonzero) $('exoLook').innerHTML=LOOK+'como el efecto real de los electrodomésticos es cero, omitirlos no genera sesgo por esta vía. Los coeficientes estimados pueden diferir por azar.';
+ else if(strength<.13) $('exoLook').innerHTML=LOOK+'los electrodomésticos afectan al consumo, pero apenas se relacionan con la temperatura en esta muestra. La omisión no produce un sesgo importante bajo este diseño.';
+ else $('exoLook').innerHTML=LOOK+'los electrodomésticos influyen en el consumo y se relacionan con la temperatura. Omitirlos sesga la estimación del coeficiente parcial de temperatura bajo este diseño. '+(sampleR>0?'El sesgo esperado es positivo.':'El sesgo esperado es negativo.');
+}
+function initExo(){
+ exoNew();
+ bindSlider('exoEffect','exoEffectV',function(v){EXO.effect=v;exoDraw();},function(v){return fmt(v,1)+' kWh';});
+ $('exoNew').addEventListener('click',function(){exoNew();exoDraw();});
+ exoDraw();
+}
+
+/* ==================== TAB 5 · diagnóstico ==================== */
+var DG={rng:mkRng(1457),kind:'ok',n:110,x:[],y:[],fit:null,answered:false,hits:0,tries:0};
+var DG_LABEL={ok:'Sin patrón evidente',curve:'Posible falta de linealidad',hetero:'Posible heterocedasticidad',auto:'Posible autocorrelación'};
+var DG_EXPL={ok:'Los residuos varían alrededor de cero, sin curvatura, embudo ni rachas temporales claras. Esto es compatible con los supuestos, aunque no los demuestra.',curve:'La relación verdadera contiene curvatura. Al ajustarla solo con una recta, aparece una estructura en los residuos frente a los valores predichos.',hetero:'La dispersión de los errores aumenta cuando crece el predictor. El gráfico de residuos abre un embudo, aunque la recta puede ajustar bien el promedio.',auto:'Los errores sucesivos se parecen. El gráfico de residuos en orden presenta rachas positivas y negativas incluso cuando el gráfico frente a la predicción no es tan revelador.'};
+function dgGen(kind){
+ DG.kind=kind||['ok','curve','hetero','auto'][Math.floor(DG.rng.u()*4)];DG.x=[];DG.y=[];DG.answered=false;var prev=0;
+ for(var i=0;i<DG.n;i++){
+  var xv=DG.rng.u(),e=DG.rng.n()*2.3,extra=0;
+  if(DG.kind==='hetero')e=DG.rng.n()*7*(0.15+0.95*xv);
+  if(DG.kind==='curve'){extra=42*(xv-.5)*(xv-.5);e=DG.rng.n()*1.6;}
+  if(DG.kind==='auto'){prev=.86*prev+1.8*DG.rng.n()*Math.sqrt(1-.86*.86);e=prev;}
+  DG.x.push(xv);DG.y.push(10+30*xv+extra+e);
+ }
+ DG.fit=ols([ones(DG.n),DG.x],DG.y);
+ var pred=DG.fit.fit,rs=DG.fit.res,seq=Array.from({length:DG.n},function(_,i){return i+1;}),p=mkPlot($('dgL'),{w:520,h:330,xd:[5,50],yd:[-16,16],xlab:'Valor estimado Ŷ',ylab:'Residuo'}),q=mkPlot($('dgR'),{w:520,h:330,xd:[0,115],yd:[-16,16],xlab:'Orden de observación',ylab:'Residuo'});
+ hline(p,0,{color:'#55606A'});drawPts(p,pred,rs,{r:4});hline(q,0,{color:'#55606A'});
+ var d='';for(i=0;i<DG.n;i++)d+=(i?' L':'M')+q.X(seq[i]).toFixed(1)+' '+q.Y(rs[i]).toFixed(1);
+ q.el('path',{d:d,fill:'none',stroke:'rgba(21,96,130,.52)','stroke-width':1.4},q.g);drawPts(q,seq,rs,{r:2.5});
+ $('dgFb').textContent='';$('dgOpts').querySelectorAll('button').forEach(function(b){b.classList.remove('correct','wrong','on');b.disabled=false;});
+}
+function initDg(){dgGen('hetero');$('dgOpts').querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){if(DG.answered)return;DG.answered=true;DG.tries++;var chosen=b.dataset.val,yes=chosen===DG.kind;if(yes)DG.hits++;$('dgScore').textContent='Aciertos: '+DG.hits+' de '+DG.tries; $('dgOpts').querySelectorAll('button').forEach(function(q){q.disabled=true;if(q.dataset.val===DG.kind)q.classList.add('correct');if(q===b&&!yes)q.classList.add('wrong');});$('dgFb').innerHTML='<span class="'+(yes?'ok':'ko')+'">'+(yes?'Correcto.':'Revisa el patrón.')+'</span> Respuesta: <b>'+DG_LABEL[DG.kind]+'</b>. '+DG_EXPL[DG.kind];});});$('dgNew').addEventListener('click',function(){var choices=['ok','curve','hetero','auto'].filter(function(t){return t!==DG.kind;});dgGen(choices[Math.floor(DG.rng.u()*choices.length)]);});}
+/* ==================== TAB 6 · reto final ==================== */
+var QUIZ=[
+ {q:'En el modelo Y = β₀ + β₁X₁ + β₂X₂ + u, ¿qué significa β₁?',opts:['El efecto de X₁ sin considerar X₂.','El cambio esperado en Y por unidad adicional de X₁, manteniendo constante X₂.','La proporción de Y explicada por X₁.'],a:1,ex:'En regresión múltiple, el coeficiente se interpreta condicionado a los demás predictores del modelo.'},
+ {q:'Si el residuo de una observación es +12 €, ¿qué ha ocurrido?',opts:['El modelo ha subestimado el precio en 12 €.','El modelo ha sobreestimado el precio en 12 €.','El modelo explica el 12 % de la variación.'],a:0,ex:'El residuo es observado menos estimado: e = Y − Ŷ. Un residuo positivo indica que el valor observado superó la predicción.'},
+ {q:'¿Qué caracteriza a la recta estimada por MCO?',opts:['Pasa exactamente por todas las observaciones.','Minimiza la suma de cuadrados de los residuos.','Siempre tiene pendiente positiva.'],a:1,ex:'MCO selecciona la recta que hace mínima la suma de los residuos elevados al cuadrado.'},
+ {q:'¿Qué patrón te haría sospechar heterocedasticidad?',opts:['Los residuos presentan dispersión cada vez mayor para Ŷ grandes.','La pendiente estimada es positiva.','El valor medio de los residuos es cercano a cero.'],a:0,ex:'La heterocedasticidad se refiere a variaciones de la varianza condicional del error, visibles a veces como un embudo.'},
+ {q:'Cuando dos predictores son casi idénticos, ¿qué problema puede aparecer?',opts:['Los coeficientes se estiman siempre con mayor precisión.','Aumenta la dificultad para separar sus efectos y pueden crecer los errores estándar.','Todos los residuos tienen que ser positivos.'],a:1,ex:'La multicolinealidad alta deteriora la precisión individual. Si hay dependencia lineal perfecta, algunos coeficientes no se pueden identificar.'},
+ {q:'¿Cuál de estas afirmaciones sobre los supuestos es correcta?',opts:['Si los residuos se ven normales, queda demostrado que hay causalidad.','La heterocedasticidad implica siempre estimadores MCO sesgados.','La exogeneidad no se puede demostrar únicamente mirando un gráfico de residuos.'],a:2,ex:'La exogeneidad trata de la relación entre el error no observado y los predictores. Se evalúa también desde el diseño y el conocimiento del proceso de generación de los datos.'}
+];
+var QSTATE=[];
+function quizDraw(){var out='';QUIZ.forEach(function(q,i){out+='<div class="gq"><div class="qt">'+(i+1)+'. '+q.q+'</div><div class="gopts">';q.opts.forEach(function(op,j){var chosen=QSTATE[i],cls=chosen===null?'':j===q.a?' correct':chosen===j?' wrong':'';out+='<button class="seg'+cls+'" data-q="'+i+'" data-op="'+j+'"'+(chosen!==null?' disabled':'')+'>'+String.fromCharCode(97+j)+') '+op+'</button>';});out+='</div>';if(QSTATE[i]!==null)out+='<div class="expl"><b>'+(QSTATE[i]===q.a?'Correcto.':'Respuesta correcta: '+String.fromCharCode(97+q.a)+').')+'</b> '+q.ex+'</div>';out+='</div>';});$('quizBox').innerHTML=out;var ans=QSTATE.filter(function(v){return v!==null;}).length,hits=QSTATE.filter(function(v,i){return v!==null&&v===QUIZ[i].a;}).length;$('quizScore').textContent='Aciertos: '+hits+' de '+ans+(ans===QUIZ.length?' · Reto completado':'');}
+function initQuiz(){QSTATE=Array(QUIZ.length).fill(null);$('quizBox').addEventListener('click',function(e){var b=e.target.closest('button[data-q]');if(!b)return;var i=Number(b.dataset.q);if(QSTATE[i]!==null)return;QSTATE[i]=Number(b.dataset.op);quizDraw();});$('quizReset').addEventListener('click',function(){QSTATE=Array(QUIZ.length).fill(null);quizDraw();});quizDraw();}
+
+/* ==================== Modelo poblacional y estimacion de viviendas ==================== */
+var HX={population:[],sample:[],reg:null,drawRng:mkRng(749201),n:80,sel:-1,term:'x1',showTrue:false,trueBeta:[50,1.8,5,31,10,-.65]};
+var HX_LABELS=['Superficie','Planta','Zona','Habitaciones','Antig\u00fcedad'];
+var HX_BUNITS=['miles de \u20ac/m\u00b2','miles de \u20ac/planta','miles de \u20ac','miles de \u20ac/habitaci\u00f3n','miles de \u20ac/a\u00f1o'];
+var HX_TERMS={
+ y:['Precio (Y)','Precio de venta de cada vivienda. Es la variable que se quiere explicar.','Miles de euros.','Variable dependiente, variable respuesta, variable objetivo o variable explicada.'],
+ b0:['\u03b2\u2080 \u00b7 Intercepto','Valor que toma la parte sistem\u00e1tica del modelo si todas las variables explicativas valen cero. Esa combinaci\u00f3n puede carecer de sentido real.','Miles de euros.','T\u00e9rmino constante o t\u00e9rmino independiente.'],
+ x1:['Superficie (X\u2081)','Tama\u00f1o de la vivienda.','Metros cuadrados (m\u00b2).','Variable explicativa, independiente, predictora o regresora.'],
+ b1:['\u03b2\u2081 \u00b7 Superficie','Cambio esperado en el precio por cada m\u00b2 adicional, manteniendo constantes las dem\u00e1s caracter\u00edsticas.','Miles de euros por m\u00b2.','Par\u00e1metro poblacional o coeficiente poblacional.'],
+ x2:['Planta (X\u2082)','Planta del edificio en la que se encuentra la vivienda.','N\u00famero de planta.','Variable explicativa, independiente, predictora o regresora.'],
+ b2:['\u03b2\u2082 \u00b7 Planta','Cambio esperado en el precio al subir una planta, manteniendo constantes las dem\u00e1s caracter\u00edsticas.','Miles de euros por planta.','Par\u00e1metro poblacional o coeficiente poblacional.'],
+ x3:['Zona (X\u2083)','Indicador de ubicaci\u00f3n: 1 si la vivienda est\u00e1 en una zona favorable y 0 en caso contrario.','Sin unidad; 0 o 1.','Variable explicativa, independiente, predictora o regresora; indicador binario.'],
+ b3:['\u03b2\u2083 \u00b7 Zona','Diferencia esperada de precio entre una zona favorable (1) y otra zona (0), manteniendo constantes las dem\u00e1s caracter\u00edsticas.','Miles de euros.','Par\u00e1metro poblacional o coeficiente poblacional.'],
+ x4:['Habitaciones (X\u2084)','N\u00famero de habitaciones de la vivienda.','Habitaciones.','Variable explicativa, independiente, predictora o regresora.'],
+ b4:['\u03b2\u2084 \u00b7 Habitaciones','Cambio esperado en el precio por una habitaci\u00f3n adicional, manteniendo constantes las dem\u00e1s caracter\u00edsticas.','Miles de euros por habitaci\u00f3n.','Par\u00e1metro poblacional o coeficiente poblacional.'],
+ x5:['Antig\u00fcedad (X\u2085)','A\u00f1os transcurridos desde la construcci\u00f3n.','A\u00f1os.','Variable explicativa, independiente, predictora o regresora.'],
+ b5:['\u03b2\u2085 \u00b7 Antig\u00fcedad','Cambio esperado en el precio por un a\u00f1o adicional, manteniendo constantes las dem\u00e1s caracter\u00edsticas.','Miles de euros por a\u00f1o.','Par\u00e1metro poblacional o coeficiente poblacional.'],
+ u:['u\u1d62 \u00b7 Perturbaci\u00f3n aleatoria','Recoge factores que afectan al precio y no est\u00e1n incluidos en la ecuaci\u00f3n. Es inobservable en datos reales.','Miles de euros.','T\u00e9rmino de error poblacional; tambi\u00e9n suele escribirse \u03b5\u1d62.'],
+ e:['e\u1d62 \u00b7 Residuo','Diferencia entre el precio observado de una vivienda y el valor predicho por la regresi\u00f3n estimada.','Miles de euros.','Residuo muestral.']
+};
+var HX_IDX=['\u2080','\u2081','\u2082','\u2083','\u2084','\u2085'];
+function hxHat(j){
+ return '<math class="hx-mathhat" aria-label="beta '+j+' estimado"><msub><mover accent="true"><mi>&#x3B2;</mi><mo stretchy="false">^</mo></mover><mn>'+j+'</mn></msub></math>';
+}
+function hxYHat(){return '<math class="hx-mathhat" aria-label="Y estimada"><mover accent="true"><mi>Y</mi><mo stretchy="false">^</mo></mover></math>';}
+function hxPrice(val,b){return b[0]+val.reduce(function(sum,x,j){return sum+b[j+1]*x;},0);}
+function hxMoney(val,dec){return fmt(val,dec===undefined?1:dec)+' mil \u20ac';}
+function hxInitPopulation(){
+ var rng=mkRng(155707);HX.population=[];
+ for(var i=0;i<1000;i++){
+  var area=Math.round(48+135*rng.u()),floor=Math.floor(9*rng.u()),zone=rng.u()<.43?1:0;
+  var rooms=clamp(Math.round(.6+area/47+.73*rng.n()),1,6),age=Math.floor(65*rng.u());
+  var x=[area,floor,zone,rooms,age],dist=20*rng.n(),price=hxPrice(x,HX.trueBeta)+dist;
+  HX.population.push({id:i+1,x:x,y:price});
+ }
+}
+function hxDrawSample(){
+ var ix=Array.from({length:HX.population.length},function(_,i){return i;});
+ for(var j=0;j<HX.n;j++){
+  var k=j+Math.floor(HX.drawRng.u()*(ix.length-j));
+  var t=ix[k];ix[k]=ix[j];ix[j]=t;
+ }
+ HX.sample=ix.slice(0,HX.n).map(function(i){return HX.population[i];});
+ var cols=[ones(HX.n)],yy=HX.sample.map(function(p){return p.y;});
+ for(var a=0;a<5;a++)cols.push(HX.sample.map(function(p){return p.x[a];}));
+ HX.reg=ols(cols,yy);HX.sel=-1;
+ hxDrawFlow();hxDrawPlot();hxDrawModel();
+}
+function hxInfoHtml(key){
+ var d=HX_TERMS[key];return '<div><strong>'+d[0]+'</strong></div><div>'+d[1]+'<div class="hx-unit">Unidades: '+d[2]+'</div>'+(d[3]?'<div class="hx-alias"><b>Nombres:</b> '+d[3]+'</div>':'')+'</div>';
+}
+function hxChooseTerm(key,mode){
+ if(!HX_TERMS[key])return;HX.term=key;
+ if(mode==='estimated-symbol'){
+  document.querySelectorAll('#hxSymbolicEq button[data-hx]').forEach(function(el){el.classList.toggle('is-active',el.dataset.hx===key);});
+  var d=HX_TERMS[key];
+  if(/^b[0-5]$/.test(key)){
+   var j=Number(key.slice(1));
+   $('hxEstimatedInfo').innerHTML='<b>'+hxHat(j)+': coeficiente estimado.</b> Se calcula a partir de una muestra. '+(j?d[1]:'Es la estimaci\u00f3n del intercepto.')+' <span class="hx-unit">Unidades: '+d[2]+' Tambi\u00e9n se escribe b'+HX_IDX[j]+'.</span>';
+  }else $('hxEstimatedInfo').innerHTML='<b>'+d[0]+':</b> '+d[1]+' <span class="hx-unit">Unidades: '+d[2]+'</span>';
+  return;
+ }
+ if(mode==='estimated-numeric'){
+  document.querySelectorAll('#hxFitEquation button[data-hx]').forEach(function(el){el.classList.toggle('is-active',el.dataset.hx===key);});
+  var j=Number(key.slice(1)),v=HX.reg.b[j];
+  $('hxNumericInfo').innerHTML='<b>'+hxHat(j)+' = '+fmt(v,2)+'</b> ('+(j?HX_BUNITS[j-1]:'miles de \u20ac')+'). Valor obtenido de la muestra actual. '+(j?HX_TERMS[key][1]:'Estimaci\u00f3n del t\u00e9rmino constante.');
+  return;
+ }
+ document.querySelectorAll('#hxPopulationEq button[data-hx]').forEach(function(el){el.classList.toggle('is-active',el.dataset.hx===key);el.setAttribute('aria-pressed',el.dataset.hx===key?'true':'false');});
+ $('hxTermInfo').innerHTML=hxInfoHtml(key);
+}
+function hxDrawSymbolic(){
+ var text='<button class="hx-symbol" type="button" data-hx="y" data-hmode="estimated-symbol">Precio<sub>i</sub></button><span>=</span>';
+ for(var j=0;j<6;j++){
+  var key='b'+j;
+  text+='<span class="hx-product">'+(j?'<span>+</span>':'')+'<button class="hx-symbol beta" type="button" data-hx="'+key+'" data-hmode="estimated-symbol" aria-label="beta '+j+' estimado">'+hxHat(j)+'</button>';
+  if(j)text+='<span>&middot;</span><button class="hx-symbol" type="button" data-hx="x'+j+'" data-hmode="estimated-symbol">'+HX_LABELS[j-1]+'<sub>i</sub></button>';
+  text+='</span>';
+ }
+ text+='<span class="hx-product"><span>+</span><button class="hx-symbol error" type="button" data-hx="e" data-hmode="estimated-symbol">e<sub>i</sub></button></span>';
+ $('hxSymbolicEq').innerHTML=text;
+}
+function hxDrawFlow(){
+ // Illustrative icons; the actual random sample appears in the graph below.
+ var popDots='',sampleDots='',modelDots='';
+ for(var i=0;i<84;i++){
+  var xx=10+(i%14)*10.2,yy=18+Math.floor(i/14)*12;
+  popDots+='<circle cx="'+xx.toFixed(1)+'" cy="'+yy+'" r="2.45" fill="#8DA3B0" opacity=".8"/>';
+ }
+ // The small picture shows only sampled units, all in orange.
+ var shown=HX.n===40?12:HX.n===80?24:36;
+ for(var j=0;j<shown;j++){
+  var yy2=17+Math.floor(j/9)*17,xx2=15+(j%9)*17;
+  sampleDots+='<circle cx="'+xx2+'" cy="'+yy2+'" r="3.15" fill="#E97132"/>';
+ }
+ for(var k=0;k<15;k++){
+  var cx=13+(k%5)*32,cy=72-(k%5)*11+((k*13)%27)-12;
+  modelDots+='<circle cx="'+cx+'" cy="'+cy+'" r="3" fill="#E97132" opacity=".85"/>';
+ }
+ var sc='viewBox="0 0 170 93" aria-hidden="true"',cards=[
+  '<div class="hx-flow-card"><strong>Poblaci\u00f3n</strong><div class="hx-flow-meta">N = 1.000 viviendas</div><svg '+sc+'>'+popDots+'</svg></div>',
+  '<div class="hx-flow-card"><strong>Muestra aleatoria</strong><div class="hx-flow-meta">n = '+HX.n+' viviendas</div><svg '+sc+'>'+sampleDots+'</svg></div>',
+  '<div class="hx-flow-card"><strong>Estimaci\u00f3n</strong><div class="hx-flow-meta">Coeficientes obtenidos</div><svg '+sc+'><line x1="8" y1="78" x2="162" y2="20" stroke="#156082" stroke-width="2.7"/>'+modelDots+'</svg></div>'
+ ];
+ $('hxFlow').innerHTML=cards.join('<div class="hx-flow-arrow" aria-hidden="true">&rarr;</div>');
+}
+function hxDrawPlot(){
+ var yvals=HX.population.map(function(d){return d.y;}),lo=Math.floor((Math.min.apply(null,yvals)-18)/50)*50,hi=Math.ceil((Math.max.apply(null,yvals)+18)/50)*50;
+ var p=mkPlot($('hxPlot'),{w:690,h:355,ml:70,mb:53,xd:[40,200],yd:[lo,hi],xlab:'Superficie (m\u00b2)',ylab:'Precio (miles de \u20ac)',ticks:4});
+ HX.population.forEach(function(v){p.el('circle',{cx:p.X(v.x[0]),cy:p.Y(v.y),r:2.1,fill:'#9DAEB9',opacity:.38},p.g);});
+ HX.sample.forEach(function(v,j){
+  var chosen=j===HX.sel,r=chosen?6.4:4.3;
+  var pt=p.el('circle',{cx:p.X(v.x[0]),cy:p.Y(v.y),r:r,fill:'#E97132',opacity:1,stroke:chosen?'#0E2841':'#fff','stroke-width':chosen?2.8:.9,'class':'hx-point',tabindex:0,role:'button','aria-label':'Vivienda '+v.id+', superficie '+v.x[0]+' metros cuadrados, precio '+hxMoney(v.y)+'. Seleccionar observaci\u00f3n'},p.g);
+  pt.addEventListener('click',function(){HX.sel=j;hxDrawPlot();});
+  pt.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();HX.sel=j;hxDrawPlot();}});
+ });
+ $('hxPlotMeta').textContent='Poblaci\u00f3n: N = '+HX.population.length.toLocaleString('de-DE')+' viviendas \u00b7 Muestra: n = '+HX.sample.length+' observaciones';
+ if(HX.sel<0){$('hxObservation').textContent='Selecciona una vivienda naranja para ver sus caracter\u00edsticas.';return;}
+ var q=HX.sample[HX.sel],pred=hxPrice(q.x,HX.reg.b),res=q.y-pred;
+ $('hxObservation').innerHTML='<b>Vivienda '+q.id+':</b> '+q.x[0]+' m\u00b2 \u00b7 planta '+q.x[1]+' \u00b7 zona '+(q.x[2]?'favorable':'no favorable')+' \u00b7 '+q.x[3]+' habitaciones \u00b7 '+q.x[4]+' a\u00f1os. <b>Precio observado:</b> '+hxMoney(q.y)+'; <b>predicho:</b> '+hxMoney(pred)+'; <b>residuo:</b> '+(res>=0?'+':'')+hxMoney(res)+'.';
+}
+function hxNumericTerm(j){
+ var v=HX.reg.b[j],prefix=j===0?'':(v<0?'&minus;':'+'),disp=fmt(Math.abs(v),2);
+ var name=j===0?'':HX_LABELS[j-1];
+ return '<span class="hx-product">'+(prefix?'<span>'+prefix+'</span>':'')+'<button class="hx-num" type="button" data-hx="b'+j+'" data-hmode="estimated-numeric" aria-label="Coeficiente estimado beta '+j+': '+fmt(v,2)+'">'+disp+'</button>'+(name?' <span>&middot; '+name+'</span>':'')+'</span>';
+}
+function hxDrawModel(){
+ $('hxFitEquation').innerHTML='<b>Precio<sub>i</sub> =</b> '+Array.from({length:6},function(_,j){return hxNumericTerm(j);}).join(' ')+' <span class="hx-product"><span>+</span><span>e<sub>i</sub></span></span>';
+ $('hxEstimates').innerHTML=HX.reg.b.map(function(v,j){var unit=j===0?'miles de \u20ac':HX_BUNITS[j-1];return '<div class="hx-coef"><b class="hx-coef-value">'+hxHat(j)+' = '+fmt(v,2)+'</b><span>'+unit+'</span></div>';}).join('');
+ $('hxSampleNote').textContent='Coeficientes estimados con n = '+HX.n+' viviendas. Al extraer otra muestra pueden cambiar.';
+ var p=HX.trueBeta;
+ $('hxTruePanel').innerHTML='<div class="note t"><b>Valores usados para simular la poblaci\u00f3n (no conocidos en datos reales):</b><div class="hx-coefs">'+p.map(function(v,j){return '<div class="hx-coef"><b>\u03b2'+HX_IDX[j]+' = '+fmt(v,2)+'</b><span>'+(j?HX_BUNITS[j-1]:'miles de \u20ac')+'</span></div>';}).join('')+'</div>Estos valores permanecen fijos al extraer otra muestra.</div>';
+ $('hxNumericInfo').textContent='Selecciona un coeficiente num\u00e9rico para consultar su interpretaci\u00f3n.';
+}
+function initHousing(){
+ hxInitPopulation();hxDrawSymbolic();
+ $('tabHousing').addEventListener('click',function(e){
+  var term=e.target.closest('button[data-hx]');
+  if(term){hxChooseTerm(term.dataset.hx,term.dataset.hmode||'population');return;}
+  var sz=e.target.closest('button[data-hx-size]');
+  if(sz){HX.n=Number(sz.dataset.hxSize);$('hxSizes').querySelectorAll('button').forEach(function(z){z.classList.toggle('on',z===sz);z.setAttribute('aria-pressed',z===sz?'true':'false');});hxDrawSample();return;}
+ });
+ $('hxNewSample').addEventListener('click',hxDrawSample);
+ $('hxShowTrue').addEventListener('click',function(){HX.showTrue=!HX.showTrue;$('hxTruePanel').hidden=!HX.showTrue;this.setAttribute('aria-expanded',HX.showTrue?'true':'false');this.textContent=HX.showTrue?'Ocultar par\u00e1metros de la simulaci\u00f3n':'Mostrar par\u00e1metros de la simulaci\u00f3n';});
+ hxDrawSample();hxChooseTerm('x1','population');
+}
+
+/* ==================== inicialización ==================== */
+initIntro();
+initHousing();
+initRg();
+initMr();
+initAssumptions();
+initDg();
+initQuiz();
+
+</script>
+
+<script
+  data-goatcounter="https://jlab.goatcounter.com/count"
+  async
+  src="//gc.zgo.at/count.js">
+</script>
+</body>
+</html>
