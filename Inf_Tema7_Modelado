@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tema 7: Modelado. Material interactivo sobre variables categóricas, transformaciones, interacciones y estandarización en modelos de regresión.">
+<title>Tema 7 · Modelado de regresión</title>
+<style>
+:root{--navy:#0E2841;--navy2:#183C56;--teal:#156082;--teal2:#25799C;--orange:#E97132;--gold:#D4A017;--green:#287949;--red:#B74341;--muted:#5E6D7A;--pale:#F1F5F8;--line:#DDE7EE;--ink:#213543;--tintT:#EAF3F7;--tintO:#FFF1E6;--tintG:#E9F5ED;--white:#fff}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--pale);color:var(--ink);font:15px/1.62 "Segoe UI",Segoe,Tahoma,Geneva,Verdana,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+a{color:var(--teal)}
+strong,b{font-weight:700}
+button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid #D6A342;outline-offset:2px}
+[hidden]{display:none!important}
+.hero{background:linear-gradient(117deg,#0E2841 10%,#123A54 67%,#175676 100%);color:#fff;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;right:-115px;top:-150px;width:480px;height:480px;border:1px solid rgba(255,255,255,.13);border-radius:50%;box-shadow:0 0 0 75px rgba(255,255,255,.025),0 0 0 160px rgba(255,255,255,.018);pointer-events:none}
+.hero-inner{max-width:1160px;margin:0 auto;padding:29px 20px 17px;position:relative}
+.eyebrow{text-transform:uppercase;letter-spacing:2px;color:#EFC879;font-weight:800;font-size:11px}
+h1{margin:5px 0 4px;font-size:clamp(27px,4.3vw,40px);line-height:1.16;letter-spacing:-.6px}
+.subtitle{color:#D0DFE9;font-size:14px;margin:8px 0 17px}
+.hero-pills{display:flex;gap:8px;flex-wrap:wrap}
+.hero-pill{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);border-radius:999px;padding:5px 12px;color:#F4F9FD;font-size:12px}
+.tab-shell{max-width:1160px;margin:0 auto;padding:0 20px 18px;position:relative}
+.tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.tabs button{min-height:57px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.075);color:#DFEAF1;padding:8px 6px;text-align:left;display:flex;align-items:center;gap:8px;font-size:12px;line-height:1.25;font-weight:650;transition:background .15s,border-color .15s}
+.tabs button:hover{background:rgba(255,255,255,.16)}
+.tabs button.on{background:var(--teal);color:#fff;border-color:#58A1BA;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.tab-n{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.13);flex:0 0 24px;font-weight:800}
+.tabs button.on .tab-n{background:rgba(255,255,255,.25)}
+main{max-width:1160px;padding:24px 20px 50px;margin:0 auto;min-height:75vh}
+.panel{display:none;animation:appear .2s ease-out}
+.panel.on{display:block}
+@keyframes appear{from{opacity:.3;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.section-head{display:flex;gap:14px;align-items:center;justify-content:space-between;margin:0 0 15px}
+.section-head .topline{font-size:11px;text-transform:uppercase;letter-spacing:1.7px;font-weight:800;color:var(--teal)}
+.section-head h2{color:var(--navy);font-size:clamp(22px,2.5vw,28px);line-height:1.23;margin:3px 0 3px;letter-spacing:-.4px}
+.section-head p{color:var(--muted);margin:3px 0 0;max-width:850px;font-size:14px}
+.numtag{color:var(--orange);font-weight:800;font-size:37px;opacity:.55;flex:0 0 auto}
+.card{background:#fff;border:1px solid rgba(185,202,213,.5);border-radius:15px;box-shadow:0 2px 13px rgba(14,40,65,.055);padding:19px 22px;margin:0 0 16px}
+.card h3{margin:0 0 10px;color:var(--navy);font-size:18px;letter-spacing:-.2px}
+.card h4{margin:5px 0 8px;color:var(--navy);font-size:15px}
+.card p{margin:8px 0}
+.card p:first-of-type{margin-top:0}
+.card p:last-child{margin-bottom:0}
+.muted,.small{color:var(--muted);font-size:13px}
+.labelup{font-size:11px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--teal)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.grid-main{display:grid;grid-template-columns:minmax(0,1.38fr) minmax(280px,.95fr);gap:16px;align-items:start}
+.grid-plot{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px}
+.grid2>.card,.grid-main>.card,.grid-plot>.card{margin-bottom:0;min-width:0}
+.mini-card{border:1px solid var(--line);background:#FCFDFE;border-radius:12px;padding:15px}
+.mini-card strong{display:block;color:var(--navy);font-size:15px}
+.mini-card p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.mini-card .mini-icon{display:inline-flex;background:var(--tintT);color:var(--teal);font-size:21px;width:36px;height:36px;align-items:center;justify-content:center;border-radius:9px;margin-bottom:8px}
+.note{padding:11px 14px;border-radius:10px;border-left:4px solid var(--teal);background:var(--tintT);font-size:14px;margin:13px 0;line-height:1.55}
+.note.orange{background:var(--tintO);border-color:var(--orange)}
+.note.green{background:var(--tintG);border-color:var(--green)}
+.note.red{background:#FDEEEE;border-color:var(--red)}
+.formula{border:1px solid var(--line);background:#F7FAFC;border-radius:10px;padding:11px 14px;margin:10px 0;line-height:1.65;overflow-wrap:anywhere}
+.math{font-family:Cambria,"Times New Roman",serif;font-size:18px;color:#203C56}
+.formula .math{font-size:clamp(16px,2vw,20px)}
+.controls{display:flex;gap:15px;align-items:flex-end;flex-wrap:wrap;margin:12px 0}
+.control{display:flex;flex-direction:column;gap:3px;min-width:170px;flex:1}
+.control label{font-size:13px;font-weight:700;color:var(--navy)}
+.control output{font-size:13px;color:var(--teal);font-weight:800;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--teal);height:19px;cursor:pointer}
+select,input[type=number]{border:1px solid #B8CBD5;color:var(--ink);border-radius:9px;background:#fff;padding:8px 11px;max-width:100%;min-height:38px}
+select{width:100%}
+.btn{border:1px solid #BED0DB;border-radius:9px;background:#fff;color:var(--navy);padding:8px 13px;font-weight:700;font-size:13px;transition:background .12s}
+.btn:hover{background:var(--tintT);border-color:var(--teal)}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:white}
+.btn.primary:hover{background:#114B67}
+.btn.warm{background:var(--orange);border-color:var(--orange);color:white}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:11px 0}
+.seg{display:flex;gap:7px;flex-wrap:wrap;margin:11px 0}
+.seg button{border:1px solid #BDD0DB;background:#fff;border-radius:9px;padding:8px 12px;font-size:13px;color:var(--navy);font-weight:700}
+.seg button.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.plot{width:100%;height:auto;display:block;background:#FCFDFE;border-radius:9px;border:1px solid #E4ECF1}
+.plot .gridline{stroke:#E7EDF2;stroke-width:1}
+.plot .tick{fill:#667885;font-size:11px}
+.plot .axis-label{fill:#486273;font-size:12px;font-weight:700}
+.plot .curve{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.plot .marker{stroke:white;stroke-width:2.6}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;color:var(--muted);font-size:12px;margin:8px 0}
+.legend span:before{content:"";display:inline-block;width:15px;height:4px;background:var(--color);vertical-align:3px;margin-right:6px;border-radius:2px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:10px 0}
+.kpi{padding:11px 12px;background:var(--tintT);border:1px solid #D1E3EB;border-radius:10px}
+.kpi .num{font-size:20px;font-weight:800;color:var(--teal);font-variant-numeric:tabular-nums;line-height:1.25}
+.kpi .cap{font-size:12px;color:var(--muted);margin-top:3px}
+.tablewrap{max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.model-interp-table{min-width:710px}
+.model-interp-table td{white-space:normal;vertical-align:top;min-width:175px}
+.model-interp-table td.math{font-size:16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:9px 10px;border-bottom:1px solid #E6EDF1;text-align:left;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+th{background:#EAF2F7;color:var(--navy);font-size:12px;font-weight:800}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+th.num{text-align:right}
+tr.hl{background:#F1F8FC}
+.code{font-family:Consolas,Monaco,"Courier New",monospace;background:#122C40;color:#D8E9F1;border:1px solid #2B4C61;border-radius:11px;padding:13px 15px;font-size:12.5px;white-space:pre;overflow-x:auto;line-height:1.55}
+.code .c{color:#92B6C9}
+.code .o{color:#FFB486}
+.readout{background:#F6FAFC;border:1px solid var(--line);border-radius:11px;padding:12px 15px;margin:12px 0;font-size:14px}
+.readout .strong{font-weight:800;color:var(--navy)}
+.quiz-card{border:1px solid #D2E2EA;background:linear-gradient(130deg,#F7FBFD,#FDFEFE);border-radius:12px;padding:15px;margin:13px 0 0}
+.quiz-head{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--teal);font-weight:800;margin-bottom:7px}
+.quiz-card h4{margin:0 0 9px;font-size:15px}
+.options{display:grid;gap:8px;margin:9px 0}
+.options button{padding:10px 12px;border:1px solid #C8D8E1;border-radius:9px;background:#fff;text-align:left;color:var(--ink);line-height:1.35}
+.options button:hover{border-color:var(--teal);background:#F5FAFC}
+.options button.chosen{background:#EAF4F8;border-color:var(--teal);box-shadow:inset 0 0 0 1px var(--teal)}
+.options button.correct{background:#E8F5EC;border-color:#269157;color:#185D37}
+.options button.wrong{background:#FCEBEC;border-color:#C15D58;color:#9F3634}
+.answer{border-radius:9px;background:var(--tintT);padding:10px 12px;margin:8px 0;font-size:13.5px;line-height:1.5}
+.answer.ok{background:var(--tintG)}
+.answer.err{background:#FDEEEE}
+.inline-quiz{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:10px}
+.inline-quiz input{width:120px}
+.progress-track{height:8px;border-radius:20px;background:#DEEAF0;overflow:hidden;margin:8px 0 13px}
+.progress-fill{height:100%;background:var(--teal);width:0%;transition:width .2s}
+.term-btn{width:100%;text-align:left;border:0;background:transparent;padding:5px 2px;font-family:Consolas,"Courier New",monospace;font-size:12.5px;color:var(--navy);font-weight:700}
+.term-btn:hover{text-decoration:underline;color:var(--teal)}
+.coef-table tr.active{background:#E2F2F8!important}
+.coef-table tr.related{background:#F3F8FB}
+.coef-table tr{transition:background .12s}
+.coef-table td{padding:6px 10px}
+.lab-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.lab-tag{border-radius:999px;color:#864B10;background:#FFF2E1;border:1px solid #F1DDBD;font-size:11px;font-weight:800;padding:5px 9px}
+.lab-help{min-height:150px}
+.callout-stat{padding:10px;border-radius:10px;border:1px solid #DCE6ED;background:#FBFDFE}
+.callout-stat .title{font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;letter-spacing:.5px}
+.callout-stat .value{color:var(--teal);font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.readonly{cursor:default}
+.footer-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:18px;padding-top:16px}
+.pagefoot{background:var(--navy);text-align:center;color:#C8D6E0;padding:24px 16px 30px;font-size:12px}
+.pagefoot img{display:block;width:min(255px,75vw);max-height:75px;object-fit:contain;margin:0 auto 10px}
+.scorebig{font-size:39px;font-weight:800;line-height:1.05;color:var(--teal)}
+.review{border-top:1px solid #E5EDF2;padding:11px 0;font-size:13px}
+.review b{color:var(--navy)}
+@media(max-width:1040px){.tabs{grid-template-columns:repeat(4,minmax(0,1fr))}.grid-main{grid-template-columns:1fr 1fr}}
+.mobile-hint{display:none}
+@media(max-width:770px){.mobile-hint{display:block}.grid2,.grid3,.grid-main,.grid-plot{grid-template-columns:1fr}.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.hero-inner{padding:24px 15px 16px}.tab-shell{padding:0 15px 14px}.tabs button{min-height:45px}main{padding:18px 12px 40px}.card{padding:16px}.section-head{align-items:flex-start}.numtag{font-size:30px}.grid2>.card,.grid-main>.card,.grid-plot>.card{margin-bottom:0}}
+@media(min-width:771px) and (max-width:1040px){.tabs button{min-height:45px}}
+@media(max-width:470px){.tab-shell{padding-left:10px;padding-right:10px}.tabs{gap:5px}.tabs button{padding:7px 6px;font-size:11px}.tab-n{width:20px;height:20px;flex-basis:20px}.kpis{grid-template-columns:1fr 1fr}.math{font-size:16px}.card{padding:14px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.panel{animation:none}}
+
+.comparison-plots{align-items:stretch}
+.compare-panel{min-width:0;border:1px solid var(--line);border-radius:12px;background:#FCFDFE;padding:12px;display:flex;flex-direction:column;gap:7px}
+.compare-panel .plot{margin-top:auto}
+.compare-heading{color:var(--navy);font-size:15px;font-weight:800}
+.compare-panel .small{min-height:41px}
+.calc-step{display:grid;grid-template-columns:31px minmax(0,1fr);gap:10px;border-bottom:1px solid var(--line);padding:11px 0}
+.calc-step:last-of-type{border-bottom:0}
+.step-number{display:flex;align-items:center;justify-content:center;background:var(--tintT);color:var(--teal);border-radius:50%;width:28px;height:28px;font-weight:800}
+.calc-two,.calcpieces,.calc-compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:9px 0}
+.calc-two>div,.calcpieces>div,.calc-compare>div{border:1px solid var(--line);background:#FBFDFE;border-radius:10px;padding:9px 10px;min-width:0}
+.calc-two strong,.calcpieces strong{display:block;color:var(--navy);font-size:17px;line-height:1.35}
+.calcpieces span{font-size:12px;color:var(--muted)}
+.calc-equation{font-family:Cambria,"Times New Roman",serif;font-size:17px;overflow-wrap:anywhere;color:var(--navy);margin-top:8px}
+.significance{padding:10px 12px;border:1px solid #B9D9C7;border-radius:10px;background:#EDF7F1;color:#20583B;font-size:13px;margin:9px 0;font-weight:650}
+.significance.nonsig{border-color:#E9CFAD;background:#FFF6EB;color:#81501D}
+.lab-operations{display:grid;gap:8px;margin:11px 0}
+.lab-operation{border:1px solid var(--line);background:#FBFDFE;border-radius:10px;padding:10px 12px}
+.lab-operation .op-label{font-size:12px;font-weight:800;color:var(--navy)}
+.lab-operation .op-calc{font-family:Cambria,"Times New Roman",serif;font-size:19px;margin:3px 0;overflow-wrap:anywhere}
+.lab-operation .op-result{color:var(--teal);font-weight:800}
+.model-controls{border-top:1px solid var(--line);padding-top:12px;margin-top:17px}
+.model-controls .control{min-width:140px}
+@media(max-width:500px){.calc-two,.calcpieces,.calc-compare{grid-template-columns:1fr}.compare-panel .small{min-height:0}}
+
+/* Secciones de aplicación y práctica */
+.explain-more{border:1px solid var(--line);background:#F7FAFC;border-radius:11px;padding:12px 14px;margin-top:12px}
+.explain-more summary{cursor:pointer;color:var(--navy);font-weight:750;font-size:13px}
+.explain-more[open] summary{margin-bottom:10px}
+.lab-operation .op-explain{font-size:13px;color:var(--ink);line-height:1.5;margin-top:7px}
+.log-hist-panel{margin-top:17px;border-top:1px solid var(--line);padding-top:15px}
+.pract-top{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+.pract-plot-wrap{max-width:760px;margin:12px auto}
+.pract-plot-wrap .plot{min-height:220px}
+.pract-help{color:var(--muted);font-size:13px}
+.pract-sol{border:1px solid #CBE0D2;border-left:4px solid var(--green);background:#F0F8F2;padding:13px 15px;border-radius:10px;margin-top:12px}
+.pract-sol h4{margin:0 0 6px;color:#205C3C}
+.pract-stepper{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin:16px 0 2px}
+.pract-math{font-family:Cambria,"Times New Roman",serif;color:var(--navy);font-size:19px;background:#F7FAFC;border:1px solid var(--line);border-radius:10px;padding:13px;margin:10px 0}
+.pract-num-input{border:1px solid #B8CBD5;border-radius:9px;padding:8px 12px;min-height:40px;width:min(250px,100%)}
+.pract-example-heading{font-weight:700;color:var(--navy);margin-top:11px}
+.pract-state{font-size:13px;color:var(--muted)}
+@media(max-width:770px){.pract-plot-wrap .plot{min-height:0}}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">Inferencia · Tema 7</div>
+    <h1>Modelado de regresión</h1>
+    <p class="subtitle">Inference and Regression Models for Business · Material interactivo</p>
+  </div>
+  <div class="tab-shell">
+    <nav class="tabs" role="tablist" aria-label="Secciones del tema">
+      <button class="on" role="tab" aria-selected="true" aria-controls="tab1" id="btn-tab1" data-tab="tab1"><span class="tab-n">1</span>Explicar o predecir</button>
+      <button role="tab" aria-selected="false" aria-controls="tab2" id="btn-tab2" data-tab="tab2"><span class="tab-n">2</span>Variables categóricas</button>
+      <button role="tab" aria-selected="false" aria-controls="tab3" id="btn-tab3" data-tab="tab3"><span class="tab-n">3</span>Logaritmos</button>
+      <button role="tab" aria-selected="false" aria-controls="tab4" id="btn-tab4" data-tab="tab4"><span class="tab-n">4</span>Cuadráticos y cúbicos</button>
+      <button role="tab" aria-selected="false" aria-controls="tab5" id="btn-tab5" data-tab="tab5"><span class="tab-n">5</span>Interacciones</button>
+      <button role="tab" aria-selected="false" aria-controls="tab6" id="btn-tab6" data-tab="tab6"><span class="tab-n">6</span>Estandarización</button>
+      <button role="tab" aria-selected="false" aria-controls="tab7" id="btn-tab7" data-tab="tab7"><span class="tab-n">7</span>Interpretación de coeficientes</button>
+      <button role="tab" aria-selected="false" aria-controls="tab8" id="btn-tab8" data-tab="tab8"><span class="tab-n">8</span>Práctica de interpretación</button>
+    </nav>
+  </div>
+</header>
+<main>
+<section class="panel on" id="tab1" role="tabpanel" aria-labelledby="btn-tab1">
+  <div class="section-head"><div><div class="topline">01 · El propósito del análisis</div><h2>¿Explicar relaciones o realizar predicciones?</h2><p>La diferencia principal es el objetivo que perseguimos. No son enfoques incompatibles.</p></div><div class="numtag">01</div></div>
+  <div class="grid2" style="margin-bottom:16px">
+    <div class="card"><div class="labelup">Enfoque explicativo</div><h3>Entender una relación</h3><p>Nos interesa <b>cómo se relaciona Y con las variables X</b>, manteniendo constantes las demás. Prestamos atención a los coeficientes, su interpretación, la incertidumbre y la validez de los supuestos para hacer inferencia.</p><div class="note">Ejemplo: ¿cómo se relacionan los años de educación con el salario, controlando otras características?</div></div>
+    <div class="card"><div class="labelup">Enfoque predictivo</div><h3>Anticipar valores</h3><p>Nos interesa <b>qué tan bien se predice Y en observaciones nuevas</b>. Prestamos especial atención al error de predicción fuera de la muestra y a la validación del modelo.</p><div class="note orange">Ejemplo: ¿qué ventas esperamos el próximo mes a partir de la información disponible?</div></div>
+  </div>
+  <div class="card"><h3>Diferencias entre ambos objetivos</h3><p>Un mismo modelo puede aportar información sobre las relaciones entre variables y realizar predicciones. Lo que cambia es <b>qué pregunta intentamos responder y cómo juzgamos el resultado</b>.</p><div class="grid3"><div class="mini-card"><strong>Coeficientes</strong><p>Tienen un papel central cuando buscamos interpretar asociaciones.</p></div><div class="mini-card"><strong>Predicción</strong><p>Se valora mediante el rendimiento en datos no utilizados para ajustar el modelo.</p></div><div class="mini-card"><strong>Precaución</strong><p>Una relación estadística no demuestra, por sí sola, un efecto causal.</p></div></div>
+    <div class="quiz-card"><div class="quiz-head">Comprueba la idea</div><h4 id="purposeQ">Una empresa desea anticipar la facturación del próximo trimestre. ¿Cuál es el objetivo principal?</h4><div class="seg" id="purposeOptions"><button data-choice="exp">Explicativo</button><button data-choice="pred">Predictivo</button></div><div class="answer" id="purposeFb" aria-live="polite" hidden></div><button class="btn" id="purposeNext" hidden>Otro ejemplo →</button></div>
+  </div>
+</section>
+<section class="panel" id="tab2" role="tabpanel" aria-labelledby="btn-tab2">
+  <div class="section-head"><div><div class="topline">02 · Variables cualitativas</div><h2>Cómo se incorporan las categorías</h2><p>Una variable categórica con varios niveles se representa mediante indicadores, utilizando una categoría de referencia.</p></div><div class="numtag">02</div></div>
+  <div class="card"><h3>¿Qué es la categoría base?</h3><p>Supongamos que explicamos la <b>esperanza de vida</b> a partir del logaritmo del PIB per cápita y el <b>continente</b>. Si hay cuatro continentes, un modelo con intercepto y la codificación habitual de R incorpora <b>tres coeficientes de continente</b>. El que no aparece es la <b>categoría de referencia (base)</b>.</p><div class="labelup">Modelo teórico</div><div class="formula math" id="catTheory"></div><div class="note"><b>En R:</b> si no indicas la referencia, se utiliza habitualmente el <b>primer nivel del factor</b> con la codificación de contrastes por defecto. Cuando un factor se crea a partir de texto, sus niveles suelen ordenarse alfabéticamente según la configuración regional. Comprueba siempre <code>levels()</code>; puedes elegir la base con <code>relevel()</code>.</div></div>
+  <div class="grid-main" style="margin-bottom:16px">
+    <div class="card"><h3>Laboratorio: cambia la categoría de referencia</h3>
+      <div class="controls"><div class="control"><label for="catBase">Categoría de referencia (base)</label><select id="catBase"><option value="Africa">África</option><option value="America">América</option><option value="Asia">Asia</option><option value="Europa">Europa</option></select></div><div class="control"><label for="catCompare">Categoría que deseas interpretar</label><select id="catCompare"></select></div><div class="control"><label for="catGDP">PIB per cápita (miles de €)</label><input type="range" id="catGDP" min="2" max="45" step="1" value="20"><output id="catGDPVal">20.000 €</output></div></div>
+      <svg id="catPlot" class="plot" viewBox="0 0 680 345" role="img" aria-label="Relación entre PIB per cápita y esperanza de vida por continente"></svg>
+      <div class="legend" id="catLegend"></div>
+      <div class="readout" id="catPrediction" aria-live="polite"></div>
+    </div>
+    <div class="card"><h3>Qué cambia y qué permanece</h3><div class="labelup">Ecuación con la base elegida</div><div class="formula" id="catFormula"></div><p class="small">Los datos y las predicciones <b>no cambian</b> por elegir otra referencia. Cambian el intercepto y los coeficientes de comparación.</p>
+      <div class="note" id="catInterpret"></div>
+    </div>
+  </div>
+  <div class="grid2" style="margin-bottom:16px;align-items:start">
+    <div class="card"><h3>De una categoría a indicadores 0/1</h3><p class="small">Misma variable, distintas columnas según la referencia seleccionada.</p><div class="tablewrap"><table id="catTable"><thead></thead><tbody></tbody></table></div><div class="note orange"><b>La trampa dummy:</b> si se incluyen el intercepto y las cuatro dummies, una columna puede expresarse como combinación de otras. Existe <b>multicolinealidad perfecta</b>; los coeficientes no se identifican de forma única.</div></div>
+    <div class="card"><h3>¿Cómo se hace en R?</h3><pre class="code" id="catCode"></pre><p class="small">Con los contrastes habituales de R, <code>summary(modelo)</code> muestra diferencias respecto a la base. Si cambias la referencia y vuelves a estimar, se modifican los coeficientes, pero no los valores ajustados.</p><div class="quiz-card"><div class="quiz-head">Pregunta rápida</div><h4>Si el coeficiente de «Europa» es +10,8 tomando África como base, ¿qué significa?</h4><div class="options" id="catQuiz"><button data-good="0">En Europa la esperanza de vida siempre es 10,8 años.</button><button data-good="1">A igual PIB per cápita, la esperanza de vida estimada es 10,8 años mayor que en África.</button><button data-good="0">Europa tiene 10,8 veces el PIB per cápita de África.</button></div><div class="answer" id="catQuizFb" hidden></div><p class="small">Para esta pregunta considera África como categoría base, como en el ejemplo inicial.</p></div></div>
+  </div>
+</section>
+<section class="panel" id="tab3" role="tabpanel" aria-labelledby="btn-tab3">
+  <div class="section-head"><div><div class="topline">03 · Transformaciones básicas</div><h2>Logaritmos e interpretación de coeficientes</h2><p>Observa la relación original y cómo queda después de transformar X, Y o ambas.</p></div><div class="numtag">03</div></div>
+  <div class="card">
+    <div class="seg" id="logModes" role="group" aria-label="Tipo de modelo"><button data-mode="ll" class="on">Sin logaritmos</button><button data-mode="lx">Log en X</button><button data-mode="ly">Log en Y</button><button data-mode="lxy">Log en X e Y</button></div>
+    <div class="controls" style="align-items:center"><div style="font-weight:700;font-size:13px;color:var(--navy)">Tipo de relación:</div><div class="seg" id="logSigns" role="group" aria-label="Sentido de la relación" style="margin:0"><button data-sign="1" class="on">Positiva</button><button data-sign="-1">Negativa</button></div></div>
+    <p class="small">Usamos el logaritmo natural (<code>ln</code>). Para aplicar logaritmos, los valores deben ser positivos.</p>
+  </div>
+  <div class="card"><h3>Antes y después de la transformación</h3><p class="small">Ejemplo ilustrativo: X representa ingresos (miles de €) e Y, gasto (€). Para logaritmos en X comparamos la relación antes y después; para logaritmos en Y observamos también su distribución con histogramas.</p>
+    <div class="grid2 comparison-plots" id="logRelationPlots">
+      <div class="compare-panel"><div class="compare-heading">1 · Antes de transformar</div><div class="small" id="logBeforeCaption"></div><svg id="logBeforePlot" class="plot" viewBox="0 0 560 315" role="img" aria-label="Relación original entre X e Y"></svg></div>
+      <div class="compare-panel"><div class="compare-heading">2 · Después de transformar</div><div class="small" id="logAfterCaption"></div><svg id="logAfterPlot" class="plot" viewBox="0 0 560 315" role="img" aria-label="Relación después de la transformación logarítmica"></svg></div>
+    </div>
+    <div class="note" id="logVisualComment"></div>
+    <div class="log-hist-panel" id="logHistogramWrap" hidden><h4>Distribución de Y antes y después de aplicar el logaritmo</h4><p class="small">La transformación de Y se observa por separado mediante histogramas. Es especialmente útil para examinar cómo cambia una distribución con asimetría positiva.</p><div class="grid2 comparison-plots"><div class="compare-panel"><div class="compare-heading">Y original</div><svg id="logYHistBefore" class="plot" viewBox="0 0 560 265" role="img" aria-label="Histograma de Y"></svg></div><div class="compare-panel"><div class="compare-heading">ln(Y)</div><svg id="logYHistAfter" class="plot" viewBox="0 0 560 265" role="img" aria-label="Histograma del logaritmo de Y"></svg></div></div></div>
+  </div>
+  <div class="card"><h3>Cómo se interpreta el coeficiente</h3>
+    <p class="small">Primero identifica si X, Y o ambas variables aparecen en logaritmos. Estas son las cuatro ecuaciones teóricas y la interpretación de β₁:</p>
+    <div class="tablewrap"><table class="model-interp-table"><thead><tr><th>Modelo</th><th>Ecuación teórica</th><th>Interpretación de β₁</th></tr></thead><tbody>
+      <tr><td><b>Nivel-nivel</b><div class="small">Sin logaritmos</div></td><td class="math">Yᵢ = β₀ + β₁Xᵢ + uᵢ</td><td>Si X aumenta 1 unidad, Y cambia β₁ unidades.</td></tr>
+      <tr><td><b>Nivel-log</b><div class="small">Log en X</div></td><td class="math">Yᵢ = β₀ + β₁ln(Xᵢ) + uᵢ</td><td>Si X aumenta un 1 %, Y cambia aproximadamente 0,01·β₁ unidades.</td></tr>
+      <tr><td><b>Log-nivel</b><div class="small">Log en Y</div></td><td class="math">ln(Yᵢ) = β₀ + β₁Xᵢ + uᵢ</td><td>Si X aumenta 1 unidad, Y cambia aproximadamente 100·β₁ %.</td></tr>
+      <tr><td><b>Log-log</b><div class="small">Log en X e Y</div></td><td class="math">ln(Yᵢ) = β₀ + β₁ln(Xᵢ) + uᵢ</td><td>Si X aumenta un 1 %, Y cambia aproximadamente β₁ %.</td></tr>
+    </tbody></table></div>
+    <div class="labelup" style="margin-top:16px">Ejemplo estimado · <span id="logTitle"></span></div><div class="formula math" id="logEq"></div><div class="note" id="logRule"></div><div class="readout" id="logExample"></div><p class="small" id="logDetail"></p></div>
+  <div class="card"><h3>Practica la interpretación</h3><p>Selecciona un modelo y responde cómo se interpreta su coeficiente. También puedes cambiar entre relación positiva y negativa.</p><div class="quiz-card"><div class="quiz-head" id="logQuizLabel">Interpretación</div><h4 id="logQuizQuestion">¿Cómo interpretas el coeficiente?</h4><div class="options" id="logQuizOpts"></div><div class="answer" id="logQuizFb" aria-live="polite" hidden></div></div></div>
+</section>
+<section class="panel" id="tab4" role="tabpanel" aria-labelledby="btn-tab4">
+  <div class="section-head"><div><div class="topline">04 · Potencias de una variable</div><h2>Efectos cuadráticos y cúbicos</h2><p>Con X² y X³ se pueden representar relaciones curvas. Para interpretar el efecto de X, hay que considerar sus términos conjuntamente.</p></div><div class="numtag">04</div></div>
+  <div class="card"><div class="seg" id="polyModes"><button data-poly="q" class="on">Efecto cuadrático</button><button data-poly="c">Efecto cúbico</button></div><div class="labelup">Modelo teórico</div><div class="formula math" id="polyTheory"></div><div class="note" id="polyIntro"><b>Modelo cuadrático:</b> al incluir edad y edad², la relación puede tener forma de U o U invertida. La pendiente cambia según la edad.</div><div class="note green" id="polyHierarchy"><b>Principio de jerarquía:</b> si se mantiene X², se conserva X; si se mantiene X³, se conservan X² y X, aunque los términos individuales no sean significativos.</div></div>
+  <div class="grid-main" style="margin-bottom:16px">
+    <div class="card"><h3 id="polyTitle">Cómo cambia el gasto con la edad</h3><div class="controls"><div class="control"><label for="polyAge">Edad seleccionada</label><input type="range" id="polyAge" min="20" max="79" value="50" step="1"><output id="polyAgeVal"></output></div><div class="control"><label for="polyB1" id="polyB1Label">Coeficiente de edad (β₁)</label><input type="range" id="polyB1" min="100" max="260" value="200" step="10"><output id="polyB1Val"></output></div><div class="control"><label for="polyB2" id="polyB2Label">Coeficiente de edad² (β₂)</label><input type="range" id="polyB2" min="-4" max="4" value="-2" step="0.25"><output id="polyB2Val"></output></div><div class="control" id="polyB3Wrap" hidden><label for="polyB3">Coeficiente de edad³ (β₃)</label><input type="range" id="polyB3" min="-0.04" max="0.02" value="-0.02" step="0.001"><output id="polyB3Val"></output></div></div>
+      <svg id="polyPlot" class="plot" viewBox="0 0 680 340" role="img" aria-label="Curva de gasto y edad"></svg><p class="small">Cambia la edad o los coeficientes para observar cómo se modifica la curva.</p>
+      <div id="polyMargWrap" class="small" style="margin-top:12px">La pendiente de la curva cambia con la edad. En el panel derecho se calcula derivando y sustituyendo la edad seleccionada.<svg id="polyMargPlot" class="plot" viewBox="0 0 680 215" role="img" aria-label="Efecto marginal en función de la edad" hidden></svg></div>
+    </div>
+    <div class="card"><h3 id="polyReadingTitle">Cómo calcular el efecto de la edad</h3><div class="formula math" id="polyFormula"></div>
+      <div id="polyQuadraticDetail">
+        <div class="calc-step"><span class="step-number">1</span><div><b>Deriva el modelo respecto a Edad</b><div class="formula math" id="polyDerivative">dŶ/dEdad = β₁ + 2β₂ · Edad</div></div></div>
+        <div class="calc-step"><span class="step-number">2</span><div><b>Sustituye la edad seleccionada</b><div class="calc-equation" id="polyDerivativeCalc"></div></div></div>
+        <div class="calc-step"><span class="step-number">3</span><div><b>Interpreta el efecto marginal</b><div class="note green" id="polyMarginalText"></div></div></div>
+        <div class="readout" id="polyTurn"></div>
+        <details class="explain-more"><summary>¿Y el cambio exacto entre dos edades?</summary><p class="small">La derivada es la pendiente <b>en una edad concreta</b>. El cambio exacto de una edad a otra se calcula restando las dos predicciones. Pueden diferir porque la pendiente cambia a lo largo de la curva.</p><div class="calc-two"><div><span class="small" id="polyPredLabel0">Edad inicial</span><strong id="polyPred0"></strong></div><div><span class="small" id="polyPredLabel1">Edad final</span><strong id="polyPred1"></strong></div></div><div class="calc-equation" id="polyDeltaCalc"></div><div class="note" id="polyTotalText"></div></details>
+      </div>
+      <div id="polyCubicDetail" hidden><div class="note">El término cúbico permite representar curvas más flexibles. Para obtener el efecto de la edad hay que derivar conjuntamente los términos lineal, cuadrático y cúbico.</div><div class="formula math" id="polyCubicDerivativeRule"></div><div class="calc-equation" id="polyCubicDerivation"></div><p class="small" id="polyCubicComment"></p></div>
+      <button class="btn" id="polyReset">Restablecer coeficientes</button>
+    </div>
+  </div>
+  <div class="card"><h3>Comprueba que lo entendiste</h3><div class="quiz-card"><div class="quiz-head">Interpretación</div><h4>Si una regresión incluye Edad y Edad², ¿cómo calculas el efecto marginal a una edad concreta?</h4><div class="options" id="polyQuiz"><button data-good="0">Se lee directamente el coeficiente de Edad.</button><button data-good="1">Se deriva respecto a Edad y se sustituye la edad elegida.</button><button data-good="0">Solo se multiplica el coeficiente de Edad² por la edad.</button></div><div class="answer" id="polyQuizFb" hidden></div></div></div>
+</section>
+<section class="panel" id="tab5" role="tabpanel" aria-labelledby="btn-tab5">
+  <div class="section-head"><div><div class="topline">05 · Efectos condicionados</div><h2>Interacciones entre variables</h2><p>Una interacción permite que el efecto de X sobre Y cambie dependiendo de otra variable.</p></div><div class="numtag">05</div></div>
+  <div class="card"><h3>Ejemplo: horas de estudio y tutorías</h3><div class="labelup">Modelo teórico</div><div class="formula math">Notaᵢ = β₀ + β₁ · Estudioᵢ + β₂ · Tutoríasᵢ + β₃ · (Estudioᵢ × Tutoríasᵢ) + uᵢ</div><div class="labelup">Modelo estimado · coeficiente de interacción ajustable</div><div class="formula math" id="intModelEq"></div><p class="small">Tutorías es una dummy: <b>0 = no recibe tutorías (base)</b> y <b>1 = recibe tutorías</b>. Puedes modificar el coeficiente β₃ de interacción. El coeficiente de Tutorías (0,8) compara los grupos <b>cuando Estudio = 0</b>; cuando Estudio es distinto de cero, la diferencia incluye la interacción.</p><div class="note green"><b>Principio de jerarquía:</b> si se mantiene la interacción Estudio × Tutorías, se conservan Estudio y Tutorías en el modelo, aunque alguno de sus coeficientes no sea significativo.</div></div>
+  <div class="grid-main" style="margin-bottom:16px">
+    <div class="card"><h3>Visualiza las pendientes de los dos grupos</h3><div class="controls"><div class="control"><label for="intHours">Horas de estudio</label><input type="range" id="intHours" min="0" max="8" value="4" step="0.5"><output id="intHoursVal"></output></div><div class="control"><label for="intGamma">Coeficiente de interacción β₃</label><input type="range" id="intGamma" min="-0.4" max="0.3" value="0.25" step="0.05"><output id="intGammaVal"></output></div></div><svg id="intPlot" class="plot" viewBox="0 0 680 340" role="img" aria-label="Regresión con y sin tutorías"></svg><div class="legend"><span style="--color:#156082">Sin tutorías · base</span><span style="--color:#E97132">Con tutorías</span></div><div class="btnrow"><button class="btn" id="intReset">Restablecer interacción</button></div></div>
+    <div class="card"><h3>Cómo leer cada término</h3><div class="readout" id="intFormulaGroups"></div><div class="kpis"><div class="kpi"><div class="num" id="intSlopeBase">—</div><div class="cap">Pendiente · sin tutorías</div></div><div class="kpi"><div class="num" id="intSlopeYes">—</div><div class="cap">Pendiente · con tutorías</div></div></div><div class="note" id="intExplain"></div><div class="quiz-card"><div class="quiz-head">Calcula e interpreta</div><h4>¿Cuánto cambia la nota estimada por una hora adicional de estudio para quienes reciben tutorías?</h4><div class="inline-quiz"><input aria-label="Pendiente para quienes reciben tutorías" type="text" inputmode="decimal" id="intGuess" placeholder="Por ejemplo, 0,85"><button class="btn primary" id="intCheck">Comprobar</button></div><div class="answer" id="intQuizFb" hidden></div></div></div>
+  </div>
+</section>
+<section class="panel" id="tab6" role="tabpanel" aria-labelledby="btn-tab6">
+  <div class="section-head"><div><div class="topline">06 · Una escala común</div><h2>Estandarización de coeficientes</h2><p>Es muy útil para comparar magnitudes en términos de desviaciones estándar cuando los predictores tienen efectos lineales simples.</p></div><div class="numtag">06</div></div>
+  <div class="card"><h3>¿Por qué no basta con comparar los β originales?</h3><p>El tamaño de un coeficiente depende de las <b>unidades</b> de su variable. Una pendiente de 200 no representa necesariamente un efecto relativo mayor que una de 50.</p><div class="labelup">Modelo teórico</div><div class="formula math">Gastoᵢ = β₀ + β₁ · Edadᵢ + β₂ · Distanciaᵢ + β₃ · Educaciónᵢ + uᵢ</div><div class="labelup">Modelo estimado</div><div class="formula math">Gasto = 120 + 50 · Edad − 1,5 · Distancia + 200 · Educación</div><div class="note">Para un predictor lineal Xⱼ, al estandarizar Xⱼ e Y, el coeficiente es <b>βⱼ estandarizado = bⱼ × DE(Xⱼ) / DE(Y)</b>. Describe el cambio estimado en desviaciones estándar de Y ante un aumento de una desviación estándar de Xⱼ, manteniendo constantes las demás variables.</div></div>
+  <div class="card"><div class="controls"><div class="control"><label for="stdUnits">Unidad de medida de la edad</label><select id="stdUnits"><option value="years">Años</option><option value="months">Meses</option></select></div></div><div class="grid-plot"><div><h4>Coeficientes originales</h4><svg id="stdRawPlot" class="plot" viewBox="0 0 680 330" role="img" aria-label="Comparación de coeficientes en unidades originales"></svg></div><div><h4>Coeficientes estandarizados</h4><svg id="stdStdPlot" class="plot" viewBox="0 0 680 330" role="img" aria-label="Comparación de coeficientes en desviaciones estándar"></svg></div></div><div class="readout" id="stdExplain"></div></div>
+  <div class="grid2" style="margin-bottom:16px">
+    <div class="card"><h3>Cómo se calculan</h3><div class="tablewrap"><table><thead><tr><th>Variable</th><th class="num">DE(X)</th><th class="num">β original</th><th class="num">β estandarizado</th></tr></thead><tbody id="stdTable"></tbody></table></div><p class="small">Valores y desviaciones estándar ilustrativos. Para el ejemplo se considera DE(Gasto) = 1.800 €.</p></div>
+    <div class="card"><h3>Una precaución importante</h3><p>La interpretación anterior es directa para <b>términos lineales que no participan en interacciones ni transformaciones</b>.</p><p>Con X², X³, log(X) o interacciones, estandarizar los coeficientes de los términos no equivale a comparar de forma simple «cuánto importa cada variable»: los efectos pueden depender del valor de X y del resto del modelo.</p><div class="quiz-card"><div class="quiz-head">Pregunta rápida</div><h4>En el ejemplo, ¿qué variable tiene la mayor magnitud de coeficiente estandarizado?</h4><div class="options" id="stdQuiz"><button data-good="1">Edad</button><button data-good="0">Distancia</button><button data-good="0">Educación</button></div><div class="answer" id="stdQuizFb" hidden></div></div></div>
+  </div>
+</section>
+<section class="panel" id="tab7" role="tabpanel" aria-labelledby="btn-tab7">
+  <div class="section-head"><div><div class="topline">07 · Aplicación</div><h2>Interpretación de coeficientes</h2><p>Comienza con el precio sin transformar y después compara cómo cambia la interpretación al utilizar su logaritmo.</p></div><div class="numtag">07</div></div>
+  <div class="card">
+    <div class="lab-head"><div><h3>Un mismo caso: precio por noche de alojamientos</h3><p><b>Variable que queremos explicar (Y): el precio en euros por noche de un alojamiento.</b></p><p class="small">Utilizamos las mismas variables explicativas en los dos modelos. Las estimaciones son <b>ilustrativas</b>, no resultados de una base de datos real.</p></div><span class="lab-tag">Ejemplo didáctico</span></div>
+    <div class="note"><b>Variable categórica <code>tipo</code>:</b> se divide en <b>Apartamento, Casa y Estudio</b>. La categoría de referencia es <b>Apartamento</b>; por eso R muestra los coeficientes <code>tipoCasa</code> y <code>tipoEstudio</code>. Además, <code>piscina</code> está codificada como 0 (no) y 1 (sí).</div>
+    <div class="seg" id="labModels" role="group" aria-label="Modelo para interpretar"><button class="on" data-model="price">1 · Precio sin transformar</button><button data-model="log">2 · Precio en logaritmos</button></div>
+    <div class="note orange" id="labModelTransition" hidden><b>Segundo modelo.</b> Supongamos que el precio tiene una distribución muy asimétrica y consideramos conveniente transformarlo. Ahora estimamos <b>ln(precio_noche)</b> como variable dependiente, manteniendo las mismas variables explicativas. Los coeficientes cambian y debemos interpretarlos de otra manera.</div>
+    <h4 id="labModelName">Modelo 1 · Precio sin transformar</h4><div class="labelup">Modelo teórico</div><div class="formula math" id="labTheory"></div><div class="labelup">Especificación en R</div><pre class="code" id="labCall"></pre>
+    <div class="seg" id="labModes"><button class="on" data-lab="learn">Aprender: selecciona coeficientes</button><button data-lab="exam">Evaluarme: 12 preguntas</button></div>
+  </div>
+  <div class="grid-main" style="margin-bottom:16px">
+    <div class="card"><h3>Salida del modelo · <code>summary(lm(...))</code></h3><p class="small"><b>Primero revisa el p-valor</b> de cada coeficiente. Después, selecciona el término que deseas interpretar. Si participa en potencias o interacciones, se resaltarán los términos relacionados.</p><p class="small mobile-hint">Puedes desplazar la tabla horizontalmente.</p><div class="tablewrap"><table class="coef-table"><thead><tr><th>Coeficiente</th><th class="num">Estimate</th><th class="num">Std. Error</th><th class="num">t value</th><th class="num">Pr(&gt;|t|)</th></tr></thead><tbody id="coefTable"></tbody></table></div><pre class="code" id="labSummary" style="background:#F5F9FB;color:#345167;border-color:#DDE7EE;margin-top:13px"></pre><div class="note orange">Los coeficientes, p-valores y medidas de ajuste son ejemplos para practicar; no proceden de una estimación real. Se muestran los decimales con coma por convención española (R habitualmente utiliza punto).</div></div>
+    <div class="card" id="labLearn"><div class="labelup">Modo aprendizaje</div><h3 id="labCoefTitle">Selecciona un coeficiente</h3><div class="significance" id="labSignificance"></div><div class="note" id="labCoefExplanation"></div><div class="formula" id="labCoefFormula"></div><div id="labCoefExtra"></div><div class="model-controls" id="labControls"><h4>Prueba otros valores</h4><p class="small">La distancia se utiliza para calcular los efectos de los términos cuadrático y cúbico; los dormitorios, para las interacciones con el tipo de alojamiento.</p><div class="controls"><div class="control"><label for="labDist">Distancia al centro</label><input type="range" min="0" max="18" step="1" value="5" id="labDist"><output id="labDistVal">5 km</output></div><div class="control"><label for="labRooms">Dormitorios</label><input type="range" min="0" max="5" value="2" step="1" id="labRooms"><output id="labRoomsVal">2</output></div></div></div></div>
+    <div class="card" id="labExam" hidden><div class="labelup">Modo evaluación</div><h3>Practica la interpretación del modelo seleccionado</h3><p class="small">La salida del modelo continúa visible, pero las interpretaciones se ocultan. Responde las 12 preguntas y consulta las correcciones al terminar.</p><div id="examBody"><div class="progress-track"><div class="progress-fill" id="examFill"></div></div><div class="small" id="examProgress"></div><h4 id="examQuestion"></h4><div class="options" id="examOptions"></div><div class="btnrow" style="justify-content:space-between"><button class="btn" id="examBack">← Anterior</button><button class="btn primary" id="examNext">Siguiente →</button></div><div class="small" id="examPending" aria-live="polite"></div></div><div id="examResults" hidden><div class="scorebig" id="examScore"></div><p id="examVerdict"></p><div id="examReview"></div><div class="btnrow"><button class="btn primary" id="examRetry">Repetir evaluación</button><button class="btn" id="examToLearn">Volver a aprender</button></div></div></div>
+  </div>
+  <div class="card"><h3>Aspectos importantes a tener en cuenta</h3><div class="grid3"><div class="mini-card"><strong>Reconocer la base</strong><p>Leer correctamente los coeficientes de variables categóricas y sus interacciones.</p></div><div class="mini-card"><strong>Interpretar transformaciones</strong><p>Distinguir cambios absolutos, porcentuales y efectos marginales variables.</p></div><div class="mini-card"><strong>Leer el modelo completo</strong><p>Combinar términos relacionados antes de interpretar un coeficiente.</p></div></div><div class="note orange"><b>Antes de interpretar:</b> comprueba el <b>p-valor</b> para saber si existe evidencia estadística de un coeficiente distinto de cero con un nivel de significación α del 5 %. Un p-valor alto no demuestra que el efecto poblacional sea cero.</div></div>
+</section>
+<section class="panel" id="tab8" role="tabpanel" aria-labelledby="btn-tab8">
+  <div class="section-head"><div><div class="topline">08 · Aplicación autónoma</div><h2>Práctica de interpretación</h2><p>Observa datos y salidas de regresión, responde y consulta la solución cuando lo necesites.</p></div><div class="numtag">08</div></div>
+  <div class="card"><div class="pract-top"><div><h3 style="margin:0">14 ejercicios de aplicación</h3><p class="small" style="margin-top:4px">6 ejercicios gráficos y 8 de coeficientes, significación y efectos conjuntos. Los datos y coeficientes son ilustrativos.</p></div><div class="seg" id="practSections" role="group" aria-label="Grupo de ejercicios"><button class="on" data-pract="graphs">Gráficos · 1–6</button><button data-pract="coeffs">Coeficientes · 7–14</button></div></div><div class="progress-track" style="margin-top:10px"><div class="progress-fill" id="practProgressBar"></div></div><p id="practProgress" class="pract-state" aria-live="polite"></p></div>
+  <div class="card">
+    <div class="labelup" id="practKind">Reconocimiento de transformaciones</div>
+    <h3 id="practQuestion"></h3>
+    <p id="practContext" class="small"></p>
+    <div class="pract-math" id="practFormula" hidden></div>
+    <div id="practChartWrap" class="pract-plot-wrap"><svg id="practChart" class="plot" viewBox="0 0 710 335" role="img" aria-label="Observaciones simuladas para analizar la forma de la relación"></svg></div>
+    <div id="practAnswerOptions" class="options" role="group" aria-label="Respuestas posibles"></div>
+    <div id="practNumericWrap" hidden><label for="practNumeric" class="pract-example-heading">Escribe tu respuesta</label><div><input id="practNumeric" class="pract-num-input" type="text" inputmode="decimal" autocomplete="off" placeholder="Usa coma decimal, por ejemplo: 0,85"><span id="practNumUnit" class="small"></span></div></div>
+    <div class="btnrow"><button id="practCheck" class="btn primary">Comprobar respuesta</button><button id="practReveal" class="btn">Ver solución</button></div>
+    <div id="practFeedback" class="answer" aria-live="polite" hidden></div>
+    <div id="practSolution" class="pract-sol" hidden><h4>Solución explicada</h4><p id="practSolText"></p><div id="practSolvedChart" hidden><p class="small"><b>Después de la transformación:</b> los mismos datos, representados en la escala transformada.</p><svg id="practAfter" class="plot" viewBox="0 0 710 305" role="img" aria-label="Datos después de aplicar la transformación"></svg></div></div>
+    <div class="pract-stepper"><button class="btn" id="practPrev">← Ejercicio anterior</button><span id="practCounter" class="small"></span><button class="btn primary" id="practNext">Siguiente ejercicio →</button></div>
+  </div>
+</section>
+<div class="footer-nav"><button id="prevTab" class="btn" disabled>← Sección anterior</button><span id="tabStatus" class="small">Sección 1 de 8</span><button id="nextTab" class="btn primary">Siguiente sección →</button></div>
+</main>
+<footer class="pagefoot"><img alt="Cátedra Analytics for Education · Comillas ICADE · Santalucía Seguros" src="data:image/png;base64,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3x//yKoPP+p78UrAZrWiS52Av98/M0ZkSsm61au59+4/xJSS5AD2XyK55NJLueraa/teaIdcZAK3fvs7MSIT4I/HisgEmhsb+dPv72JjVKS/BCZPmcy3fvADcvPyYqyPAHowSOnOnbS2tDB3wQIQAil1dm7bzvARI3BFJcRHSvx+P/f89nd89MEHEVkKsrOzueb665l/0okRixxqjorIlBK3201leTl7SkupramhtbmFYDCAzW4nMyubwuIixk+cSHKUL6seDFJfW8vO7dsp27uP+vp63O4ekEapzty8YRQWFVEydiwZWZkDis2GujqWL1tGbXUNxSUlnHL6aThczphfjB4M8u7bb7Njy1aCwQAXfPGLjCwqiujT0tTEy8+/QGdHB2aziWkzZzFv0UIQgq7OTpa++io1oVRhJWNGc9b558cVjvW1tTzzxJMAJCUnseCEEyg5gOpPUuq89drr7Ni2HbPFzIzZs5k9b97gowRS0trSwqZPPmHntu3U1dWi6zpOp5PcYcMoKCxi9LixZGRlxYjrQ8qREplDIt6TcwDCROuxT7hkOZz7eyi3cwDXYkjEewMemwzyq1UcLwQCAVZ+8OGAgTvxbkMRp11KeP2VV42I4AP69hAkJSfzlSuuICeUwNtoBZ/PFyEwB+L9994bMHAnej9722LbBW8uWYI/ENjv/g86V8r99TjmSUxKYs68uTG1wwWwdfMW/v3oo2zfsgWvx2Mcb2jq6GhnxTvv8OQjj7C9V0hLSWVZOU899hjPP/00ba2xHwIWi4XEpKQY0Wq12bDZ7RFtnwWk1GlsaOC1l1/mHw88wMMPPsRLzz7He8uW8f57y3l76Rv854knePqxx9lTWhp2P0mCgQCrPvyQhx/6O/944G+88MwzfPDee6z7eDXrVq9mxbvv8sy/n+Khv97Pk488ysZ16/F5I0t69lJXU8NbS9/gzaVLeen55418t9G3rpQ0NTaybOkbLH39dd5cupTNn3wSc493d3Xx/vLlvLV0KcvefIs9pbv6hKHX42HNqo95a+lS3lq6lE2ffDKgaOzo6Ojr9/57y6mrrRuwbwTSsJZ3tLXz9BNP8ubSpbzx2uuseOddmpuaontH0NTYyMsvvMA/7n+AV156idUrV7H249WsePc9nn3qaf5+//28+J//DPiM+WwyhHPei4j/RD026d3Xw72/h3I7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"><div>Universidad Pontificia Comillas · Inference and Regression Models for Business</div><div>Material didáctico interactivo · Tema 7: Modelado</div></footer>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const fmt = (x,n=2) => Number(x).toLocaleString('es-ES',{minimumFractionDigits:n,maximumFractionDigits:n});
+const fTrim = (x,n=2) => fmt(x,n).replace(/(,\d*?[1-9])0+$/,'$1').replace(/,0+$/,'');
+const sign = (x,n=2) => `${x>=0?'+':'−'} ${fmt(Math.abs(x),n)}`;
+const fmtPct = (x,n=1) => `${fmt(x,n)} %`;
+const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
+const COLORS = {navy:'#0E2841',teal:'#156082',orange:'#E97132',red:'#B74341',green:'#287949',purple:'#9B659F',gray:'#94A3B0',blue:'#4179C8'};
+let activeTab = 0;
+const tabs = [...document.querySelectorAll('nav.tabs button')];
+function gotoTab(idx){
+  activeTab=clamp(idx,0,tabs.length-1);
+  tabs.forEach((b,i)=>{const on=i===activeTab;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1});
+  document.querySelectorAll('section.panel').forEach((p,i)=>p.classList.toggle('on',i===activeTab));
+  $('prevTab').disabled=activeTab===0;$('nextTab').disabled=activeTab===tabs.length-1;
+  $('tabStatus').textContent=`Sección ${activeTab+1} de ${tabs.length}`;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)window.scrollTo(0,0);
+  else window.scrollTo({top:0,behavior:'smooth'});
+}
+tabs.forEach((b,i)=>{b.addEventListener('click',()=>gotoTab(i));b.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();const j=(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length;gotoTab(j);tabs[j].focus()}})});
+$('prevTab').addEventListener('click',()=>gotoTab(activeTab-1));$('nextTab').addEventListener('click',()=>gotoTab(activeTab+1));
+function S(tag,attrs={},parent,text){
+  const el=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,String(v)));
+  if(text!==undefined)el.textContent=text;
+  parent.append(el);return el;
+}
+function plotSVG(id,opt){
+  const svg=$(id);svg.replaceChildren();
+  const W=svg.viewBox.baseVal.width||680,H=svg.viewBox.baseVal.height||345;
+  const m={l:60,r:22,t:24,b:48},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const {xmin,xmax,ymin,ymax}=opt;
+  const px=x=>m.l+(x-xmin)/(xmax-xmin)*iw;
+  const py=y=>m.t+(1-(y-ymin)/(ymax-ymin))*ih;
+  const ticksY=opt.ticksY||4, ticksX=opt.ticksX||5;
+  for(let i=0;i<=ticksY;i++){
+    const y=ymin+(ymax-ymin)*i/ticksY;
+    S('line',{x1:m.l,x2:W-m.r,y1:py(y),y2:py(y),class:'gridline'},svg);
+    const t=(opt.tickYFmt||tickFmt)(y);
+    S('text',{x:m.l-10,y:py(y)+4,'text-anchor':'end',class:'tick'},svg,t);
+  }
+  for(let i=0;i<=ticksX;i++){
+    const x=xmin+(xmax-xmin)*i/ticksX;
+    S('line',{x1:px(x),x2:px(x),y1:m.t,y2:H-m.b,class:'gridline'},svg);
+    S('text',{x:px(x),y:H-m.b+18,'text-anchor':'middle',class:'tick'},svg,(opt.tickXFmt||tickFmt)(x));
+  }
+  S('line',{x1:m.l,x2:W-m.r,y1:H-m.b,y2:H-m.b,stroke:'#7D92A1','stroke-width':1.3},svg);
+  S('line',{x1:m.l,x2:m.l,y1:m.t,y2:H-m.b,stroke:'#7D92A1','stroke-width':1.3},svg);
+  S('text',{x:W/2,y:H-8,'text-anchor':'middle',class:'axis-label'},svg,opt.xLabel||'X');
+  S('text',{x:15,y:H/2,transform:`rotate(-90 15 ${H/2})`,'text-anchor':'middle',class:'axis-label'},svg,opt.yLabel||'Y');
+  if(ymin<0&&ymax>0){S('line',{x1:m.l,x2:W-m.r,y1:py(0),y2:py(0),stroke:'#94A9B7','stroke-dasharray':'5 4'},svg)}
+  (opt.lines||[]).forEach(line=>{
+    if(line.x>=xmin&&line.x<=xmax){S('line',{x1:px(line.x),x2:px(line.x),y1:m.t,y2:H-m.b,stroke:line.color||COLORS.orange,'stroke-width':1.6,'stroke-dasharray':'6 5'},svg);
+      if(line.label)S('text',{x:px(line.x)+5,y:m.t+13,fill:line.color||COLORS.orange,'font-size':11,'font-weight':700},svg,line.label);
+    }
+  });
+  (opt.series||[]).forEach(series=>{
+    let d='';const n=150;
+    for(let i=0;i<=n;i++){
+      const x=xmin+(xmax-xmin)*i/n,y=series.fn(x);
+      if(Number.isFinite(y))d+=(d?' L ':'M ')+px(x).toFixed(2)+' '+py(y).toFixed(2);
+    }
+    S('path',{d,fill:'none',stroke:series.color||COLORS.teal,'stroke-width':series.width||3,'stroke-linecap':'round','stroke-linejoin':'round',...(series.dash?{'stroke-dasharray':series.dash}:{})},svg);
+  });
+  (opt.markers||[]).forEach(pt=>{
+    if(pt.x<xmin||pt.x>xmax||pt.y<ymin||pt.y>ymax)return;
+    if(pt.vertical)S('line',{x1:px(pt.x),x2:px(pt.x),y1:py(pt.y),y2:H-m.b,stroke:pt.color||COLORS.orange,'stroke-dasharray':'4 5','stroke-width':1.5},svg);
+    S('circle',{cx:px(pt.x),cy:py(pt.y),r:pt.r||6,fill:pt.color||COLORS.orange,class:'marker'},svg);
+  });
+  if(opt.onX){svg.style.cursor='crosshair';svg.onpointerdown=e=>{
+    const rect=svg.getBoundingClientRect();
+    const sx=(e.clientX-rect.left)/rect.width*W;
+    const x=clamp(xmin+(sx-m.l)/iw*(xmax-xmin),xmin,xmax);
+    opt.onX(x);
+  }}else{svg.style.cursor='default';svg.onpointerdown=null}
+}
+function shuffledIndices(n){const a=Array.from({length:n},(_,i)=>i);for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function tickFmt(v){const a=Math.abs(v);if(a>=1000)return fmt(v,0);if(a>=10)return fmt(v,0);if(a>=1)return fmt(v,1);return fmt(v,2)}
+function withPadding(values,p=.13){const lo=Math.min(...values),hi=Math.max(...values),r=Math.max(1,hi-lo);return [lo-r*p,hi+r*p]}
+function quizClick(groupId,fbId,explain){
+  [...$(groupId).querySelectorAll('button')].forEach(b=>b.addEventListener('click',()=>{
+    const good=b.dataset.good==='1';
+    $(groupId).querySelectorAll('button').forEach(x=>{x.disabled=true;x.classList.toggle('correct',x.dataset.good==='1');x.classList.toggle('wrong',x===b&&!good)});
+    const fb=$(fbId);fb.hidden=false;fb.className='answer '+(good?'ok':'err');fb.textContent=(good?'Correcto. ':'No exactamente. ')+explain;
+  }));
+}
+
+
+// Gráficos estadísticos de práctica: puntos de observaciones y histogramas.
+function sampleNoise(i,seed=1){
+ const u=Math.sin((i+1)*12.9898+seed*78.233)*43758.5453;
+ const v=Math.sin((i+1)*61.7381+seed*17.713)*15437.123;
+ return ((u-Math.floor(u))+(v-Math.floor(v))-1);
+}
+function scatterPlot(id,points,{xLabel='X',yLabel='Y',line=null,rangeX=null,rangeY=null}={}){
+ const xs=points.map(p=>p.x),ys=points.map(p=>p.y),[rawMin,xmax]=rangeX||withPadding(xs,.045),[ymin,ymax]=rangeY||withPadding(ys,.12);
+ const xmin=xs.every(x=>x>=0)?Math.max(0,rawMin):rawMin;
+ plotSVG(id,{xmin,xmax,ymin,ymax,xLabel,yLabel,series:line?[{fn:line,color:'#B4C9D6',width:2}]:[]});
+ const svg=$(id),W=svg.viewBox.baseVal.width,H=svg.viewBox.baseVal.height;
+ const px=x=>60+(x-xmin)/(xmax-xmin)*(W-82),py=y=>24+(1-(y-ymin)/(ymax-ymin))*(H-72);
+ points.forEach(p=>S('circle',{cx:px(p.x),cy:py(p.y),r:3.9,fill:COLORS.teal,opacity:.76,stroke:'#fff','stroke-width':.65},svg));
+}
+function histogramPlot(id,values,xLabel='Y',bins=13){
+ const svg=$(id);svg.replaceChildren();const W=svg.viewBox.baseVal.width,H=svg.viewBox.baseVal.height;
+ const m={l:55,r:19,t:20,b:43},low=Math.min(...values),high=Math.max(...values),span=Math.max(0.001,high-low),step=span/bins;
+ const count=Array(bins).fill(0);values.forEach(v=>{const k=Math.min(bins-1,Math.max(0,Math.floor((v-low)/step)));count[k]++});
+ const yMax=Math.max(...count)*1.13,iw=W-m.l-m.r,ih=H-m.t-m.b;
+ for(let i=0;i<=4;i++){
+  const n=yMax*i/4,y=m.t+ih*(1-i/4);
+  S('line',{x1:m.l,x2:W-m.r,y1:y,y2:y,class:'gridline'},svg);
+  S('text',{x:m.l-8,y:y+4,'text-anchor':'end',class:'tick'},svg,fmt(n,0));
+ }
+ for(let i=0;i<bins;i++){
+  const w=iw/bins,barh=count[i]/yMax*ih;
+  S('rect',{x:m.l+i*w+1,y:m.t+ih-barh,width:Math.max(2,w-2),height:barh,fill:COLORS.teal,opacity:.84,rx:2},svg);
+ }
+ for(let i=0;i<=4;i++){const x=m.l+i*iw/4,val=low+i*span/4;S('text',{x,y:H-m.b+18,'text-anchor':'middle',class:'tick'},svg,tickFmt(val))}
+ S('line',{x1:m.l,x2:m.l,y1:m.t,y2:m.t+ih,stroke:'#7D92A1'},svg);
+ S('line',{x1:m.l,x2:W-m.r,y1:m.t+ih,y2:m.t+ih,stroke:'#7D92A1'},svg);
+ S('text',{x:W/2,y:H-8,'text-anchor':'middle',class:'axis-label'},svg,xLabel);
+ S('text',{x:12,y:H/2,transform:`rotate(-90 12 ${H/2})`,'text-anchor':'middle',class:'axis-label'},svg,'Frecuencia');
+}
+function normalNoise(i,seed=1){
+ const u0=Math.sin((i+1)*12.9898+seed*41.713)*43758.5453;
+ const v0=Math.sin((i+1)*78.233+seed*23.727)*24419.123;
+ const u=Math.max(.00001,u0-Math.floor(u0)),v=v0-Math.floor(v0);
+ return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function drawYHistograms(mode,s){
+ const center=Math.log(logModels[mode].raw(40,s));
+ const logys=Array.from({length:260},(_,i)=>center+.55*normalNoise(i,4));
+ histogramPlot('logYHistBefore',logys.map(Math.exp),'Y original (€)');
+ histogramPlot('logYHistAfter',logys,'ln(Y)');
+}
+
+// 1. Objetivo explicativo o predictivo
+const purposeQuestions=[
+  {q:'Una empresa desea anticipar la facturación del próximo trimestre. ¿Cuál es el objetivo principal?',a:'pred',why:'La prioridad es predecir valores que todavía no observamos.'},
+  {q:'Quieres describir cómo se asocia el nivel educativo con el salario, controlando otras variables. ¿Cuál es el objetivo principal?',a:'exp',why:'El interés está en interpretar asociaciones entre variables.'},
+  {q:'Usas información de clientes pasados para estimar cuáles comprarán el próximo mes. ¿Qué objetivo predomina?',a:'pred',why:'El rendimiento sobre casos nuevos es la prioridad.'},
+  {q:'Estudias la relación entre antigüedad de un vehículo y precio, manteniendo constantes otras características. ¿Qué objetivo predomina?',a:'exp',why:'Quieres interpretar la relación parcial entre antigüedad y precio.'}
+];
+let purposeIdx=0;
+function purposeRender(){const q=purposeQuestions[purposeIdx];$('purposeQ').textContent=q.q;$('purposeFb').hidden=true;$('purposeNext').hidden=true;[...$('purposeOptions').children].forEach(b=>{b.disabled=false;b.className='';});}
+$('purposeOptions').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+ const q=purposeQuestions[purposeIdx],ok=b.dataset.choice===q.a;
+ [...$('purposeOptions').children].forEach(x=>{x.disabled=true;x.classList.toggle('correct',x.dataset.choice===q.a);x.classList.toggle('wrong',x===b&&!ok)});
+ const fb=$('purposeFb');fb.hidden=false;fb.className='answer '+(ok?'ok':'err');fb.textContent=`${ok?'Correcto. ':'Revisa la pregunta. '}${q.why} Ambos usos pueden coexistir.`;
+ $('purposeNext').hidden=false;
+}));
+$('purposeNext').addEventListener('click',()=>{purposeIdx=(purposeIdx+1)%purposeQuestions.length;purposeRender()});
+purposeRender();
+
+// 2. Variables categóricas
+const cats=['Africa','America','Asia','Europa'];
+const catLabels={Africa:'África',America:'América',Asia:'Asia',Europa:'Europa'};
+const catEffects={Africa:0,America:6.3,Asia:7.6,Europa:10.8};
+const catColors={Africa:COLORS.teal,America:COLORS.orange,Asia:COLORS.purple,Europa:COLORS.green};
+const catY=(gdp,c)=>47+5.4*Math.log(gdp)+catEffects[c];
+function catUpdate(){
+ const base=$('catBase').value,gdp=+$('catGDP').value;
+ const others=cats.filter(c=>c!==base),cmp=$('catCompare'),old=cmp.value;
+ cmp.replaceChildren();others.forEach(c=>{const opt=document.createElement('option');opt.value=c;opt.textContent=catLabels[c];cmp.add(opt)});
+ if(others.includes(old))cmp.value=old;
+ const choice=cmp.value,dif=catEffects[choice]-catEffects[base];
+ $('catGDPVal').textContent=fmt(gdp*1000,0)+' €';
+ const beta0=47+catEffects[base];
+ $('catTheory').textContent='Vidaᵢ = β₀ + β₁ · ln(PIBpcᵢ) ' + others.map((c,i)=>'+ β'+['₂','₃','₄'][i]+' · continente'+catLabels[c]+'ᵢ').join(' ') + ' + uᵢ';
+ const additional=others.map(c=>`${sign(catEffects[c]-catEffects[base],1)} · continente${catLabels[c]}`).join(' ');
+ $('catFormula').innerHTML=`<span class="math">Ŷ = ${fmt(beta0,1)} + 5,4 · ln(PIBpc) ${additional}</span><div class="small">En esta ecuación, <code>continente${catLabels[choice]}</code> vale 1 cuando la observación pertenece a ${catLabels[choice]} y 0 en caso contrario. R muestra el nombre del factor seguido del nivel.</div>`;
+ $('catInterpret').innerHTML=`<b>Comparación seleccionada:</b> ${catLabels[choice]} frente a ${catLabels[base]} (base). El coeficiente es <b>${sign(dif,1)} años</b>: a igual PIB per cápita, la esperanza de vida estimada en ${catLabels[choice]} es ${fmt(Math.abs(dif),1)} años <b>${dif>=0?'mayor':'menor'}</b> que en ${catLabels[base]}.`;
+ $('catPrediction').innerHTML=`Para un PIB per cápita de <b>${fmt(gdp*1000,0)} €</b>: ${catLabels[base]} = <b>${fmt(catY(gdp,base),1)} años</b>; ${catLabels[choice]} = <b>${fmt(catY(gdp,choice),1)} años</b>.`;
+ const table=$('catTable');table.tHead.replaceChildren();table.tBodies[0].replaceChildren();
+ const trh=document.createElement('tr');['Continente',...others.map(c=>`continente${catLabels[c]}`)].forEach(txt=>{const th=document.createElement('th');th.textContent=txt;trh.append(th)});table.tHead.append(trh);
+ cats.forEach(c=>{const tr=document.createElement('tr');if(c===base)tr.classList.add('hl');const td=document.createElement('td');td.textContent=catLabels[c]+(c===base?' · base':'');tr.append(td);others.forEach(other=>{const cell=document.createElement('td');cell.className='num';cell.textContent=String(c===other?1:0);tr.append(cell)});table.tBodies[0].append(tr)});
+ $('catCode').textContent=`# R toma el primer nivel del factor como base (contrastes habituales)\ndatos$continente <- factor(datos$continente)\nlevels(datos$continente)\n\n# Cambiar la referencia a ${catLabels[base]}\ndatos$continente <- relevel(datos$continente, ref = "${catLabels[base]}")\n\nmodelo <- lm(vida ~ log(pibpc_miles) + continente, data = datos)\nsummary(modelo)`.replaceAll('\\n','\n');
+ // Las cuatro curvas se mantienen idénticas al cambiar la categoría de referencia.
+ plotSVG('catPlot',{xmin:1,xmax:45,ymin:43,ymax:93,xLabel:'PIB per cápita (miles de €)',yLabel:'Esperanza de vida (años)',series:cats.map(c=>({fn:x=>catY(x,c),color:catColors[c],width:2.8})),markers:[{x:gdp,y:catY(gdp,base),color:catColors[base],vertical:true},{x:gdp,y:catY(gdp,choice),color:catColors[choice]}],onX:x=>{$('catGDP').value=Math.round(x);catUpdate()}});
+ $('catLegend').innerHTML=cats.map(c=>`<span style="--color:${catColors[c]}">${catLabels[c]}${c===base?' · base':''}</span>`).join('');
+}
+$('catBase').addEventListener('change',catUpdate);$('catGDP').addEventListener('input',catUpdate);$('catCompare').addEventListener('change',catUpdate);catUpdate();
+quizClick('catQuiz','catQuizFb','La dummy representa una diferencia respecto a la base, manteniendo constantes las demás variables.');
+
+// 3. Transformaciones logarítmicas
+const logModels={
+ ll:{name:'Sin logaritmos',title:'Lineal–lineal',a:950,b:6,raw:(x,s)=>950+s*6*x,xlog:false,ylog:false,
+   point:'Por cada aumento de 1 unidad de X (1.000 € de ingresos), Y cambia 6 €.',
+   detail:'Ni X ni Y se transforman. La pendiente se interpreta en unidades de Y por unidad de X.'},
+ lx:{name:'Log en X',title:'Lineal–logarítmico',a:1000,b:160,raw:(x,s)=>1000+s*160*Math.log(x),xlog:true,ylog:false,
+   point:'Un aumento del 1 % en X se asocia aproximadamente con un cambio de 1,6 € en Y.',
+   detail:'Regla: un 1 % más de X se asocia aproximadamente con un cambio de 0,01·β₁ unidades de Y.'},
+ ly:{name:'Log en Y',title:'Logarítmico–lineal',a:5.2,b:.012,raw:(x,s)=>Math.exp(5.2+s*.012*x),xlog:false,ylog:true,
+   point:'Por cada aumento de 1 unidad de X, Y cambia aproximadamente un 1,2 %.',
+   detail:'Regla: por una unidad más de X, el cambio porcentual aproximado en Y es 100·β₁ %.'},
+ lxy:{name:'Log en X e Y',title:'Logarítmico–logarítmico',a:4.5,b:.4,raw:(x,s)=>Math.exp(4.5+s*.4*Math.log(x)),xlog:true,ylog:true,
+   point:'Un aumento del 1 % en X se asocia aproximadamente con un cambio del 0,4 % en Y.',
+   detail:'Regla: β₁ es una elasticidad; un 1 % más de X se asocia aproximadamente con β₁ % de cambio en Y.'}
+};
+let logMode='ll',logDirection=1;
+function logQuizRender(){
+ const m=logModels[logMode],b=logDirection*m.b,verb=b>0?'aumenta':'disminuye';
+ $('logQuizLabel').textContent=m.title;
+ $('logQuizQuestion').textContent=`En este modelo, β₁ = ${fmt(b,m.b<1?3:1)}. ¿Cómo lo interpretas?`;
+ const good=logMode==='ll'?`Cuando X aumenta 1 unidad, Y ${verb} ${fmt(Math.abs(b),0)} unidades.`:
+   logMode==='lx'?`Cuando X aumenta un 1 %, Y ${verb} aproximadamente ${fmt(Math.abs(b)/100,1)} unidades.`:
+   logMode==='ly'?`Cuando X aumenta 1 unidad, Y ${verb} aproximadamente ${fmt(100*Math.abs(b),1)} %.`:
+   `Cuando X aumenta un 1 %, Y ${verb} aproximadamente ${fmt(Math.abs(b),1)} %.`;
+ const opts=[good,
+   `Cuando X aumenta un 1 %, Y ${verb} ${fmt(Math.abs(b),2)} unidades exactamente.`,
+   `El coeficiente muestra cuánta variabilidad de Y explica el modelo.`];
+ const wrap=$('logQuizOpts');wrap.replaceChildren();
+ shuffledIndices(opts.length).forEach(idx=>{const button=document.createElement('button');button.dataset.idx=idx;button.textContent=opts[idx];button.addEventListener('click',()=>{
+   [...wrap.children].forEach(x=>{x.disabled=true;x.classList.toggle('correct',+x.dataset.idx===0);x.classList.toggle('wrong',x===button&&idx!==0)});
+   const fb=$('logQuizFb');fb.hidden=false;fb.className='answer '+(idx===0?'ok':'err');fb.textContent=(idx===0?'Correcto. ':'No exactamente. ')+good;
+ });wrap.append(button)});
+ $('logQuizFb').hidden=true;
+}
+function logUpdate(){
+ const m=logModels[logMode],s=logDirection,b=s*m.b;
+ const eqLeft=m.ylog?'ln(Y)':'Y',eqX=m.xlog?'ln(X)':'X';
+ const equation=`${eqLeft} = ${fmt(m.a,m.a<10?2:0)} ${sign(b,m.b<1?3:0)} · ${eqX}`;
+ $('logTitle').textContent=m.title;
+ $('logEq').textContent=equation;
+ $('logBeforeCaption').textContent='Ejes originales: ingresos (X) y gasto (Y).';
+ $('logAfterCaption').textContent=logMode==='ll'?'Sin transformación: la relación continúa igual.':
+  `Ejes después: ${m.xlog?'ln(X)':'X'} y ${m.ylog?'ln(Y)':'Y'}.`;
+ $('logHistogramWrap').hidden=!m.ylog;
+ $('logRelationPlots').hidden=logMode==='ly';
+ if(m.ylog)drawYHistograms(logMode,s);
+ $('logVisualComment').innerHTML=logMode==='ly'?'<b>Cuando transformamos Y:</b> observamos primero su distribución en un histograma, antes y después de aplicar ln(Y). La elección de transformar Y también depende del objetivo y del diagnóstico del modelo.':logMode==='ll'?'<b>Sin logaritmos:</b> no cambiamos la escala. El modelo ya representa una recta.':
+  `<b>Observa los ejes:</b> la relación original puede ser curva, pero al representar ${m.xlog?'ln(X)':'X'} frente a ${m.ylog?'ln(Y)':'Y'} queda una recta. No hemos cambiado los datos ni añadido otra regresión en estos gráficos.`;
+ const raw=m.raw;
+ const xMin=10,xMax=90;
+ const [y1,y2]=withPadding([raw(xMin,s),raw(xMax,s)],.14);
+ plotSVG('logBeforePlot',{xmin:xMin,xmax:xMax,ymin:y1,ymax:y2,xLabel:'Ingresos X (miles de €)',yLabel:'Gasto Y (€)',series:[{fn:x=>raw(x,s),color:COLORS.teal,width:3.4}]});
+ const transformX=x=>m.xlog?Math.log(x):x;
+ const transformY=y=>m.ylog?Math.log(y):y;
+ const afterFn=t=>transformY(raw(m.xlog?Math.exp(t):t,s));
+ const xmin=transformX(xMin),xmax=transformX(xMax);
+ const [ya,yb]=withPadding([afterFn(xmin),afterFn(xmax)],.14);
+ plotSVG('logAfterPlot',{xmin,xmax,ymin:ya,ymax:yb,xLabel:m.xlog?'ln(Ingresos X)':'Ingresos X (miles de €)',yLabel:m.ylog?'ln(Gasto Y)':'Gasto Y (€)',series:[{fn:afterFn,color:COLORS.teal,width:3.4}]});
+ const dX=m.xlog?'1 %':'1 unidad',dY=logMode==='ll'?`${fmt(Math.abs(b),0)} €`:
+   logMode==='lx'?`${fmt(Math.abs(b)/100,1)} €`:
+   logMode==='ly'?`${fmt(100*Math.abs(b),1)} %`:`${fmt(Math.abs(b),1)} %`;
+ $('logRule').innerHTML=`<b>Interpretación:</b> si X aumenta <b>${dX}</b>, Y <b>${b>=0?'aumenta':'disminuye'}</b> ${logMode==='ll'?'': 'aproximadamente ' }<b>${dY}</b>, manteniendo constantes las demás variables.`;
+ $('logDetail').textContent=m.detail;
+ const x0=40,x1=m.xlog?40*1.01:41,z0=raw(x0,s),z1=raw(x1,s);
+ const actual=logMode==='ll'||logMode==='lx'?`${sign(z1-z0,2)} €`:`${sign((z1/z0-1)*100,2)} %`;
+ $('logExample').innerHTML=`<b>Ejemplo:</b> al pasar de X = <b>${fmt(x0,1)}</b> a <b>${fmt(x1,1)}</b> (${m.xlog?'+1 %':'+1 unidad'}), el cambio calculado con el modelo es <b>${actual}</b>. La regla anterior es ${logMode==='ll'?'exacta':'una aproximación habitual'}.`;
+}
+$('logModes').querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{logMode=btn.dataset.mode;[...$('logModes').children].forEach(b=>b.classList.toggle('on',b===btn));logUpdate();logQuizRender()}));
+$('logSigns').querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{logDirection=+btn.dataset.sign;[...$('logSigns').children].forEach(b=>b.classList.toggle('on',b===btn));logUpdate();logQuizRender()}));
+logUpdate();logQuizRender();
+
+// 4. Efectos cuadráticos y cúbicos
+let polyMode='q';
+function polyInit(){
+ const cubic=polyMode==='c',b1=$('polyB1'),b2=$('polyB2');
+ $('polyTitle').textContent=cubic?'Una curva cúbica':'Una parábola: gasto y edad';
+ $('polyReadingTitle').textContent=cubic?'Efecto marginal en el modelo cúbico':'Cómo calcular el efecto marginal de la edad';
+ $('polyTheory').textContent=cubic?'Gastoᵢ = β₀ + β₁ · Edadᵢ + β₂ · Edadᵢ² + β₃ · Edadᵢ³ + uᵢ':'Gastoᵢ = β₀ + β₁ · Edadᵢ + β₂ · Edadᵢ² + uᵢ';
+ $('polyB1Label').textContent='Coeficiente de edad (β₁)';
+ $('polyB2Label').textContent='Coeficiente de edad² (β₂)';
+ $('polyIntro').innerHTML=cubic?'<b>Modelo cúbico:</b> añadir una potencia de grado tres permite representar curvas con formas más flexibles. Nos centraremos en la interpretación visual.':'<b>Modelo cuadrático:</b> al incluir edad y edad², la relación puede tener forma de U o U invertida. La pendiente cambia según la edad.';
+ if(cubic){b1.min=-200;b1.max=-40;b1.step=1;b1.value=-117;b2.min=1;b2.max=5;b2.step=.05;b2.value=2.85}
+ else{b1.min=100;b1.max=260;b1.step=10;b1.value=200;b2.min=-4;b2.max=4;b2.step=.25;b2.value=-2}
+ $('polyB3Wrap').hidden=!cubic;$('polyMargWrap').hidden=cubic;
+ $('polyQuadraticDetail').hidden=cubic;$('polyCubicDetail').hidden=!cubic;
+ $('polyB3').value=-0.02;$('polyAge').value=50;
+ polyUpdate();
+}
+function polyFuncs(){
+ const a=+$('polyB1').value,b=+$('polyB2').value,c=+$('polyB3').value;
+ if(polyMode==='q')return{val:x=>300+a*x+b*x*x,der:x=>a+2*b*x,a,b,c,formula:`Gasto = 300 ${sign(a,0)} · edad ${sign(b,2)} · edad²`};
+ return{val:x=>3000+a*x+b*x*x+c*x*x*x,der:x=>a+2*b*x+3*c*x*x,a,b,c,formula:`Gasto = 3000 ${sign(a,0)} · edad ${sign(b,2)} · edad² ${sign(c,3)} · edad³`};
+}
+function polyUpdate(){
+ const age=+$('polyAge').value,o=polyFuncs(),v=o.val(age),cubic=polyMode==='c';
+ $('polyAgeVal').textContent=fmt(age,0)+' años';$('polyB1Val').textContent=fmt(o.a,0);$('polyB2Val').textContent=fmt(o.b,2);$('polyB3Val').textContent=fmt(o.c,3);
+ $('polyFormula').innerHTML=`<span class="math">${o.formula}</span>`;
+ const ages=Array.from({length:121},(_,i)=>20+i*.5);
+ const [ymin,ymax]=withPadding(ages.map(o.val),.11);
+ const turn= !cubic && Math.abs(o.b)>1e-9?-o.a/(2*o.b):null;
+ plotSVG('polyPlot',{xmin:20,xmax:80,ymin,ymax,xLabel:'Edad (años)',yLabel:'Gasto estimado (€)',series:[{fn:o.val,color:COLORS.teal}],lines:!cubic&&turn>=20&&turn<=80?[{x:turn,color:COLORS.green}]:[],markers:[{x:age,y:v,color:COLORS.orange,vertical:true}],onX:x=>{$('polyAge').value=Math.round(clamp(x,20,79));polyUpdate()}});
+ if(cubic){
+  const der=o.der(age);
+  $('polyCubicDerivativeRule').textContent='dŶ/dEdad = β₁ + 2β₂ · Edad + 3β₃ · Edad²';
+  $('polyCubicDerivation').textContent=`Edad = ${age}: ${fmt(o.a,0)} + 2 × (${fmt(o.b,2)}) × ${age} + 3 × (${fmt(o.c,3)}) × ${age}² = ${sign(der,2)} € por año`;
+  $('polyCubicComment').textContent=`A los ${age} años, la pendiente de la curva es ${sign(der,2)} € por año. Es un efecto marginal en ese punto, no necesariamente el cambio exacto de ${age} a ${age+1} años.`;
+  return;
+ }
+ const p1=o.val(age+1),total=p1-v,marg=o.der(age);
+ $('polyPredLabel0').textContent=`Edad: ${age} años`;$('polyPredLabel1').textContent=`Edad: ${age+1} años`;
+ $('polyPred0').textContent=fmt(v,0)+' €';$('polyPred1').textContent=fmt(p1,0)+' €';
+ $('polyDeltaCalc').textContent=`${fmt(p1,0)} − ${fmt(v,0)} = ${sign(total,2)} €`;
+ $('polyDerivativeCalc').textContent=`${fmt(o.a,0)} + 2 × (${fmt(o.b,2)}) × ${age} = ${sign(marg,2)} € por año`;
+ $('polyMarginalText').innerHTML=`A los <b>${age} años</b>, el efecto marginal de la edad es <b>${sign(marg,2)} € por año</b>. Indica la pendiente de la curva en esa edad, manteniendo constantes las demás variables.`;
+ $('polyTotalText').innerHTML=`<b>De ${age} a ${age+1} años:</b> la diferencia entre las dos predicciones es <b>${sign(total,2)} €</b>. Es el cambio estimado entre esas edades, considerando conjuntamente Edad y Edad².`;
+ $('polyDerivative').textContent='dŶ/dEdad = β₁ + 2β₂ · Edad';
+ $('polyTurn').textContent=Math.abs(o.b)<1e-9?'Si β₂ = 0, el modelo es una recta y no tiene máximo o mínimo interior.':`Cuando la derivada vale cero, la pendiente es horizontal. En este modelo, ${fmt(o.a,0)} ${sign(2*o.b,2)} × Edad = 0 a los ${fmt(turn,1)} años: ese es el ${o.b<0?'máximo':'mínimo'} de la parábola${turn>=20&&turn<=80?' (dentro del gráfico)':' (fuera del rango mostrado)'}.`;
+ const [smin,smax]=withPadding([...ages.map(o.der),0],.13);
+ plotSVG('polyMargPlot',{xmin:20,xmax:80,ymin:smin,ymax:smax,xLabel:'Edad (años)',yLabel:'Pendiente (€ / año)',series:[{fn:o.der,color:COLORS.purple}],lines:[{x:age,color:COLORS.orange}],markers:[{x:age,y:marg,color:COLORS.orange}],onX:x=>{$('polyAge').value=Math.round(clamp(x,20,79));polyUpdate()}});
+}
+$('polyModes').querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{polyMode=btn.dataset.poly;[...$('polyModes').children].forEach(b=>b.classList.toggle('on',b===btn));polyInit()}));
+['polyAge','polyB1','polyB2','polyB3'].forEach(id=>$(id).addEventListener('input',polyUpdate));
+$('polyReset').addEventListener('click',polyInit);polyInit();
+quizClick('polyQuiz','polyQuizFb','Para calcular el efecto marginal, se deriva respecto a Edad: β₁ + 2β₂ · Edad. Después se sustituye la edad seleccionada. El cambio exacto entre dos edades se obtiene restando las predicciones.');
+
+// 5. Interacciones
+function intUpdate(){
+ const x=+$('intHours').value,g=+$('intGamma').value;
+ const base=z=>2+.6*z,yes=z=>2+.6*z+.8+g*z;
+ $('intHoursVal').textContent=fmt(x,1)+' horas';$('intGammaVal').textContent=fmt(g,2);
+ $('intModelEq').textContent=`Ŷ = 2 + 0,6 · Estudio + 0,8 · Tutorías ${sign(g,2)} · (Estudio × Tutorías)`;
+ $('intSlopeBase').textContent=fmt(.6,2);$('intSlopeYes').textContent=fmt(.6+g,2);
+ // Dejar los términos separados. No sumar el efecto de tutorías al intercepto.
+ $('intFormulaGroups').innerHTML=`<b>Sin tutorías (0, base)</b><div class="math">Ŷ = 2 + 0,6 · Estudio</div><div style="margin-top:12px"><b>Con tutorías (1)</b></div><div class="math">Ŷ = 2 + 0,6 · Estudio + 0,8 ${sign(g,2)} · Estudio</div>`;
+ const diff=.8+g*x;
+ $('intExplain').innerHTML=`Con <b>${fmt(x,1)} horas</b>, el modelo predice <b>${fmt(base(x),2)}</b> puntos sin tutorías y <b>${fmt(yes(x),2)}</b> con tutorías. La diferencia estimada es <b>${sign(diff,2)} puntos</b>. La pendiente con tutorías se calcula como <b>0,60 ${sign(g,2)} = ${fmt(.6+g,2)}</b> puntos por hora de estudio.`;
+ const [ymin,ymax]=withPadding([base(0),base(8),yes(0),yes(8)],.12);
+ plotSVG('intPlot',{xmin:0,xmax:8,ymin:Math.min(0,ymin),ymax:Math.max(10,ymax),xLabel:'Horas de estudio',yLabel:'Nota estimada',series:[{fn:base,color:COLORS.teal},{fn:yes,color:COLORS.orange}],markers:[{x,y:base(x),color:COLORS.teal,vertical:true},{x,y:yes(x),color:COLORS.orange}],onX:v=>{$('intHours').value=Math.round(v*2)/2;intUpdate()}});
+ $('intQuizFb').hidden=true;
+}
+$('intHours').addEventListener('input',intUpdate);$('intGamma').addEventListener('input',intUpdate);
+$('intReset').addEventListener('click',()=>{$('intHours').value=4;$('intGamma').value=.25;$('intGuess').value='';intUpdate()});
+$('intCheck').addEventListener('click',()=>{
+ const raw=$('intGuess').value.trim().replace(',','.'),n=Number(raw),correct=.6+(+$('intGamma').value),ok=raw!==''&&Number.isFinite(n)&&Math.abs(n-correct)<.011;
+ const fb=$('intQuizFb');fb.hidden=false;fb.className='answer '+(ok?'ok':'err');fb.textContent=(ok?'Correcto. ':'No exactamente. ')+`Con tutorías = 1, se suman los coeficientes de Estudio y de la interacción: 0,60 ${sign(+$('intGamma').value,2)} = ${fmt(correct,2)} puntos por hora adicional.`;
+});intUpdate();
+
+// 6. Estandarización
+const stdData=[{name:'Edad',b:50,sd:12,color:COLORS.teal},{name:'Distancia',b:-1.5,sd:200,color:COLORS.orange},{name:'Educación',b:200,sd:2,color:COLORS.purple}];
+function coefBars(id,values,labels,colors,precision=2){
+ const svg=$(id);svg.replaceChildren();const W=680,H=330,m={l:63,r:24,t:26,b:55};
+ const lo=Math.min(0,...values),hi=Math.max(0,...values),rng=Math.max(1e-9,hi-lo),pad=rng*.15;
+ const min=lo-pad,max=hi+pad,ih=H-m.t-m.b,py=v=>m.t+(1-(v-min)/(max-min))*ih;
+ for(let i=0;i<=4;i++){const val=min+(max-min)*i/4;S('line',{x1:m.l,x2:W-m.r,y1:py(val),y2:py(val),class:'gridline'},svg);S('text',{x:m.l-8,y:py(val)+4,'text-anchor':'end',class:'tick'},svg,fmt(val,precision))}
+ S('line',{x1:m.l,x2:W-m.r,y1:py(0),y2:py(0),stroke:'#778E9B','stroke-width':1.5},svg);
+ const each=(W-m.l-m.r)/3;
+ values.forEach((v,i)=>{
+   const bw=each*.34,barx=m.l+i*each+(each-bw)/2,y=Math.min(py(0),py(v)),h=Math.max(2,Math.abs(py(0)-py(v)));
+   S('rect',{x:barx,y,width:bw,height:h,rx:4,fill:colors[i]},svg);
+   S('text',{x:barx+bw/2,y:(v>=0?y-8:y+h+17),'text-anchor':'middle',fill:colors[i],'font-size':13,'font-weight':800},svg,fmt(v,precision));
+   S('text',{x:m.l+i*each+each/2,y:H-25,'text-anchor':'middle',class:'axis-label'},svg,labels[i]);
+ });
+}
+function stdUpdate(){
+ const months=$('stdUnits').value==='months';const sdY=1800;
+ const raw=stdData.map((v,i)=>i===0&&months?v.b/12:v.b);
+ const sds=stdData.map((v,i)=>i===0&&months?v.sd*12:v.sd);
+ const beta=raw.map((v,i)=>v*sds[i]/sdY);
+ const labels=[months?'Edad (meses)':'Edad (años)','Distancia','Educación'];
+ coefBars('stdRawPlot',raw,labels,stdData.map(x=>x.color),2);
+ coefBars('stdStdPlot',beta,['Edad','Distancia','Educación'],stdData.map(x=>x.color),3);
+ const rows=$('stdTable');rows.replaceChildren();
+ stdData.forEach((v,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${labels[i]}</td><td class="num">${fmt(sds[i],i===0&&months?0:1)}</td><td class="num">${fmt(raw[i],2)}</td><td class="num"><b>${fmt(beta[i],3)}</b></td>`;rows.append(tr)});
+ $('stdExplain').innerHTML=months?
+   `Al expresar la edad en <b>meses</b>, su coeficiente pasa de <b>50 por año</b> a <b>${fmt(50/12,3)} por mes</b>. Su desviación estándar pasa de 12 años a 144 meses. El beta estandarizado se mantiene en <b>${fmt(beta[0],3)}</b> y las predicciones no cambian.`:
+   `En unidades originales, Educación tiene el coeficiente numérico mayor (<b>200</b>). Pero en desviaciones estándar, la mayor magnitud corresponde a <b>Edad (${fmt(beta[0],3)})</b>. La comparación original era engañosa porque las unidades son diferentes.`;
+}
+$('stdUnits').addEventListener('change',stdUpdate);stdUpdate();
+quizClick('stdQuiz','stdQuizFb','Edad tiene β estandarizado 0,333, mayor en magnitud absoluta que Educación (0,222) y Distancia (−0,167).');
+
+// 7. Laboratorio: dos modelos sobre las mismas variables explicativas.
+// Los coeficientes y estadísticos son ilustrativos, no estimados sobre datos reales.
+const labTermsSets={
+ price:[
+  {term:'(Intercept)',b:38,se:11,t:'3.455',p:'0.0006'},
+  {term:'log(superficie_m2)',b:14,se:3.10,t:'4.516',p:'< 0.001'},
+  {term:'distancia_km',b:-2.2,se:.8,t:'−2.750',p:'0.0062'},
+  {term:'I(distancia_km^2)',b:.15,se:.055,t:'2.727',p:'0.0067'},
+  {term:'I(distancia_km^3)',b:-.004,se:.0016,t:'−2.500',p:'0.0128'},
+  {term:'dormitorios',b:4,se:1.20,t:'3.333',p:'0.0009'},
+  {term:'tipoCasa',b:20,se:5.5,t:'3.636',p:'0.0003'},
+  {term:'tipoEstudio',b:-14,se:4.5,t:'−3.111',p:'0.0020'},
+  {term:'dormitorios:tipoCasa',b:1.5,se:.6,t:'2.500',p:'0.0128'},
+  {term:'dormitorios:tipoEstudio',b:-.8,se:.94,t:'−0.851',p:'0.3950'},
+  {term:'valoracion',b:5.5,se:1,t:'5.500',p:'< 0.001'},
+  {term:'piscina',b:1.2,se:1.78,t:'0.674',p:'0.5000'}
+ ],
+ log:[
+  {term:'(Intercept)',b:2.85,se:.3300,t:'8.636',p:'< 0.001'},
+  {term:'log(superficie_m2)',b:.38,se:.0600,t:'6.333',p:'< 0.001'},
+  {term:'distancia_km',b:-.04,se:.0140,t:'−2.857',p:'0.0045'},
+  {term:'I(distancia_km^2)',b:.0015,se:.00055,t:'2.727',p:'0.0067'},
+  {term:'I(distancia_km^3)',b:-.00002,se:.000008,t:'−2.500',p:'0.0128'},
+  {term:'dormitorios',b:.06,se:.0200,t:'3.000',p:'0.0029'},
+  {term:'tipoCasa',b:.22,se:.0700,t:'3.143',p:'0.0018'},
+  {term:'tipoEstudio',b:-.18,se:.0550,t:'−3.273',p:'0.0012'},
+  {term:'dormitorios:tipoCasa',b:.025,se:.0100,t:'2.500',p:'0.0128'},
+  {term:'dormitorios:tipoEstudio',b:-.01,se:.0120,t:'−0.833',p:'0.4051'},
+  {term:'valoracion',b:.045,se:.0100,t:'4.500',p:'< 0.001'},
+  {term:'piscina',b:.008,se:.01187,t:'0.674',p:'0.5000'}
+ ]
+};
+let labModel='price',labSelected=1,labMode='learn',labTerms=labTermsSets.price;
+const logToPct=delta=>100*Math.expm1(delta);
+const labDistance=()=>+$('labDist').value;
+const labRooms=()=>+$('labRooms').value;
+const coefficient=(index)=>labTerms[index].b;
+const labFmt=(x)=>fmt(x,labModel==='log'?4:2);
+const labUnit=(x)=>labModel==='log'?`${fmt(x*100,2)} %`:`${fmt(x,2)} €`;
+const labResult=(x)=>labModel==='log'?`${fmt(logToPct(x),2)} %`:`${fmt(x,2)} €`;
+function labOperations(){
+ const v0=coefficient(5),vc=coefficient(8),ve=coefficient(9),log=labModel==='log';
+ const rows=[
+  ['Apartamento (base)',labFmt(v0),v0],
+  ['Casa',`${labFmt(v0)} ${sign(vc,log?4:2)} = ${labFmt(v0+vc)}`,v0+vc],
+  ['Estudio',`${labFmt(v0)} ${sign(ve,log?4:2)} = ${labFmt(v0+ve)}`,v0+ve]
+ ];
+ return `<div class="lab-operations">${rows.map(([label,calc,res])=>{
+  const dir=res>=0?'aumenta':'disminuye';
+  const amount=log?`${fmt(Math.abs(res*100),2)} % aproximadamente`:`${fmt(Math.abs(res),2)} €`;
+  const qualifier=label==='Estudio'?'<div class="small">La interacción de Estudio no es significativa con un nivel de significación α del 5 %: no puede afirmarse una diferencia de pendientes frente a Apartamento a nivel poblacional.</div>':'';
+  return `<div class="lab-operation"><div class="op-label">${label}</div><div class="op-calc">${calc}</div><div class="op-explain">Por cada dormitorio adicional en un ${label.startsWith('Apartamento')?'apartamento':label.toLowerCase()}, el precio estimado por noche <b>${dir} ${amount}</b>, manteniendo constantes las demás variables.</div>${qualifier}</div>`;
+ }).join('')}</div>`;
+}
+function labDistanceExtra(){
+ const d=labDistance(),a=coefficient(2),b=coefficient(3),c=coefficient(4),log=labModel==='log';
+ const margin=a+2*b*d+3*c*d*d;
+ const predDist=x=>coefficient(0)+coefficient(1)*Math.log(60)+a*x+b*x*x+c*x*x*x+coefficient(5)*2+coefficient(10)*8;
+ const start=predDist(d),end=predDist(d+1),delta=end-start;
+ const label=log?'ln(precio) estimado':'Precio estimado por noche';
+ const exact=log?`${sign(logToPct(delta),2)} %`:`${sign(delta,2)} €`;
+ const local=log?`${sign(margin*100,2)} % por km (aprox.)`:`${sign(margin,2)} € por km`;
+ const reason=log?'El resultado porcentual se obtiene a partir de la diferencia entre los logaritmos predichos: 100 × (exp(Δln(precio)) − 1).':'El resultado se obtiene restando los precios estimados para las dos distancias.';
+ return `<div class="small">Ejemplo: Apartamento de 60 m², con 2 dormitorios, valoración 8 y sin piscina. Solo cambia la distancia.</div>
+  <div class="calc-two"><div class="callout-stat"><div class="title">${label} · ${d} km</div><div class="value">${fmt(start,log?3:2)}${log?'':' €'}</div></div>
+  <div class="callout-stat"><div class="title">${label} · ${d+1} km</div><div class="value">${fmt(end,log?3:2)}${log?'':' €'}</div></div></div>
+  <div class="note green"><b>Cambio exacto entre ${d} y ${d+1} km: ${exact}.</b><div class="small">${reason}</div></div>
+  <details class="explain-more"><summary>Ver el efecto marginal en ${d} km</summary>
+   <p class="small">La derivada indica la pendiente de la curva en ese punto. No coincide necesariamente con el cambio entre ${d} y ${d+1} km porque la pendiente cambia.</p>
+   <div class="formula math">β₂ + 2β₃ · d + 3β₄ · d² = ${local}</div>
+  </details>`;
+}
+function labExplanation(i){
+ const log=labModel==='log',d=labDistance(),rooms=labRooms();
+ const a=coefficient(6),b=coefficient(7),ic=coefficient(8),ie=coefficient(9);
+ const casa=a+ic*rooms,estudio=b+ie*rooms;
+ if(i===0)return {
+   txt:log?'El intercepto representa ln(precio) para un Apartamento de 1 m², situado a 0 km, con 0 dormitorios, valoración 0 y sin piscina. Son condiciones poco realistas.':'El intercepto representa el precio estimado de un Apartamento de 1 m², situado a 0 km, con 0 dormitorios, valoración 0 y sin piscina. Son condiciones poco realistas.',
+   formula:'El intercepto corresponde al caso donde todos los términos explicativos valen cero; ln(superficie)=0 equivale a superficie de 1 m².'
+ };
+ if(i===1)return {
+   txt:log?'Como tanto precio como superficie aparecen en logaritmos, el coeficiente es una elasticidad. Un 1 % más de superficie se asocia aproximadamente con un 0,38 % más de precio, manteniendo constantes las demás variables.':'Aquí solo la superficie está en logaritmos. Un 1 % más de superficie se asocia aproximadamente con 0,14 € más de precio por noche, manteniendo constantes las demás variables.',
+   formula:log?'Para +1 % en superficie: Δ% precio ≈ 0,380 % (modelo log–log).':'Para +1 % en superficie: Δ precio ≈ 14 × 0,01 = 0,14 € (modelo lineal–log).'
+ };
+ if(i>=2&&i<=4)return {
+   txt:`La distancia aparece en tres términos: distancia, distancia² y distancia³. No deben interpretarse aisladamente. <b>Calculamos el cambio entre dos distancias mediante las predicciones</b>, manteniendo constantes las demás características.`,
+   formula:'Se consideran juntos distancia, distancia² y distancia³. El efecto marginal se puede consultar después de calcular el cambio exacto.',
+   extra:labDistanceExtra()
+ };
+ if(i===5)return {
+   txt:log?'Un dormitorio adicional tiene una pendiente distinta según el tipo de alojamiento. Como Y está en logaritmos, expresamos los cambios aproximados en porcentajes.':'Un dormitorio adicional tiene una pendiente distinta según el tipo de alojamiento. Como Y no está transformada, expresamos los cambios en euros.',
+   formula:'Se combina el coeficiente de dormitorios con la interacción correspondiente. Apartamento es la categoría base.',
+   extra:labOperations()
+ };
+ if(i===6||i===8){
+   const amount=labModel==='log'?`${sign(casa,3)} en ln(precio), equivalente a ${sign(logToPct(casa),2)} %`:`${sign(casa,2)} €`;
+   return {txt:`Casa se compara con Apartamento (base). Como existe la interacción con dormitorios, la diferencia estimada depende del número de dormitorios.`,
+    formula:`Con ${rooms} dormitorios: ${labFmt(a)} ${sign(ic,log?4:2)} × ${rooms} = ${labFmt(casa)}.`,
+    extra:`<div class="note green">Para ${rooms} dormitorios, la diferencia Casa − Apartamento es <b>${amount}</b>, manteniendo las demás variables constantes.</div>`};
+ }
+ if(i===7||i===9){
+   const amount=labModel==='log'?`${sign(estudio,3)} en ln(precio), equivalente a ${sign(logToPct(estudio),2)} %`:`${sign(estudio,2)} €`;
+   return {txt:'Estudio se compara con Apartamento (base). Su diferencia estimada depende también del número de dormitorios porque hay una interacción. Recuerda revisar por separado la significación estadística del término de interacción.',
+    formula:`Con ${rooms} dormitorios: ${labFmt(b)} ${sign(ie,log?4:2)} × ${rooms} = ${labFmt(estudio)}.`,
+    extra:`<div class="note green">Para ${rooms} dormitorios, la diferencia Estudio − Apartamento es <b>${amount}</b>, manteniendo las demás variables constantes.</div>`};
+ }
+ if(i===10)return {
+   txt:log?'Valoración es una variable cuantitativa lineal, sin términos adicionales ni interacciones. Un punto adicional de valoración se asocia aproximadamente con un 4,5 % más de precio por noche, manteniendo constantes las demás variables.':'Valoración es una variable cuantitativa lineal, sin términos adicionales ni interacciones. Un punto adicional de valoración se asocia con un precio estimado 5,50 € mayor por noche, manteniendo constantes las demás variables.',
+   formula:log?'Modelo log–lineal: por +1 punto de valoración, Δ% precio ≈ 100 × 0,045 = 4,5 %.':'Modelo sin transformar Y: por +1 punto de valoración, Δ precio = +5,50 €.'
+ };
+ return {
+   txt:log?'Piscina es una variable dummy (0 = no, 1 = sí). El coeficiente estimado es +0,008 en ln(precio), pero su p-valor es 0,50: con un nivel de significación α del 5 %, no hay evidencia suficiente para afirmar que su coeficiente poblacional sea diferente de cero.':'Piscina es una variable dummy (0 = no, 1 = sí). El coeficiente estimado es +1,20 €, pero su p-valor es 0,50: con un nivel de significación α del 5 %, no hay evidencia suficiente para afirmar que su coeficiente poblacional sea diferente de cero.',
+   formula:'H₀: βpiscina = 0. Con p = 0,50 > 0,05 no rechazamos H₀. Eso no demuestra que el coeficiente poblacional sea exactamente cero.'
+ };
+}
+function labHighlight(i){
+ const related=i>=2&&i<=4?[2,3,4]:i===5?[5,8,9]:[6,8].includes(i)?[5,6,8]:[7,9].includes(i)?[5,7,9]:[i];
+ document.querySelectorAll('#coefTable tr[data-index]').forEach(tr=>{const j=+tr.dataset.index;tr.classList.toggle('active',j===i);tr.classList.toggle('related',j!==i&&related.includes(j))});
+}
+function labUpdate(){
+ $('labDistVal').textContent=labDistance()+' km';$('labRoomsVal').textContent=String(labRooms());
+ const term=labTerms[labSelected],interpretation=labExplanation(labSelected),pnum=term.p.includes('<')?.0009:Number(term.p),nonsig=pnum>=.05;
+ $('labCoefTitle').textContent=term.term;
+ const stat=$('labSignificance');stat.className='significance'+(nonsig?' nonsig':'');
+ const pShown=term.p.includes('<')?'p-valor < 0,001':`p-valor = ${term.p.replace('.',',')}`;
+ stat.textContent=nonsig?`${pShown}. Con un nivel de significación α del 5 %, no se rechaza H₀: β = 0. No existe evidencia estadística suficiente para afirmar que el coeficiente poblacional sea distinto de cero.`:`${pShown}. Con un nivel de significación α del 5 %, el coeficiente es estadísticamente significativo y se rechaza H₀: β = 0.`;
+ $('labCoefExplanation').innerHTML=interpretation.txt;
+ $('labCoefFormula').textContent=interpretation.formula;
+ $('labCoefExtra').innerHTML=interpretation.extra||'';
+ $('labControls').hidden=!(labSelected>=2&&labSelected<=9);
+ if(labMode==='learn')labHighlight(labSelected);
+}
+function labMakeTable(){
+ labTerms=labTermsSets[labModel];const wrap=$('coefTable');wrap.replaceChildren();
+ labTerms.forEach((term,i)=>{
+  const tr=document.createElement('tr');tr.dataset.index=String(i);
+  const td=document.createElement('td'),button=document.createElement('button');button.type='button';button.className='term-btn';button.textContent=term.term;button.setAttribute('aria-label',`Interpretar ${term.term}`);
+  button.addEventListener('click',()=>{if(labMode!=='learn')return;labSelected=i;labUpdate()});td.append(button);tr.append(td);
+  const dec=i===4?6:(i===3?5:(i===8||i===9?4:3));
+  const vals=[term.b.toFixed(dec),term.se.toFixed(i===4?6:(i===3?5:4)),term.t,term.p];
+  vals.forEach(value=>{const cell=document.createElement('td');cell.className='num';cell.textContent=String(value).replace(/\.(?=\d)/g,',');tr.append(cell)});
+  wrap.append(tr);
+ });
+ $('labSummary').textContent=labModel==='price'?'Residual standard error: 15.8 on 408 degrees of freedom\nMultiple R-squared: 0.704    Adjusted R-squared: 0.696\nF-statistic: 88.2 on 11 and 408 DF, p-value: < 2.2e-16\nn = 420 observaciones (ejemplo didáctico)':
+  'Residual standard error: 0.240 on 408 degrees of freedom\nMultiple R-squared: 0.742    Adjusted R-squared: 0.735\nF-statistic: 106.7 on 11 and 408 DF, p-value: < 2.2e-16\nn = 420 observaciones (ejemplo didáctico)';
+ $('labSummary').textContent=$('labSummary').textContent.replaceAll('\\n','\n').replace(/(?<=\d)\.(?=\d)/g,',');
+}
+function changeLabMode(mode){
+ labMode=mode;[...$('labModes').children].forEach(b=>b.classList.toggle('on',b.dataset.lab===mode));
+ $('labLearn').hidden=mode!=='learn';$('labExam').hidden=mode!=='exam';
+ [...$('coefTable').querySelectorAll('.term-btn')].forEach(b=>{b.disabled=mode!=='learn';b.style.cursor=mode==='learn'?'pointer':'default'});
+ if(mode==='exam'){
+   document.querySelectorAll('#coefTable tr[data-index]').forEach(tr=>tr.classList.remove('active','related'));
+   examRender();
+ }else labHighlight(labSelected);
+}
+$('labModes').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>changeLabMode(b.dataset.lab)));
+['labDist','labRooms'].forEach(id=>$(id).addEventListener('input',labUpdate));
+
+// Cuestionarios correspondientes a cada una de las dos salidas de R.
+const examSets={
+ price:[
+ {q:'¿Cuál es la variable dependiente del primer modelo?',opts:['Precio por noche, expresado en euros.','ln(precio por noche).','Superficie en metros cuadrados.','Valoración del alojamiento.'],a:0,ex:'La ecuación del primer modelo tiene precio_noche como variable dependiente, sin transformarla.'},
+ {q:'¿Cuál es la categoría base de la variable tipo?',opts:['Apartamento.','Casa.','Estudio.','No hay base, porque se incluyen todas las dummies.'],a:0,ex:'Apartamento no aparece como coeficiente de tipo; las otras categorías se interpretan respecto a esa referencia.'},
+ {q:'En el primer modelo, log(superficie_m2) tiene un coeficiente de 14. ¿Cómo se interpreta?',opts:['Un 1 % más de superficie se asocia aproximadamente con 0,14 € más de precio.','Un metro cuadrado adicional se asocia siempre con 14 € más de precio.','Un 1 % más de superficie aumenta el precio un 14 %.','La superficie explica el 14 % del precio.'],a:0,ex:'Y está en euros y X en logaritmos: para un 1 % más de superficie el cambio aproximado es 14/100 = 0,14 €.'},
+ {q:'El coeficiente de valoración es +5,50 y su p-valor es menor que 0,001. ¿Qué significa?',opts:['Un punto adicional de valoración se asocia con 5,50 € más de precio, manteniendo constantes las demás variables.','Un punto adicional de valoración aumenta el precio un 5,5 %.','El modelo demuestra un efecto causal.','La valoración no es significativa.'],a:0,ex:'Valoración entra linealmente y no participa en interacciones. Y se mide en euros.'},
+ {q:'El p-valor de piscina es 0,50. ¿Cuál es la conclusión al 5 %?',opts:['No se rechaza que su coeficiente poblacional sea cero; no hay evidencia suficiente de diferencia.','Está demostrado que el coeficiente poblacional es exactamente cero.','Piscina es estadísticamente significativa.','El coeficiente tiene una probabilidad del 50 % de ser correcto.'],a:0,ex:'p = 0,50 > 0,05; no rechazamos H₀: βpiscina = 0. No equivale a demostrar igualdad a cero.'},
+ {q:'¿Por qué no se interpreta distancia_km = −2,20 como un cambio fijo de −2,20 € por kilómetro?',opts:['Porque distancia también está al cuadrado y al cubo.','Porque todas las variables en niveles deben estandarizarse.','Porque la distancia no aparece en la ecuación.','Porque la variable dependiente está en logaritmos.'],a:0,ex:'El efecto marginal depende de distancia: −2,20 + 0,30·d − 0,012·d².'},
+ {q:'Para pasar de 5 a 6 km, el cambio exacto de precio estimado por los términos de distancia es…',opts:['Aproximadamente −0,91 €.','Siempre −2,20 €.','+0,15 €.','−0,004 €.'],a:0,ex:'−2,20 + 0,15(36−25) − 0,004(216−125) = −0,914 €.'},
+ {q:'En un Apartamento, un dormitorio adicional se asocia con…',opts:['4,00 € más de precio estimado.','4 % más de precio.','1,50 € más de precio.','20 € más de precio.'],a:0,ex:'Apartamento es la base. Su pendiente de dormitorios es el coeficiente principal: 4,00 €.'},
+ {q:'¿Qué pendiente de dormitorios corresponde a una Casa?',opts:['4,00 + 1,50 = 5,50 € por dormitorio.','Solo 1,50 € por dormitorio.','20 € por dormitorio.','4,00 € para todos los tipos.'],a:0,ex:'Se combinan dormitorios y dormitorios:tipoCasa; la pendiente es 5,50 €.'},
+ {q:'¿Se puede decir que tipoCasa = 20 representa la diferencia entre Casa y Apartamento para cualquier número de dormitorios?',opts:['No; la diferencia también depende de dormitorios.','Sí; las interacciones nunca modifican la comparación entre categorías.','Sí; siempre son exactamente 20 €.','No, porque Casa es la categoría base.'],a:0,ex:'La diferencia Casa−Apartamento para r dormitorios es 20 + 1,50·r euros.'},
+ {q:'La interacción dormitorios:tipoEstudio tiene p = 0,395. ¿Qué indica?',opts:['No hay evidencia suficiente de que la diferencia de pendientes respecto a Apartamento sea distinta de cero.','Está demostrado que ambas pendientes son exactamente iguales.','La interacción es significativa al 5 %.','La variable dormitorios debe eliminarse.'],a:0,ex:'El p-valor supera 0,05; no se rechaza que el coeficiente de interacción poblacional sea cero.'},
+ {q:'¿Qué implica incorporar distancia³ en un modelo de regresión?',opts:['La relación puede ser más flexible, pero el modelo sigue siendo lineal en sus coeficientes.','El coeficiente cúbico es siempre la pendiente constante.','La variable Y necesariamente está en logaritmos.','Se demuestra causalidad.'],a:0,ex:'Las potencias de X permiten curvas, manteniendo linealidad respecto de los parámetros.'}
+ ],
+ log:[
+ {q:'En el segundo modelo, ¿qué se transformó respecto al primero?',opts:['El precio por noche, que ahora aparece como ln(precio_noche).','Los dormitorios, que ahora aparecen como ln(dormitorios).','La variable tipo, que ya no necesita categoría base.','Todas las variables explicativas.'],a:0,ex:'Se mantienen los predictores y se aplica logaritmo natural a Y.'},
+ {q:'¿Cuál es la categoría de referencia de la variable tipo?',opts:['Apartamento.','Casa.','Estudio.','Ninguna, porque se incluyen las tres.'],a:0,ex:'R muestra tipoCasa y tipoEstudio; Apartamento es la referencia.'},
+ {q:'¿Cómo se interpreta log(superficie_m2) = 0,380?',opts:['Un 1 % más de superficie se asocia aproximadamente con un 0,38 % más de precio.','Un metro cuadrado aumenta siempre 0,38 € el precio.','Un 1 % más de superficie aumenta el precio un 38 %.','El modelo demuestra causalidad.'],a:0,ex:'X e Y están en logaritmos, por lo que 0,380 representa una elasticidad.'},
+ {q:'El coeficiente de valoración es 0,045 y es significativo. ¿Qué significa?',opts:['Un punto más de valoración se asocia aproximadamente con un 4,5 % más de precio.','Un 1 % más de valoración se asocia con un 0,045 % más de precio.','La valoración aumenta 0,045 € por punto.','La valoración no se interpreta porque Y está en logaritmos.'],a:0,ex:'Es un modelo log(Y)–X: +1 unidad de X se asocia aproximadamente con 100×0,045 = 4,5 % de Y.'},
+ {q:'Piscina tiene un p-valor de 0,50. ¿Qué se concluye al 5 %?',opts:['No hay evidencia suficiente de que su coeficiente poblacional sea distinto de cero.','Está probado que no existe relación alguna.','Piscina es significativa.','Hay un 50 % de probabilidad de que la hipótesis nula sea verdadera.'],a:0,ex:'No se rechaza H₀: βpiscina = 0; eso no demuestra que el efecto poblacional sea exactamente cero.'},
+ {q:'¿Cuál es el efecto aproximado de un dormitorio adicional en un Apartamento?',opts:['+6 % de precio.','+0,06 € de precio.','+2,5 % de precio.','+22 % de precio.'],a:0,ex:'Para la categoría base, la pendiente de dormitorios es 0,060 en ln(precio), aproximadamente +6 %.'},
+ {q:'¿Cuál es la pendiente en ln(precio) de dormitorios para una Casa?',opts:['0,060 + 0,025 = 0,085.','0,025 únicamente.','0,220 únicamente.','0,060 para todos los tipos.'],a:0,ex:'La pendiente para Casa suma el coeficiente de dormitorios y su interacción con tipoCasa.'},
+ {q:'Con dos dormitorios, la diferencia Casa − Apartamento en ln(precio) es…',opts:['0,220 + 2(0,025) = 0,270.','0,220 exactamente, independientemente de dormitorios.','0,025.','0,060.'],a:0,ex:'El cambio porcentual exacto asociado a 0,270 unidades logarítmicas es aproximadamente +31 %.'},
+ {q:'¿Por qué no se interpreta distancia_km = −0,040 como una reducción constante del 4 % por km?',opts:['Porque el modelo también contiene distancia² y distancia³.','Porque es una variable categórica.','Porque su p-valor es 0,50.','Porque el precio está expresado en euros.'],a:0,ex:'La derivada conjunta es −0,040 + 0,003·d − 0,000060·d².'},
+ {q:'De 5 a 6 km, el cambio porcentual exacto estimado por la distancia es aproximadamente…',opts:['−2,50 %.','−4,00 %.','+2,65 %.','−0,04 %.'],a:0,ex:'La diferencia en logaritmos es −0,02532; al convertirla: 100(exp(−0,02532)−1) ≈ −2,50 %.'},
+ {q:'Para Estudio con 2 dormitorios, frente a Apartamento con 2, la diferencia en ln(precio) es…',opts:['−0,180 − 2(0,010) = −0,200.','−0,180, sin interacción.','+0,200.','−0,010.'],a:0,ex:'Se combinan tipoEstudio y dormitorios:tipoEstudio. Esa diferencia depende de dormitorios.'},
+ {q:'La interacción dormitorios:tipoEstudio tiene un p-valor de 0,405. ¿Qué indica?',opts:['No existe evidencia suficiente de una diferencia poblacional de pendientes respecto a Apartamento.','El coeficiente poblacional es exactamente cero.','La interacción es significativa al 5 %.','Todos los tipos tienen idéntico intercepto.'],a:0,ex:'p = 0,405 > 0,05. No rechazamos H₀ para ese coeficiente de interacción.'}
+ ]
+};
+let examQuestions=examSets.price,examOrder=[],examAnswers=[],examOptionOrders=[],examAt=0,examDone=false;
+function examRender(){
+ $('examBody').hidden=examDone;$('examResults').hidden=!examDone;
+ if(examDone)return;
+ const qi=examOrder[examAt],q=examQuestions[qi],selection=examAnswers[qi],answered=examAnswers.filter(x=>x!==null).length;
+ $('examProgress').textContent=`Pregunta ${examAt+1} de ${examQuestions.length} · ${answered} respondidas`;
+ $('examFill').style.width=`${answered/examQuestions.length*100}%`;
+ $('examQuestion').textContent=q.q;
+ const opts=$('examOptions');opts.replaceChildren();
+ examOptionOrders[qi].forEach((i,k)=>{const button=document.createElement('button');button.textContent=String.fromCharCode(65+k)+'. '+q.opts[i];button.className=selection===i?'chosen':'';button.addEventListener('click',()=>{examAnswers[qi]=i;examRender()});opts.append(button)});
+ $('examBack').disabled=examAt===0;$('examNext').disabled=selection===null;
+ $('examNext').textContent=examAt===examQuestions.length-1?'Corregir evaluación':'Siguiente →';
+ $('examPending').textContent=examAt===examQuestions.length-1&&answered<examQuestions.length?`Quedan ${examQuestions.length-answered} preguntas sin responder. Puedes regresar para completarlas.`:'';
+}
+function examShowResults(){
+ examRender();const right=examQuestions.filter((q,i)=>examAnswers[i]===q.a).length,rate=right/examQuestions.length*100;
+ $('examScore').textContent=`${right} / ${examQuestions.length}`;
+ $('examVerdict').textContent=`Has respondido correctamente ${fmt(rate,1)} % de las preguntas. Revisa las explicaciones y las interpretaciones del modelo.`;
+ const review=$('examReview');review.replaceChildren();
+ examOrder.forEach((idx,position)=>{
+  const q=examQuestions[idx],sel=examAnswers[idx],good=sel===q.a,block=document.createElement('div');block.className='review';
+  const head=document.createElement('div');head.innerHTML=`<b>${position+1}. ${q.q}</b>`;block.append(head);
+  const answer=document.createElement('div');answer.style.color=good?'#287949':'#B74341';answer.textContent=(good?'✓ Correcta: ':'✗ Tu respuesta: ')+q.opts[sel];block.append(answer);
+  if(!good){const correct=document.createElement('div');correct.textContent='Respuesta correcta: '+q.opts[q.a];block.append(correct)}
+  const exp=document.createElement('div');exp.className='muted';exp.textContent=q.ex;block.append(exp);review.append(block);
+ });
+}
+function examReset(shuffle=false){
+ examQuestions=examSets[labModel];examAnswers=Array(examQuestions.length).fill(null);examAt=0;examDone=false;
+ examOrder=examQuestions.map((_,i)=>i);examOptionOrders=examQuestions.map(q=>shuffledIndices(q.opts.length));
+ if(shuffle){for(let i=examOrder.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[examOrder[i],examOrder[j]]=[examOrder[j],examOrder[i]]}}
+ examRender();
+}
+$('examBack').addEventListener('click',()=>{examAt=Math.max(0,examAt-1);examRender()});
+$('examNext').addEventListener('click',()=>{
+ if(examAnswers[examOrder[examAt]]===null)return;
+ if(examAt<examQuestions.length-1){examAt++;examRender();return}
+ if(examAnswers.some(x=>x===null)){examAt=examOrder.findIndex(i=>examAnswers[i]===null);examRender();return}
+ examDone=true;examShowResults();
+});
+$('examRetry').addEventListener('click',()=>examReset(true));
+$('examToLearn').addEventListener('click',()=>changeLabMode('learn'));
+function changeLabModel(model){
+ labModel=model;labSelected=1;
+ [...$('labModels').children].forEach(button=>button.classList.toggle('on',button.dataset.model===model));
+ $('labModelName').textContent=model==='price'?'Modelo 1 · Precio sin transformar':'Modelo 2 · Precio en logaritmos';
+ $('labTheory').textContent=`${model==='price'?'Precioᵢ':'ln(Precioᵢ)'} = β₀ + β₁ · ln(Superficieᵢ) + β₂ · Distanciaᵢ + β₃ · Distanciaᵢ² + β₄ · Distanciaᵢ³ + β₅ · Dormitoriosᵢ + β₆ · tipoCasaᵢ + β₇ · tipoEstudioᵢ + β₈ · (Dormitoriosᵢ × tipoCasaᵢ) + β₉ · (Dormitoriosᵢ × tipoEstudioᵢ) + β₁₀ · Valoraciónᵢ + β₁₁ · Piscinaᵢ + uᵢ`;
+ $('labModelTransition').hidden=model!=='log';
+ $('labCall').textContent=`Call:\nlm(formula = ${model==='price'?'precio_noche':'log(precio_noche)'} ~\n    log(superficie_m2) + distancia_km + I(distancia_km^2) +\n    I(distancia_km^3) + dormitorios * tipo + valoracion + piscina,\n    data = alojamientos)`;
+ labMakeTable();labUpdate();examReset();changeLabMode('learn');
+}
+$('labModels').querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>changeLabModel(button.dataset.model)));
+changeLabModel('price');
+
+// 8. Práctica de interpretación. Todos los datos y modelos son didácticos.
+// Las soluciones se muestran solo por petición del estudiante.
+const practGraphChoices=['Logaritmo en X','Logaritmo en Y','Logaritmo en X e Y','Término cuadrático','Término cúbico','Sin transformación'];
+const practExercises=[
+ {kind:'graph',curve:'logplus',correct:0,question:'Los datos muestran una relación creciente que se va aplanando. ¿Qué transformación en X podría ser útil?',context:'Se representa una muestra de observaciones individuales. Elige la opción más razonable.',solution:'El logaritmo en X puede representar una relación creciente con incrementos cada vez menores. Al representar Y frente a ln(X), los puntos siguen aproximadamente una recta.'},
+ {kind:'graph',curve:'logminus',correct:0,question:'La relación es negativa y la caída se hace menos pronunciada. ¿Qué transformación en X podrías explorar?',context:'Observa la nube de puntos, no solo su tendencia general.',solution:'También con una relación negativa puede ser útil ln(X). Cambia el signo de la pendiente, pero la interpretación del coeficiente sigue siendo lineal–logarítmica.'},
+ {kind:'graph',curve:'hist',correct:1,question:'La variable Y presenta una distribución muy asimétrica a la derecha. ¿Qué transformación de Y podría examinarse?',context:'Este gráfico es un histograma de Y, sin utilizar todavía ninguna variable X.',solution:'Aplicar ln(Y), si Y es estrictamente positiva, puede reducir la asimetría. La decisión requiere examinar después la adecuación del modelo; el histograma por sí solo no obliga a transformar.'},
+ {kind:'graph',curve:'quadratic',correct:3,question:'Las observaciones muestran una U invertida. ¿Qué término añadirías al modelo?',context:'La relación aumenta hasta cierta zona y después disminuye.',solution:'Un término X² junto con X permite una parábola. Si el coeficiente de X² es negativo, la curvatura es hacia abajo. Ambos términos se interpretan conjuntamente.'},
+ {kind:'graph',curve:'cubic',correct:4,question:'Los puntos sugieren una curva con dos cambios de dirección. ¿Qué término puede aportar más flexibilidad?',context:'La relación no parece representarse bien mediante una sola U.',solution:'Incorporar X³, junto con X y X² por jerarquía, permite formas más flexibles y dos posibles puntos de giro. Se interpreta el conjunto de los términos.'},
+ {kind:'graph',curve:'linear',correct:5,question:'Los puntos se distribuyen aproximadamente alrededor de una recta. ¿Qué opción probarías primero?',context:'Considera únicamente la forma observada de la relación.',solution:'Una relación aproximadamente lineal puede modelarse inicialmente sin transformar. Después hay que comprobar el ajuste y los supuestos.'},
+ {kind:'choice',question:'En una regresión, tipoCasa = +18,00 y Apartamento es la base. ¿Qué significa?',context:'Y es el precio por noche (€), sin transformar; no hay interacción con tipo.',formula:'Precio = β₀ + β₁ · tipoCasa + otros términos',opts:['La Casa cuesta, en promedio, 18,00 € más que un Apartamento con iguales características.','La Casa cuesta un 18 % más que un Apartamento.','El Apartamento cuesta 18,00 € más que la Casa.','El coeficiente indica el precio total de una Casa.'],correct:0,solution:'El coeficiente de la dummy representa una diferencia estimada respecto a la categoría base (Apartamento), manteniendo constantes las demás variables.'},
+ {kind:'choice',question:'Una variable tiene p-valor = 0,50. ¿Qué conclusión corresponde con un nivel de significación α del 5 %?',context:'Se contrasta H₀: β = 0.',opts:['No se rechaza H₀; no hay evidencia suficiente de que el coeficiente poblacional sea diferente de cero.','El coeficiente poblacional está demostrado que es cero.','Hay un 50 % de probabilidad de que H₀ sea verdadera.','La variable es significativa al 5 %.'],correct:0,solution:'Como 0,50 > 0,05, no rechazamos H₀: β = 0. No demostrar diferencia de cero no equivale a demostrar que sea exactamente cero.'},
+ {kind:'numeric',question:'Si Y está en euros y el coeficiente de ln(ingresos) es 240,00, ¿en cuántos euros cambia aproximadamente Y cuando los ingresos aumentan un 1 %?',context:'Modelo lineal–logarítmico, manteniendo constantes las demás variables.',formula:'Y = β₀ + 240,00 · ln(ingresos)',value:2.4,tolerance:.03,unit:'€',solution:'Con logaritmo solo en X, un aumento del 1 % se asocia aproximadamente con 0,01 × 240,00 = 2,40 € más en Y.'},
+ {kind:'numeric',question:'¿Cuál es el cambio exacto estimado del gasto al pasar de 40 a 41 años?',context:'Calcula las dos predicciones y réstalas. Expresa el resultado en euros.',formula:'Gasto estimado = 300 + 200 · Edad − 2 · Edad²',value:38,tolerance:.01,unit:'€',solution:'A los 40 años: 5.100 €. A los 41 años: 5.138 €. La diferencia es 5.138 − 5.100 = 38,00 €. La derivada a los 40 años es 40 € por año, pero no es el cambio exacto entre 40 y 41.'},
+ {kind:'numeric',question:'¿Cuál es el efecto de una hora más de estudio entre quienes reciben tutorías (T = 1)?',context:'Indica el cambio de nota por hora adicional de estudio.',formula:'Nota = 2 + 0,60 · Estudio + 0,80 · T + 0,25 · (Estudio × T)',value:.85,tolerance:.011,unit:'puntos por hora',solution:'Con tutorías, el efecto de estudio se obtiene sumando 0,60 + 0,25 = 0,85 puntos por cada hora adicional, manteniendo las demás variables constantes.'},
+ {kind:'choice',question:'Si mantienes X³ en un modelo, ¿qué términos conservas por el principio de jerarquía?',context:'Supón que X³ se ha decidido mantener aunque los coeficientes de menor orden tengan p-valores mayores que 0,05.',opts:['X y X², además de X³.','Solo X³.','X², pero se elimina X.','Solo los términos individuales estadísticamente significativos.'],correct:0,solution:'La jerarquía de un polinomio cúbico incluye X, X² y X³. Los términos de orden inferior se conservan aunque no sean significativos por separado.'},
+ {kind:'choice',question:'Si la interacción Edad × Tutorías se mantiene, ¿qué ocurre con los términos principales?',context:'La interacción es estadísticamente significativa, pero Edad no lo es individualmente.',opts:['Se conservan Edad y Tutorías junto con su interacción.','Se elimina Edad porque no es significativa.','Se elimina Tutorías y se mantiene solo la interacción.','La interacción reemplaza automáticamente a las otras variables.'],correct:0,solution:'Por jerarquía se mantienen ambos efectos principales al incluir la interacción. Sus p-valores individuales no obligan a eliminarlos.'},
+ {kind:'numeric',question:'¿Cuál es el coeficiente estandarizado de Edad?',context:'Coeficiente original 50; DE(Edad) = 12; DE(Y) = 1.800. Redondea a tres decimales.',formula:'β estandarizado = b × DE(X) / DE(Y)',value:1/3,tolerance:.005,unit:'desviaciones estándar',solution:'50 × 12 / 1.800 = 0,333. Un aumento de una desviación estándar de Edad se asocia con 0,333 desviaciones estándar de Y, manteniendo constantes las demás variables. Este ejemplo supone un término lineal sin interacciones.'}
+];
+let practAt=0;
+const practSaved=practExercises.map(()=>({choice:null,numeric:'',checked:false,shown:false,ok:false}));
+function practDataset(name){
+ if(name==='hist'){
+  return Array.from({length:260},(_,i)=>({x:i,y:Math.exp(4.7+.65*normalNoise(i,7))}));
+ }
+ const data=[];
+ for(let i=0;i<52;i++){
+  const t=(i+.6)/52,n=sampleNoise(i,9),n2=sampleNoise(i,15);
+  const x=(name==='logplus'||name==='logminus'||name==='power')?2+77*t:name==='quadratic'?3+54*t:name==='cubic'?12+58*t:3+75*t;
+  let y;
+  if(name==='logplus')y=160+115*Math.log(x)+30*n;
+  else if(name==='logminus')y=950-135*Math.log(x)+30*n;
+  else if(name==='power')y=42*Math.pow(x,.59)*Math.exp(.13*n);
+  else if(name==='quadratic')y=260+38*x-.66*x*x+23*n;
+  else if(name==='cubic')y=450+.025*Math.pow(x-41,3)-11*(x-41)+19*n2;
+  else y=160+5.3*x+32*n;
+  data.push({x,y:Math.max(1,y)});
+ }
+ return data;
+}
+function practGraphDraw(id,name,after=false){
+ const points=practDataset(name);
+ if(name==='hist'){histogramPlot(id,points.map(p=>after?Math.log(p.y):p.y),after?'ln(Y)':'Y original',14);return}
+ let mapped=points,xLabel='X',yLabel='Y',line=null;
+ if(after&&['logplus','logminus','power'].includes(name)){
+  mapped=points.map(p=>({x:Math.log(p.x),y:name==='power'?Math.log(p.y):p.y}));
+  xLabel='ln(X)';yLabel=name==='power'?'ln(Y)':'Y';
+ }else if(after){
+  if(name==='quadratic')line=x=>260+38*x-.66*x*x;
+  if(name==='cubic')line=x=>450+.025*Math.pow(x-41,3)-11*(x-41);
+  if(name==='linear')line=x=>160+5.3*x;
+ }
+ scatterPlot(id,mapped,{xLabel,yLabel,line});
+}
+function practRender(){
+ const q=practExercises[practAt],r=practSaved[practAt],graph=q.kind==='graph';
+ $('practKind').textContent=graph?'Identificar transformaciones a partir de observaciones':'Interpretar coeficientes y modelos';
+ $('practQuestion').textContent=q.question;$('practContext').textContent=q.context;
+ $('practFormula').hidden=!q.formula;if(q.formula)$('practFormula').textContent=q.formula;
+ $('practChartWrap').hidden=!graph;
+ if(graph)practGraphDraw('practChart',q.curve,false);
+ $('practAnswerOptions').hidden=q.kind==='numeric';$('practNumericWrap').hidden=q.kind!=='numeric';
+ if(q.kind==='numeric'){$('practNumeric').value=r.numeric;$('practNumUnit').textContent=' '+q.unit;}
+ const opts=q.kind==='graph'?practGraphChoices:q.opts;
+ $('practAnswerOptions').replaceChildren();
+ if(q.kind!=='numeric')opts.forEach((op,i)=>{
+  const b=document.createElement('button');b.textContent=op;b.className=r.choice===i?'chosen':'';
+  if(r.checked||r.shown){b.classList.toggle('correct',i===q.correct);b.classList.toggle('wrong',r.choice===i&&i!==q.correct)}
+  b.addEventListener('click',()=>{r.choice=i;r.checked=false;r.ok=false;practRender()});$('practAnswerOptions').append(b);
+ });
+ $('practFeedback').hidden=!r.checked;
+ if(r.checked){$('practFeedback').className='answer '+(r.ok?'ok':'err');$('practFeedback').textContent=r.ok?'Correcto. Puedes consultar la explicación en «Ver solución».':'Revisa tu respuesta. Puedes consultar la solución y su explicación.'}
+ $('practSolution').hidden=!r.shown;
+ $('practReveal').textContent=r.shown?'Ocultar solución':'Ver solución';
+ if(r.shown){
+  $('practSolText').textContent=(q.kind==='numeric'?`Resultado: ${fmt(q.value, q.unit==='desviaciones estándar'?3:2)} ${q.unit}. `:q.kind==='graph'?`Opción orientativa: ${practGraphChoices[q.correct]}. `:`Respuesta correcta: ${q.opts[q.correct]} `)+q.solution;
+  $('practSolvedChart').hidden=!graph;
+  $('practSolvedChart').querySelector('p').innerHTML=['quadratic','cubic','linear'].includes(q.curve)?'<b>Curva de ajuste ilustrativa:</b> los mismos puntos y una función que reproduce su tendencia.':'<b>Después de la transformación:</b> los mismos datos representados con la transformación elegida.';
+  if(graph)practGraphDraw('practAfter',q.curve,true);
+ }
+ const completed=practSaved.filter(x=>x.checked).length;
+ $('practProgress').textContent=`Ejercicio ${practAt+1} de ${practExercises.length} · ${completed} respuestas comprobadas`;
+ $('practProgressBar').style.width=`${completed/practExercises.length*100}%`;
+ $('practCounter').textContent=`${practAt+1} / ${practExercises.length}`;
+ $('practPrev').disabled=practAt===0;$('practNext').disabled=practAt===practExercises.length-1;
+ [...$('practSections').children].forEach(b=>b.classList.toggle('on',b.dataset.pract===(practAt<6?'graphs':'coeffs')));
+}
+$('practNumeric').addEventListener('input',()=>{const r=practSaved[practAt];r.numeric=$('practNumeric').value;r.checked=false;r.ok=false;$('practFeedback').hidden=true});
+$('practCheck').addEventListener('click',()=>{
+ const q=practExercises[practAt],r=practSaved[practAt];
+ if(q.kind==='numeric'){
+  const raw=$('practNumeric').value.trim().replace(',','.');
+  if(raw===''||!Number.isFinite(Number(raw))){$('practFeedback').hidden=false;$('practFeedback').className='answer err';$('practFeedback').textContent='Escribe un número antes de comprobar.';return}
+  r.numeric=$('practNumeric').value;r.ok=Math.abs(Number(raw)-q.value)<=q.tolerance;
+ }else{
+  if(r.choice===null){$('practFeedback').hidden=false;$('practFeedback').className='answer err';$('practFeedback').textContent='Selecciona una respuesta antes de comprobar.';return}
+  r.ok=r.choice===q.correct;
+ }
+ r.checked=true;practRender();
+});
+$('practReveal').addEventListener('click',()=>{const r=practSaved[practAt];r.shown=!r.shown;practRender()});
+$('practPrev').addEventListener('click',()=>{practAt=Math.max(0,practAt-1);practRender()});
+$('practNext').addEventListener('click',()=>{practAt=Math.min(practExercises.length-1,practAt+1);practRender()});
+$('practSections').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{practAt=b.dataset.pract==='graphs'?0:6;practRender()}));
+practRender();
+
+</script>
+
+<script
+  data-goatcounter="https://jlab.goatcounter.com/count"
+  async
+  src="//gc.zgo.at/count.js">
+</script>
+</body>
+</html>
